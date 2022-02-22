@@ -36,8 +36,9 @@ def read_and_extract_targets(path):
 	targets = []
 	with open(path, 'r') as f:
 		for line in f:
-			_, target = line.split('\t')
-			targets.append(target.strip())
+			if not line.startswith('#'):
+				_, target = line.split('\t')
+				targets.append(target.strip())
 	return targets
 
 def replace_and_get_AA(ID):
