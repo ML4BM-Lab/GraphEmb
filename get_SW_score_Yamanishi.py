@@ -1,15 +1,15 @@
 import argparse
 import logging
 import os, sys, uuid
-from re import search
 import pandas as pd
-from tqdm import tqdm
-from GetDrugsAndGenes import getamino_KEGG
-from itertools import repeat
 import subprocess as sp
 import multiprocessing as mp
+from itertools import repeat
+from re import search
+from tqdm import tqdm
 from shutil import rmtree
-
+from GetDrugsAndGenes import getamino_KEGG
+from sklearn.preprocessing import MinMaxScaler
 def get_DB_name(path):
 	"""
 	This function returns the name of the DB.
@@ -103,7 +103,6 @@ def get_SW_score(pair1, pair2):
 	except:
 		print(target1, target2)
 
-
 def read_fasta(path):
 	names=[]
 	seqs = []
@@ -150,6 +149,7 @@ def main():
 	logging.basicConfig(format=fmt, level=level)
 
 	# sanity check for the DB
+	# DB_PATH = '/home/margaret/data/jfuente/DTI/Data/Yamanashi_et_al_GoldStandard/E/interactions/e_admat_dgc_mat_2_line.txt'
 	DB_PATH = args.dbPath
 	logging.info(f'Reading database from: {DB_PATH}')
 	db_name = get_DB_name(DB_PATH)
@@ -162,6 +162,9 @@ def main():
 	targets_seqs = []
 	for target in tqdm(targets, desc='Getting AA sequences from KEGG'):
 		targets_seqs.append(replace_and_get_AA(target))
+
+	# remove entries without sequences
+	targets_seqs = list(filter(lambda entry: entry[1] != '', targets_seqs))
 	
 	# write the sequences to fasta
 	file_path = os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name, 'Targets_AA_sequences.tsv')
@@ -170,8 +173,6 @@ def main():
 			for target, seq in targets_seqs:
 				_ = f.write('>'+target+'\n'+seq+'\n')
 
-	# remove the targets without sequences
-	targets_seqs = list(filter(lambda x: x[1] != '', targets_seqs))
 	# get the SW scores
 	global PATH
 	PATH = create_remove_tmp_folder(os.path.join('/tmp/SmithWaterman' , db_name))
@@ -194,6 +195,10 @@ def main():
 	file_path = os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name, 'Drugs_SmithWaterman_scores.tsv')
 	SmithWaterman_arr.to_csv(file_path, sep='\t')
 	rmtree(PATH)
+	zscore_SmithWaterman_arr = pd.DataFrame(MinMaxScaler().fit_transform(SmithWaterman_arr),columns=targets,index=targets)
+	file_path = os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name, 'Drugs_SmithWaterman_scores_MinMax.tsv')
+	zscore_SmithWaterman_arr.to_csv(file_path, sep='\t')
+
 
 #####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

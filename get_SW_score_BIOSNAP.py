@@ -9,6 +9,8 @@ from itertools import repeat
 import subprocess as sp
 import multiprocessing as mp
 from shutil import rmtree
+from sklearn.preprocessing import MinMaxScaler
+
 
 def get_DB_name(path):
 	"""
@@ -158,7 +160,8 @@ def main():
 	db_name = get_DB_name(DB_PATH)
 	targets = read_and_extract_targets(DB_PATH)
 	targets = list(set(targets))
-	target_seqs = map(getamino_uniprot, targets)
+	logging.info('targets: {len(targets)}')
+	target_seqs = list(map(getamino_uniprot, tqdm(targets)))
 	
 	# remove the targets without sequences
 	logging.info('Downloading and removing targets without sequences')
@@ -190,8 +193,13 @@ def main():
 	logging.info('Saving the array')
 	check_and_create_folder(db_name)
 	file_path = os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name, 'Drugs_SmithWaterman_scores.tsv')
+	logging.info('Raw scores saved to: {file_path}')
 	SmithWaterman_arr.to_csv(file_path, sep='\t')
 	rmtree(PATH)
+	zscore_SmithWaterman_arr = pd.DataFrame(MinMaxScaler().fit_transform(SmithWaterman_arr),columns=targets,index=targets)
+	file_path = os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name, 'Drugs_SmithWaterman_scores_MinMax.tsv')
+	logging.info('Normalized scores saved to: {file_path}')
+	zscore_SmithWaterman_arr.to_csv(file_path, sep='\t')
 
 
 #####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

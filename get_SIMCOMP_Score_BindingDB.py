@@ -6,6 +6,8 @@ from re import search
 import subprocess  as sp
 from tqdm import tqdm
 from GetDrugsAndGenes import get_SIMMCOMP_score, get_drug_pubchem
+import re
+
 
 def get_DB_name(path):
 	"""
@@ -23,13 +25,19 @@ def get_DB_name(path):
 	logging.error(f'Database: {db} not found')
 	sys.exit('Please provide a valid database')
 
-def read_and_extract_DAVIS(path):
+def read_and_extract_BINDING(path):
+	pattern = re.compile(r'[\d]+$')
 	drugs = []
 	with open(path, 'r') as f:
+		next(f)
 		for line in f:
-			if not line.startswith('\t'):
-				drug = line.split('\t')[1]
-				drugs.append(drug)
+			line = line.split('\t')
+			if line[6] == '':
+				drug_id = pattern.search(line[8]).group()
+				drug_id = 'BDBM'+drug_id
+				drugs.append((drug_id, line[2]))
+			else:
+				drugs.append((line[6], line[2]))
 	return drugs
 
 def check_and_create_folder(db_name):
@@ -82,22 +90,20 @@ def main():
 	logging.basicConfig(format=fmt, level=level)
 
 	# sanity check for the DB
+	# DB_PATH = args.dbPath
 	paper_cite = 'https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-016-0977-x#Sec19'
 	logging.info(f'\n\n{paper_cite}\n')
-	DB_PATH = args.dbPath
-	# DB_PATH =  '/home/margaret/data/jfuente/DTI/Data/Davis_et_al/Davis_30.tsv'
+	DB_PATH =  '/home/margaret/data/jfuente/DTI/Data/BindingDB/BindingDB_All_2021m11/BindingDB_Kd_filtered_columns_subset_HomoSapiens_noduplicities.tsv'
 	logging.info(f'Reading database from: {DB_PATH}')
 	db_name = get_DB_name(DB_PATH)
 
 	# read the DB and keep the drugs
-	drugs = read_and_extract_DAVIS(DB_PATH)
-	drugs = list(set(drugs))
-	logging.info(f'{len(drugs)} drugs found')
-
-
-	drugs_smiles = list(map(lambda drug_id: (drug_id , get_drug_pubchem(drug_id)), tqdm(drugs)))
-	write_smiles(db_name, drugs_smiles)
+	drugs = read_and_extract_BINDING(DB_PATH)
+	drugs_smiles = list(set(drugs))
+	logging.info(f'{len(drugs_smiles)} drugs found')
 	
+	write_smiles(db_name, drugs_smiles)
+
 	# write the smiles per file to compute
 	global PATH
 	PATH = create_remove_tmp_folder(os.path.join('/tmp/SIMCOMP_sucedaneo' , db_name))

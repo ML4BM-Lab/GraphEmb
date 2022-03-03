@@ -2,7 +2,6 @@ import argparse
 from asyncio.log import logger
 import logging
 import os, sys, uuid
-import requests
 import pandas as pd
 from re import search
 from tqdm import tqdm
@@ -11,6 +10,7 @@ import subprocess as sp
 import multiprocessing as mp
 from shutil import rmtree
 from sklearn.preprocessing import MinMaxScaler
+
 
 def get_DB_name(path):
 	"""
@@ -36,7 +36,6 @@ def get_DB_name(path):
 	logging.error(f'Database: {db} not found')
 	sys.exit('Please provide a valid database')
 
-
 def extract_score(results_file):
 	with open(results_file, 'r') as f:
 		for line in f:
@@ -61,7 +60,6 @@ def write_fasta(path, target, seq):
 	with open(fl_name, 'w') as f:
 		_ = f.write('>'+target+'\n'+seq+'\n')
 	return fl_name
-
 
 def get_SW_score(pair1, pair2):
 	global PATH
@@ -101,17 +99,16 @@ def check_and_create_folder(db_name):
 	if not os.path.exists(os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name)):
 		os.mkdir(os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name))
 
-
-def get_seqs_DAVIS(path):
+def get_seqs_BindingDB(path):
 	"""
 	This function reads the database and returns the targets 
 	"""
 	targets = []
 	with open(path, 'r') as f:
+		header = next(f)
 		for line in f:
-			if not line.startswith('\t'):
-				line = line.split('\t')
-				targets.append((line[3], line[4]))
+			line = line.split('\t')
+			targets.append((line[4], line[1]))
 		return targets
 
 def write_seqs(db_name, target_seqs):
@@ -125,14 +122,13 @@ def write_seqs(db_name, target_seqs):
 #############################################################################################
 
 
-
 def main():
 	level= logging.INFO
 	fmt = '[%(levelname)s] %(message)s'
 	logging.basicConfig(format=fmt, level=level)
 	parser = argparse.ArgumentParser()
 	parser.add_argument("dbPath", help="Path to the database interaction lits",
-						default='/home/margaret/data/jfuente/DTI/Data/Davis_et_al/Davis_30.tsv',
+						default='/home/margaret/data/jfuente/DTI/Data/BindingDB/BindingDB_All_2021m11/BindingDB_Kd_filtered_columns_subset_HomoSapiens_noduplicities.tsv',
 						type=str)
 	parser.add_argument("-v", "--verbose", dest="verbosity", action="count", default=3,
 						help="Verbosity (between 1-4 occurrences with more leading to more "
@@ -151,13 +147,11 @@ def main():
 	fmt = '[%(levelname)s] %(message)s'
 	logging.basicConfig(format=fmt, level=level)
 
-	# DB_PATH =  '/home/margaret/data/jfuente/DTI/Data/Davis_et_al/Davis_30.tsv'
+	# DB_PATH =  '/home/margaret/data/jfuente/DTI/Data/BindingDB/BindingDB_All_2021m11/BindingDB_Kd_filtered_columns_subset_HomoSapiens_noduplicities.tsv'
 	DB_PATH = args.dbPath
 	logging.info(f'Reading database from: {DB_PATH}')
 	db_name = get_DB_name(DB_PATH)
-	
-	target_seqs = list(set(get_seqs_DAVIS(DB_PATH)))
-	logging.info(f'{len(target_seqs)} targets found')
+	target_seqs = list(set(get_seqs_BindingDB(DB_PATH)))
 	write_seqs(db_name, target_seqs)
 
 	# get the SW scores
@@ -180,12 +174,13 @@ def main():
 	logging.info('Saving the array')
 	check_and_create_folder(db_name)
 	file_path = os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name, 'Drugs_SmithWaterman_scores.tsv')
+	logging.info('Raw scores saved to: {file_path}')
 	SmithWaterman_arr.to_csv(file_path, sep='\t')
 	rmtree(PATH)
 	zscore_SmithWaterman_arr = pd.DataFrame(MinMaxScaler().fit_transform(SmithWaterman_arr),columns=targets,index=targets)
 	file_path = os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name, 'Drugs_SmithWaterman_scores_MinMax.tsv')
+	logging.info('Normalized scores saved to: {file_path}')
 	zscore_SmithWaterman_arr.to_csv(file_path, sep='\t')
-
 
 
 
