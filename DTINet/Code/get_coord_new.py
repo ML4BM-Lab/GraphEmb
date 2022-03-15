@@ -46,6 +46,8 @@ def main():
 
     args = parser.parse_args()
 
+    DB_PATH = args.dbPath
+
     list_of_pys = ['process_HPRD_DTINet_new.py',
                 'process_SIDER_DTINet_new.py',
                 'process_CTD_DTINet_new.py',
@@ -54,12 +56,17 @@ def main():
     # check that exception works; check other options
     for script in list_of_pys:
         try:
-            sp.check_output(['python3', script, args.dbPath])
+            sp.check_output(['python3', script, DB_PATH])
         except sp.CalledProcessError as e:
             print(e.output)
             break
-
-
+    
+    if DB_PATH in ('BIOSNAP', 'BindingDB', 'Davis_et_al', 'DrugBank_FDA', 'E', 'GPCR', 'IC', 'NR'):
+        try:
+            sp.check_output(['python3', {}, DB_PATH])
+        except sp.CalledProcessError as e:
+            print(e.output)
+            break
 
 
 #####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
