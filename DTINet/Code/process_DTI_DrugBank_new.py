@@ -96,15 +96,10 @@ def main():
     logging.info(
         '''
         This script needs:
-            - XXXXX.XX
-            - XX
+            - DrugBank xml file
 
-        This script generates the following files:
-            - XXXX
-
-        
-        DTINet uses from HPRD:
-            - XXXXXXX
+        This script generates:
+            - coordinates_DTI.tsv
         '''
         )
     # OUTPUT DIRECTORY
@@ -116,20 +111,18 @@ def main():
     # Create relative output path
     output_path = os.path.join('../Data', db_name)
     
-    ################ program
-    pass
-    # global 
-    # read xml
-    tree = ET.parse('/home/margaret/data/jfuente/DTI/Data/cross_side_information_DB/DrugBank/Data/full_database.xml')
+    ## program
+    logging.info(f'Reading DrugBank xml file')
+    tree = ET.parse('../../../Data/cross_side_information_DB/DrugBank/Data/full_database.xml')
     root = tree.getroot()
-    ## execute the function
+    # execute the function
+    logging.info(f'Retrieving DTI coordinates')
     coordinate_list = []
     for drug_entry in tqdm(root):
         coordinate_list = get_DTI_coordinates(drug_entry, coordinate_list)
-        #db_rel_drug_prot.append(line_drug_target)
-
-    ## save coordinates to a tsv
+    # save coordinates to a tsv
     with open(os.path.join(output_path, 'coordinates_DTI.tsv'), 'w') as f:
+        f.write("DrugBank_ID\tProtein_ID\n")
         for item in coordinate_list:
             _ = f.write("%s\t%s\n" % item)
 
