@@ -1,22 +1,8 @@
+import os, sys
 import xml.etree.ElementTree as ET
 from tqdm import tqdm
-import pandas as pd
-import numpy as np
-import os
-from pubchempy import Compound
-import json
-from rdkit import Chem
-from rdkit import DataStructs
-import multiprocessing as mp
-from itertools import repeat
-
-import os, sys
 import argparse
 import logging
-import numpy as np
-import pandas as pd
-import json
-import requests
 from tqdm import tqdm
 from re import search
 
@@ -44,7 +30,8 @@ def check_and_create_folder(db_name):
 
 
 
-#### GET COORDINATES of DTI INTERACTIONS ##########
+#################### GET COORDINATES of DTI INTERACTIONS #################################### ----> esta funcion está mal porque non ten en conta enzymes, transport & carrriers
+############################################################################################# ---->
 def get_DTI_coordinates(drug_entry, coordinate_list):
 	drugbank_ID = drug_entry.find('{http://www.drugbank.ca}drugbank-id').text
 	target = 'None'
@@ -59,6 +46,9 @@ def get_DTI_coordinates(drug_entry, coordinate_list):
 						coordinate_list.append(coordinate)
 					else:
 						continue 
+    # enzymes
+    # transporters
+    # carrier
 	return coordinate_list
 
 
@@ -110,7 +100,7 @@ def main():
     check_and_create_folder(db_name)
     # Create relative output path
     output_path = os.path.join('../Data', db_name)
-    
+
     ## program
     logging.info(f'Reading DrugBank xml file')
     tree = ET.parse('../../../Data/cross_side_information_DB/DrugBank/Data/full_database.xml')

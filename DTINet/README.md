@@ -1,3 +1,12 @@
+# Script List
+
+- process_SIDER
+- process_HPRD
+- process_Drugbank
+- process_CTD
+- get_coord_new.py (run processing?)
+- generate_all_matrix.py (similarity too? include exc files)
+
 # Input data needed for DTINet
 
 Processed data needed: (download + preproc )
@@ -21,7 +30,6 @@ Processed data needed: (download + preproc )
 
 * se.txt  -------------------------------------------------------------> process_SIDER_DTINet.py
 * mat_drug_se.txt  ----------------------------------------------------> process_SIDER_DTINet.py (only coordinates)
-
 
 
 Original DBs:

@@ -7,12 +7,13 @@ import multiprocessing as mp
 import time
 import json
 
+# Transform & do this in: GET_ALL_MATRIX.py
 # import all coordinates
 
 wdir = '../Data/DrugBank'
 
-files = ['coordinates_drug_dis.tsv', 'coordinates_drug_se.tsv', 'coordinates_PPI.tsv',
-            'coordinates_drug_drug.tsv', 'coordinates_DTI.tsv',  'coordinates_protein_disease.tsv']
+files = ['coordinates_drug_disease.tsv', 'coordinates_drug_se.tsv', 'coordinates_PPI.tsv',
+            'coordinates_drug_drug.tsv', 'DrugBank_DTIs.tsv',  'coordinates_protein_disease.tsv']
 
 drug_dis = pd.read_csv(os.path.join(wdir, files[0]), sep='\t')
 drug_se = pd.read_csv(os.path.join(wdir, files[1]), sep='\t')
@@ -33,7 +34,7 @@ drugs_linked_to_sideeffect = set(drug_se.DrugBank_ID.tolist()) # 675
 drugs_linked_to_proteins = set(DTI.Drug.tolist()) # 7627
 not_isolated_drugs = list(drugs_linked_to_drugs.union(drugs_linked_to_disease, drugs_linked_to_sideeffect, drugs_linked_to_proteins )) ### 9720
 not_isolated_drugs.sort()
-
+#### need to have the drug_w_smiles.txt first
 list_drug_w_smiles = np.loadtxt(os.path.join(wdir, 'drug_w_smiles.txt'), dtype=str).tolist() ##############################------>>> ** aqui ya estaria! 
 len(set(not_isolated_drugs).intersection(set(list_drug_w_smiles))) # 8638
 

@@ -13,10 +13,10 @@ import subprocess as sp
 
 '''
 This script should execute:
-    - process_HPRD_DTINet_new.py
-    - process_SIDER_DTINet_new.py
-    - process_CTD_DTINet_new.py
-    - process_DrugBank_new.py
+    - process_HPRD_DTINet.py
+    - process_SIDER_DTINet.py
+    - process_CTD_DTINet.py
+    - process_DrugBank.py
 
 => parse argument for DB directory 
 '''
@@ -48,26 +48,36 @@ def main():
 
     DB_PATH = args.dbPath
 
-    list_of_pys = ['process_HPRD_DTINet_new.py',
-                'process_SIDER_DTINet_new.py',
-                'process_CTD_DTINet_new.py',
-                    'process_DrugBank_new.py']
+    list_of_pys = ['process_HPRD_DTINet.py', 'process_SIDER_DTINet.py', 'process_CTD_DTINet.py', 'process_DrugBank.py']
     
     # check that exception works; check other options
     for script in list_of_pys:
         try:
-            sp.check_output(['python3', script, DB_PATH])
-        except sp.CalledProcessError as e:
-            print(e.output)
-            break
-    
-    if DB_PATH in ('BIOSNAP', 'BindingDB', 'Davis_et_al', 'DrugBank_FDA', 'E', 'GPCR', 'IC', 'NR'):
-        try:
-            sp.check_output(['python3', {}, DB_PATH])
+            return_code = sp.check_call(['python3', script, DB_PATH])
+            if return_code ==0: 
+                print('EXIT CODE 0')
         except sp.CalledProcessError as e:
             print(e.output)
             break
 
+    if DB_PATH in ('BIOSNAP', 'BindingDB', 'Davis_et_al', 'DrugBank', 'E', 'GPCR', 'IC', 'NR'):
+        try:
+            if DB_PATH == 'DrugBank':
+                print('Already as tsv')
+            else:
+                return_code = sp.check_call(['python3', f'process_DTI_{DB_PATH}_new.py', DB_PATH])
+            #
+            if return_code == 0:
+                print('EXIT CODE 0')
+        except sp.CalledProcessError as e:
+            print(e.output)
+        except FileNotFoundError:
+            print(f"No 'process_DTI_{DB_PATH}_new.py' file yet")
+    logging.info(
+        '''
+        ------------------- FINISHED: get_coord.py ---------------------
+        '''
+        )
 
 #####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -75,3 +85,4 @@ if __name__ == "__main__":
     main()
 #####-------------------------------------------------------------------------------------------------------------
 ####################### END OF THE CODE ##########################################################################
+

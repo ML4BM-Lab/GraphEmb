@@ -41,8 +41,25 @@ genes = df['Gene'].unique()
 #print(genes)
 
 #Get the smiles and sequences of drugs and proteins
-smiles = np.vectorize(getdrug_drugbank)(drugs)
-targetsequences = np.vectorize(getamino_uniprot)(genes)
+
+fname = 'smiles_BIOSNAP.txt'
+path_smiles = os.getcwd() + '/' + fname
+    
+if not os.path.exists(path_smiles):
+    smiles = np.vectorize(getdrug_drugbank)(drugs)
+    np.savetxt(fname, smiles, fmt="%s")
+else:
+    smiles = np.genfromtxt(fname, dtype = 'str')
+
+fname = 'targetsequences_BIOSNAP.txt'
+path_targetsequences = os.getcwd() + '/' + fname
+    
+if not os.path.exists(path_targetsequences):
+    targetsequences = np.vectorize(getamino_uniprot)(genes)
+    np.savetxt(fname, targetsequences, fmt="%s")
+    
+else:
+    targetsequences = np.genfromtxt(fname, dtype = 'str')
 
 #print(smiles)
 #print(targetsequences)
@@ -72,5 +89,5 @@ df['SMILES'] = df['DrugBank ID'].map(drugs_smiles)
 df['Target Sequence'] = df['Gene'].map(genes_targetsequences)    
 
 #Save it as a csv file
-output_path = os.getcwd() + '/../Data/BIOSNAP.csv'
+output_path = os.getcwd() + '/../Data/BIOSNAP/BIOSNAP.csv'
 df.to_csv(output_path)

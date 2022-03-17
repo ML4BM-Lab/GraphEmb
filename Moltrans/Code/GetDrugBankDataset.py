@@ -26,9 +26,9 @@ def getamino_uniprot(protein):
 ###----------------------------------DRUGBANK FDA-------------------------------------###
 
 #Read csv to dataframe for positive pairs
-data_path = os.getcwd() + '/../../../Data/DrugBank_FDA/interactions/All_DB_Did_Tid_HumanSingleProteins_FDA_D_withSMI_T_NoFalseAA.txt'
+data_path = os.getcwd() + '/../../../Data/DrugBank/DrugBank_DTIs.tsv'
 colnames = ['DrugBank ID', 'Gene']
-df = pd.read_csv(data_path, names = colnames, header = None, index_col=False, sep='\t')
+df = pd.read_csv(data_path, names = colnames, header = None, index_col=False, sep='\t', skiprows = 0)
 df['Label'] = [1]*len(df.index)
 #print(df)
 
@@ -40,8 +40,24 @@ genes = df['Gene'].unique()
 #print(genes)
 
 #Get the smiles and sequences of drugs and proteins
-smiles = np.vectorize(getdrug_drugbank)(drugs)
-targetsequences = np.vectorize(getamino_uniprot)(genes)
+fname = 'smiles_DrugBank.txt'
+path_smiles = os.getcwd() + '/../Data/DrugBank/' + fname
+    
+if not os.path.exists(path_smiles):
+    smiles = np.vectorize(getdrug_drugbank)(drugs)
+    np.savetxt(fname, smiles, fmt="%s")
+else:
+    smiles = np.genfromtxt(fname, dtype = 'str')
+
+fname = 'targetsequences_DrugBank.txt'
+path_targetsequences = os.getcwd() + '/../Data/DrugBank/' + fname
+    
+if not os.path.exists(path_targetsequences):
+    targetsequences = np.vectorize(getamino_uniprot)(genes)
+    np.savetxt(fname, targetsequences, fmt="%s")
+    
+else:
+    targetsequences = np.genfromtxt(fname, dtype = 'str')
 
 #print(smiles)
 #print(targetsequences)
@@ -71,5 +87,5 @@ df['SMILES'] = df['DrugBank ID'].map(drugs_smiles)
 df['Target Sequence'] = df['Gene'].map(genes_targetsequences)    
 
 #Save it as a csv file
-output_path = os.getcwd() + '/../Data/DrugBankFDA.csv'
+output_path = os.getcwd() + '/../Data/DrugBank/DrugBank.csv'
 df.to_csv(output_path)

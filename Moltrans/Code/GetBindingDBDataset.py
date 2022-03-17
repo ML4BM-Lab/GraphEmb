@@ -20,11 +20,11 @@ threshold = 30
 
 df['Label'] = [1 if x < threshold else 0 for x in df['Y']]
 
-print(len(drugs))
-print(len(genes))
+print("Num Drugs:", len(drugs))
+print("Num Genes:", len(genes))
 
 print(df['Label'].value_counts())
 
 #Save it as a csv files
-output_path = os.getcwd() + '/../Data/BindingDB.csv'
-df.to_csv('BINDINGDB.csv')
+output_path = os.getcwd() + '/../Data/BindingDB/BindingDB.csv'
+df.to_csv(output_path)
