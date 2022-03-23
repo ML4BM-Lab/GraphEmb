@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, uuid
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -18,16 +18,13 @@ from re import search
 import argparse
 import argparse
 from rdkit import RDLogger                     
+import subprocess as sp
+from shutil import rmtree
+from sklearn.preprocessing import MinMaxScaler
+
 
 
 '''
-log_levels = {
-    0: logging.CRITICAL,
-    1: logging.ERROR,
-    2: logging.WARN,
-    3: logging.INFO,
-    4: logging.DEBUG,
-}
 logging.basicConfig()
 logging.getLogger('').setLevel(logging.INFO)
 '''
@@ -48,16 +45,13 @@ def get_DB_name(path):
 	logging.error(f'Database: {db} not found')
 	sys.exit('Please provide a valid database')
 
-
 def check_and_create_folder(db_name):
 	if not os.path.exists(os.path.join('../Data', db_name)):
 		os.mkdir(os.path.join('../Data', db_name))
 
-
-###############
+####
 def get_compound_pubchem(drug):
     return Compound.from_cid(drug).isomeric_smiles
-
 
 def get_smiles(drug_entry):
 	'''
@@ -86,7 +80,6 @@ def get_smiles(drug_entry):
 		return(drugbank_ID, smiles)
 	return(drugbank_ID, None)
 
-
 def get_pairwise_tanimoto(smiles1,smiles2):
 	try:
 		mol1, mol2 = Chem.MolFromSmiles(str(smiles1)), Chem.MolFromSmiles(str(smiles2))
@@ -95,7 +88,6 @@ def get_pairwise_tanimoto(smiles1,smiles2):
 		return tani
 	except:
 		return None
-
 
 # ''.join(list_of_protein_seqs[0].split('\n')[1:])
 def get_amino_uniprot(proteinID):
@@ -199,9 +191,112 @@ def get_drug_nodes(file_path_drugs, file_path_dic_drug_smiles, drug_drug, drug_d
 		with open(file_path_dic_drug_smiles, 'r') as f:
 			dict_drugid_smiles = json.load(f)
 	return list_of_drug_nodes, dict_drugid_smiles
+#sim
+def get_drug_similarity_matrix(file_path_sim_pickle, file_path_simdrug_mat, list_of_drug_nodes, dict_drugid_smiles):
+	# check file
+	list_drugs = list_of_drug_nodes
+	list_smiles = [dict_drugid_smiles[i] for i in list_drugs]
+	all_Sim_Tani = []
+	for i in range(len(list_drugs)): ### CHANGE LATER
+		print(i+1, end='\r')
+		if i%500==0: logging.info(f'it: {i}')
+		id_drug_1 = list_drugs[i]
+		smiles_drug_1 = list_smiles[list_drugs.index(id_drug_1)]
+		tmp = []
+		tmp.extend(repeat(smiles_drug_1, len(list_drugs))) ### CHANGE LATER!!!
+		with mp.Pool(processes = mp.cpu_count()-5) as pool:
+			results = pool.starmap(get_pairwise_tanimoto, zip(tmp, list_smiles))
+		all_Sim_Tani.append(results)
+	## CHANGE LATER
+	df_all_Sim_Tani = pd.DataFrame(all_Sim_Tani, columns= list_drugs, index = list_drugs) # add columns, & index
+	logging.info(f'        * Drug Similarity Matrix Shape {df_all_Sim_Tani.shape}')
+	# save pickle
+	df_all_Sim_Tani.to_pickle(file_path_sim_pickle) # add here column %& index next time
+	# save csv for model
+	df_all_Sim_Tani.to_csv(file_path_simdrug_mat, sep='\t', header=False, index=False) # add here column %& index next time
+# SW
+def create_remove_tmp_folder(path):
+	if not os.path.exists(path):
+		logging.info('Creating tmp folder: {}'.format(path))
+		os.makedirs(path)
+		return path
+	else: 
+		return path
 
-######## def nuevas funciones + úti
+def write_fasta(path, target, seq):
+	fl_name = os.path.join(path, target.replace(':', '_')+'.fasta')
+	if os.path.exists(fl_name):
+		logging.debug(f'File {fl_name} already exists')
+		return fl_name
+	with open(fl_name, 'w') as f:
+		_ = f.write('>'+target+'\n'+seq+'\n')
+	return fl_name
 
+def extract_score(results_file):
+	with open(results_file, 'r') as f:
+		for line in f:
+			if not line.startswith('# Score:'):
+				continue
+			else:
+				return float(line.split()[-1])
+
+def check_and_create_fasta(target, seq):
+	global PATH
+	fasta1 = os.path.join(PATH, target.replace(':', '_')+'.fasta')
+	if not os.path.exists(fasta1):
+		fasta1 = write_fasta(PATH, target, seq)
+	return fasta1
+
+def get_SW_score(pair1, pair2):
+	global PATH
+	target1, seq1 = pair1
+	target2, seq2 = pair2
+	fasta1 = os.path.join(PATH, target1.replace(':', '_')+'.fasta')
+	if not os.path.exists(fasta1):
+		fasta1 = write_fasta(PATH, target1, seq1)
+	fasta2 = os.path.join(PATH, target2.replace(':', '_')+'.fasta')
+	fasta2 = write_fasta(PATH, target2, seq2)
+	result_ID = str(uuid.uuid4())
+	result_file = os.path.join(PATH, result_ID+'_results.txt')
+	args = ['/home/margaret/data/gserranos/REST_API_embl/EMBOSS-6.6.0/emboss/water', 
+			'-asequence', fasta1 , '-bsequence', fasta2, 
+			'-gapopen', '10.0', '-gapext', '0.5', 
+			'-outfile', result_file]
+	try:
+		_ = sp.check_call(args, stdout=sp.DEVNULL, stderr=sp.DEVNULL)
+		score = extract_score(result_file)
+		os.remove(result_file)
+		return score
+	except:
+		print(target1, target2)
+
+def get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_of_protein_nodes, list_of_protein_seqs):
+	global PATH
+	# db_name = 'DrugBank' # comentar
+	logging.info('Calculating SW')
+	PATH = create_remove_tmp_folder(os.path.join('/tmp/SmithWaterman' , db_name))
+	# print(PATH)
+	target_seqs = list(zip(list_of_protein_nodes, list_of_protein_seqs))
+	all_SmithWaterman = []
+	for pair1 in tqdm(target_seqs):
+		tmp = []
+		if not pair1[1]:
+			logging.info(f'No sequence for {pair1[0]}')
+			continue
+		tmp.extend(repeat(pair1, len(target_seqs)))
+		with mp.Pool(processes=mp.cpu_count()-5) as pool:
+			results = pool.starmap(get_SW_score, zip(tmp, target_seqs))
+		all_SmithWaterman.append(results)
+
+	logging.info('Creating matrix & applying MinMaxScaler() in range (0,1)')
+	SmithWaterman_arr = pd.DataFrame(all_SmithWaterman, columns=list_of_protein_nodes, index=list_of_protein_nodes)
+	zscore_SmithWaterman_arr = pd.DataFrame(MinMaxScaler().fit_transform(SmithWaterman_arr),columns=list_of_protein_nodes, index=list_of_protein_nodes)
+	logging.info(f'        * Protein Similarity Matrix Shape {zscore_SmithWaterman_arr.shape}')
+	# save pickle
+	zscore_SmithWaterman_arr.to_pickle(file_path_SW_pickle) # add here column %& index next time
+	# save csv for model
+	zscore_SmithWaterman_arr.to_csv(file_path_SW_mat, sep='\t', header=False, index=False) # add here column %& index next time
+	rmtree(PATH)
 
 
 ######################################## START MAIN #########################################
@@ -245,6 +340,7 @@ def main():
 		
 		Returns:
 			- mat*.txt
+			- Similarity_Matrix_Drugs.txt
 		'''
 		)
 	# OUTPUT DIRECTORY
@@ -383,50 +479,29 @@ def main():
 	logging.info('Drug Similarity matrix....')
 	# definir file path
 	# call function directly
-
 	file_path_sim_pickle = os.path.join(wdir, 'drug_sim.pkl')
 	file_path_simdrug_mat = os.path.join(wdir, 'Similarity_Matrix_Drugs.txt')
 	if ((not os.path.exists(file_path_simdrug_mat)) ):
 		# call function: 
+		logging.info('Calculating matrix...')
 		get_drug_similarity_matrix(file_path_sim_pickle, file_path_simdrug_mat, list_of_drug_nodes, dict_drugid_smiles)
 		#pass
+	else:
+		logging.info('Matrix already in folder')
+
+
+	################## PROTEIN SIMILARITY MATRIX  
+	logging.info('-'*30)
+	logging.info('Protein Similarity Matrix....')
+	file_path_SW_pickle = os.path.join(wdir, 'prot_sim.pkl')
+	file_path_SW_mat = os.path.join(wdir, 'Similarity_Matrix_Proteins.txt')
+	if (not os.path.exists(file_path_SW_mat)):
+		get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_of_protein_nodes, list_of_protein_seqs)
+	else:
+		logging.info('Matrix already in folder')
 
 
 #############################################
-## Call Drug Similarity
-
-# call like this & use other code
-#  & Protein Similarity here
-# just for not having stuff 
-# dont run 
-
-
-# list_of_drug_nodes, list_of_drug_smiles
-# list_of_drug_nodes != list_drugs
-# list drug nodes menor que list drugs
-def get_drug_similarity_matrix(file_path_sim_pickle, file_path_simdrug_mat, list_of_drug_nodes, dict_drugid_smiles):
-	# check file
-	list_drugs = list_of_drug_nodes
-	list_smiles = [dict_drugid_smiles[i] for i in list_drugs]
-	all_Sim_Tani = []
-	for i in range(len(list_drugs[:5])): ### CHANGE LATER
-		print(i+1, end='\r')
-		id_drug_1 = list_drugs[i]
-		smiles_drug_1 = list_smiles[list_drugs.index(id_drug_1)]
-		tmp = []
-		tmp.extend(repeat(smiles_drug_1, len(list_drugs[:5]))) ### CHANGE LATER!!!
-		with mp.Pool(processes = mp.cpu_count()-5) as pool:
-			results = pool.starmap(get_pairwise_tanimoto, zip(tmp, list_smiles))
-		all_Sim_Tani.append(results)
-
-	## CHANGE LATER
-	df_all_Sim_Tani = pd.DataFrame(all_Sim_Tani, columns= list_drugs[:5], index = list_drugs[:5]) # add columns, & index
-	# save pickle
-	df_all_Sim_Tani.to_pickle(file_path_sim_pickle) # add here column %& index next time
-	# save csv for model
-	df_all_Sim_Tani.to_csv(file_path_simdrug_mat, sep='\t', header=False, index=False) # add here column %& index next time
-
-#df_all_Sim_Tani.to_csv(os.path.join(output_path, 'test_matrix.tsv'), sep='\t', header=True, index=True) # add here column %& index next time
 
 
 
@@ -436,3 +511,5 @@ if __name__ == "__main__":
     main()
 #####-------------------------------------------------------------------------------------------------------------
 ####################### END OF THE CODE ##########################################################################
+
+
