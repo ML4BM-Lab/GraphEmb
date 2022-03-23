@@ -1,38 +1,34 @@
-# Script List
+# Preprocessing of Databases
+
+preprocessing_DTINet_DrugBank.py (for example, not available yet)
+
+Script that calls:
+    1. get_coord.py
+        - meaning:
+        - Calls:
+            1.1. process_HPRD_DTINet.py
+            1.2. process_SIDER_DTINet.py
+            1.3. process_CTD_DTINet.py
+            1.4. process_DrugBank.py
+    2. get_all_matrix_DrugBank.py
+
+
+## Script List
 
 - process_SIDER
 - process_HPRD
 - process_Drugbank
 - process_CTD
-- get_coord_new.py (run processing?)
-- generate_all_matrix.py (similarity too? include exc files)
+- get_coord.py 
+- get_all_matrix.py 
+
 
 # Input data needed for DTINet
 
 Processed data needed: (download + preproc )
 
-* *** Similarity_Matrix_Drugs.txt (Fingerprint + Tanimoto) ***  ----------------> get_drug_sim.py ---------->
-* drug.txt -------------------------------------------------------------> process_DTI_DrugBank.py
-* drug_dict_map.txt	----------------------------------------------------> process_DTI_DrugBank.py
-* mat_protein_drug.txt -------------------------------------------------> process_DTI_DrugBank.py
-* mat_drug_drug.txt ----------------------------------------------------> process_DTI_DrugBank.py
-* mat_drug_protein.txt  (transpose) ------------------------------------> --------------------------> preprocess_data_DTINet_DrugBank.py
-* mat_drug_protein_remove_homo.txt (remove homologous above) -----------> --------------------------> preprocess_data_DTINet_DrugBank.py
 
-* protein.txt  ---------------------------------------------------------> process_HPRD_DTINet.py
-* protein_dict_map.txt -------------------------------------------------> process_HPRD_DTINet.py
-* mat_protein_protein.txt ----------------------------------------------> process_HPRD_DTINet.py
-* *** Similarity_Matrix_Proteins.txt (Smith-Waterman score) -> script get_SW_score find) *** 
-
-* disease.txt ---------------------------------------------------------> process_CTD_DTINet.py
-* mat_protein_disease.txt  --------------------------------------------> process_CTD_DTINet.py (only coordinates)
-* mat_drug_disease.txt	
-
-* se.txt  -------------------------------------------------------------> process_SIDER_DTINet.py
-* mat_drug_se.txt  ----------------------------------------------------> process_SIDER_DTINet.py (only coordinates)
-
-
-Original DBs:
+## What do we retrieve from databases? 
 * DrugBank database 
     - Drug nodes
     - *** DTI *** - change DB in each folder
