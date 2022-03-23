@@ -3,14 +3,14 @@
 preprocessing_DTINet_DrugBank.py (for example, not available yet)
 
 Script that calls:
-    1. get_coord.py
-        - meaning:
-        - Calls:
-            1.1. process_HPRD_DTINet.py
-            1.2. process_SIDER_DTINet.py
-            1.3. process_CTD_DTINet.py
-            1.4. process_DrugBank.py
-    2. get_all_matrix_DrugBank.py
+1. get_coord.py
+    * meaning:
+    * Calls:
+      1. process_HPRD_DTINet.py
+      2. process_SIDER_DTINet.py
+      3. process_CTD_DTINet.py
+      4. process_DrugBank.py
+2. get_all_matrix_DrugBank.py
 
 
 ## Script List
