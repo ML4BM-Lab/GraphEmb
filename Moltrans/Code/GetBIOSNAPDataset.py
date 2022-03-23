@@ -43,23 +43,23 @@ genes = df['Gene'].unique()
 #Get the smiles and sequences of drugs and proteins
 
 fname = 'smiles_BIOSNAP.txt'
-path_smiles = os.getcwd() + '/' + fname
+path_smiles = os.getcwd() + '/../Data/BIOSNAP/' + fname
     
 if not os.path.exists(path_smiles):
     smiles = np.vectorize(getdrug_drugbank)(drugs)
-    np.savetxt(fname, smiles, fmt="%s")
+    np.savetxt(path_smiles, smiles, fmt="%s")
 else:
-    smiles = np.genfromtxt(fname, dtype = 'str')
+    smiles = np.genfromtxt(path_smiles, dtype = 'str')
 
 fname = 'targetsequences_BIOSNAP.txt'
-path_targetsequences = os.getcwd() + '/' + fname
+path_targetsequences = os.getcwd() + '/../Data/BIOSNAP/' + fname
     
 if not os.path.exists(path_targetsequences):
     targetsequences = np.vectorize(getamino_uniprot)(genes)
-    np.savetxt(fname, targetsequences, fmt="%s")
+    np.savetxt(path_targetsequences, targetsequences, fmt="%s")
     
 else:
-    targetsequences = np.genfromtxt(fname, dtype = 'str')
+    targetsequences = np.genfromtxt(path_targetsequences, dtype = 'str')
 
 #print(smiles)
 #print(targetsequences)

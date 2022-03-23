@@ -10,6 +10,7 @@ import multiprocessing as mp
 from itertools import repeat
 
 ######## SIM MATRIX #########
+#### use as example code for later processign
 # SIM MATRIX Calculated via get_drug_sim.py
 # read matrix as: (with header & index)
 # pd.read_csv(os.path.join(output_path, 'Similarity_Matrix_Drugs.tsv'), sep='\t') 
@@ -49,7 +50,7 @@ def get_pairwise_tanimoto(smiles1,smiles2):
 	except:
 		return None
 
-def get_smiles_drugbank(drug_entry):
+def get_smiles_drugbank(drug_entry, db_drug_smiles):
 	drugbank_ID = drug_entry.find('{http://www.drugbank.ca}drugbank-id').text
 	smiles = None
 	for props in drug_entry.findall('.//{http://www.drugbank.ca}property'):
@@ -81,7 +82,7 @@ root = tree.getroot()
 ########### Find Smiles in DrugBank
 db_drug_smiles  = []
 for drug_entry in tqdm(root):
-	get_smiles_drugbank(drug_entry)
+	get_smiles_drugbank(drug_entry,db_drug_smiles)
 
 # uncomment to save this output into a tsv file in outputfolder
 # save file # put in get_drug_sim.py
@@ -119,7 +120,7 @@ db_drug_smiles_ok[0]
 # df 
 import time
 
-df_smiles = pd.DataFrame(db_drug_smiles_ok, columns=['Drug_ID', 'SMILES'])
+df_smiles = pd.DataFrame(db_drug_smiles, columns=['Drug_ID', 'SMILES'])
 df_smiles = df_smiles.set_index('Drug_ID')
 df_smiles['sims'] = None  # create an empty column for tanimoto similitude list
 ## Tanimoto
@@ -127,24 +128,24 @@ indxs = df_smiles.index.tolist()  # list of index # can use this later?
 all_smiles_ = df_smiles.SMILES.tolist()
 
 all_Sim_Tani = []
-for i in range(len(indxs)):
-	a = time.time()
+for i in range(len(indxs[:5])): # TEST HERE CHANGE LATER !
 	print('='*80)
 	print(i+1)
 	id_drug_1 = indxs[i]
 	smiles_drug_1 = df_smiles.loc[id_drug_1]['SMILES'] 
 	tmp = []
-	tmp.extend(repeat(smiles_drug_1, len(indxs)) )
+	tmp.extend(repeat(smiles_drug_1, len(indxs[:5])) ) # TEST HERE CHANGE LATER !
 	with mp.Pool(processes = mp.cpu_count()-5) as pool:
 		results = pool.starmap(get_pairwise_tanimoto, zip(tmp, all_smiles_))
 	all_Sim_Tani.append(results)
-	b=time.time()
-	print(b-a)
 
+ # TEST HERE CHANGE LATER !
+df_all_Sim_Tani = pd.DataFrame(all_Sim_Tani, columns= indxs[:5], index = indxs[:5]) # add columns, & index 
 
-df_all_Sim_Tani = pd.DataFrame(all_Sim_Tani, columns= indxs, index = indxs) # add columns, & index 
+df_all_Sim_Tani.to_csv(os.path.join(output_path, 'test_matrix.tsv'), sep='\t', header=True, index=True) # add here column %& index next time
 
-df_all_Sim_Tani.to_csv(os.path.join(output_path, 'Similarity_Matrix_Drugs.tsv'), sep='\t') # add here column %& index next time
+tmp = pd.read_csv(os.path.join(output_path, 'test_matrix.tsv'), sep='\t', index_col=0)
+
 
 ##
 df_tmp = pd.read_csv('/mnt/md0/data/uveleiro/Similarity_Matrix_Drugs.tsv', index_col=0, sep="\t")

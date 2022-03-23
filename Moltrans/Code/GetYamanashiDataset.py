@@ -52,19 +52,19 @@ def get_dataset(type):
     
     if not os.path.exists(path_smiles):
         smiles = np.vectorize(get_drug_pubchem)(drugs)
-        np.savetxt(fname, smiles, fmt="%s")
+        np.savetxt(path_smiles, smiles, fmt="%s")
     else:
-        smiles = np.genfromtxt(fname, dtype = 'str')
+        smiles = np.genfromtxt(path_smiles, dtype = 'str')
     
     fname = 'targetsequences_Yamanashi_' + type + '.txt'
     path_targetsequences = os.getcwd() + '/../Data/Yamanashi_et_al_GoldStandard/' + fname
     
     if not os.path.exists(path_targetsequences):
         targetsequences = np.vectorize(getamino_KEGG)(genes)
-        np.savetxt(fname, targetsequences, fmt="%s")
+        np.savetxt(path_targetsequences, targetsequences, fmt="%s")
     
     else:
-        targetsequences = np.genfromtxt(fname, dtype = 'str')
+        targetsequences = np.genfromtxt(path_targetsequences, dtype = 'str')
 
     #print(smiles)
 
@@ -95,7 +95,7 @@ def get_dataset(type):
 
 
     #Save it as a csv file
-    output_path = os.getcwd() + '/../Data/Yamanashi_' + type.upper() + ".csv"
+    output_path = os.getcwd() + '/../Data/Yamanashi_et_al_GoldStandard/Yamanashi_' + type.upper() + ".csv"
     df.to_csv(output_path)
 
 

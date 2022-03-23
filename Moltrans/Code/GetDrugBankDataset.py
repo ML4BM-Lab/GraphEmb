@@ -28,9 +28,9 @@ def getamino_uniprot(protein):
 #Read csv to dataframe for positive pairs
 data_path = os.getcwd() + '/../../../Data/DrugBank/DrugBank_DTIs.tsv'
 colnames = ['DrugBank ID', 'Gene']
-df = pd.read_csv(data_path, names = colnames, header = None, index_col=False, sep='\t', skiprows = 0)
+df = pd.read_csv(data_path, names = colnames, index_col=False, sep='\t')
 df['Label'] = [1]*len(df.index)
-#print(df)
+print(df)
 
 #Obtain the unique drugs and genes
 drugs = df['DrugBank ID'].unique()
@@ -41,8 +41,8 @@ genes = df['Gene'].unique()
 
 #Get the smiles and sequences of drugs and proteins
 fname = 'smiles_DrugBank.txt'
-path_smiles = os.getcwd() + '/../Data/DrugBank/' + fname
-    
+#path_smiles = os.getcwd() + '/../Data/DrugBank/' + fname
+path_smiles = 'smiles_DrugBank.txt'   
 if not os.path.exists(path_smiles):
     smiles = np.vectorize(getdrug_drugbank)(drugs)
     np.savetxt(fname, smiles, fmt="%s")

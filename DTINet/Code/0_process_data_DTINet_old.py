@@ -38,6 +38,7 @@ not_isolated_drugs.sort()
 list_drug_w_smiles = np.loadtxt(os.path.join(wdir, 'drug_w_smiles.txt'), dtype=str).tolist() ##############################------>>> ** aqui ya estaria! 
 len(set(not_isolated_drugs).intersection(set(list_drug_w_smiles))) # 8638
 
+
 ### SELECT PROTEIN NODES
 #all_proteins = np.loadtxt(os.path.join(wdir, 'all_protein.txt'), dtype=str).tolist() # 9183
 proteins_linked_to_proteins = set(PPI.P1.tolist() + PPI.P2.tolist()) # 9183 

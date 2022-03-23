@@ -58,7 +58,7 @@ def dowload_FAERS( start_year = 2004, end_year = 2021):
 					url = f'https://fis.fda.gov/content/Exports/aers_ascii_{year}Q{quarter}.zip'
 					urllib.request.urlretrieve(url, dets_file)
 			else:
-				logging.info(f'Already existing file for {year}-Q{quarter}. Skipping')
+				logging.debug(f'Already existing file for {year}-Q{quarter}. Skipping')
 
 def uncompress_FAERS(path_2_folder):
 	"""
@@ -89,17 +89,26 @@ def get_events( start_year = 2004, end_year = 2021):
 				f'./../../../Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/reac{str(year)[-2:]}q{quarter}.TXT',
 				f'./../../../Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/reac{str(year)[-2:]}q{quarter}.txt'
 				]
-		fl = [real_file for real_file in possible_files if os.path.isfile(real_file)]
-		if fl:
-			fl = fl[0]
-		else:
-			logging.warning(f'No file found for {year}-Q{quarter}')
-			continue
-		with open(fl, 'r') as f:
-			_ = next(f)
-			events = f.readlines()
-		events = [event.strip().split('$') for event in events]
-		all_events.extend(events)
+			fl = [real_file for real_file in possible_files if os.path.isfile(real_file)]
+			if fl:
+				fl = fl[0]
+			else:
+				logging.warning(f'No file found for {year}-Q{quarter}')
+				continue
+			logging.debug(f'Reading {fl}')
+			with open(fl, 'r') as f:
+				_ = next(f)
+				events = f.readlines()
+			events_cleaned = []
+			# later files from the fda, have 3 fields instead of 2
+			for event in events:
+				event = event.strip().split('$')
+				if len(event) == 3:
+					events_cleaned.append([event[0], event[1].upper()])
+				else:
+					events_cleaned.append([event[0], event[2].upper()])
+			all_events.extend(events_cleaned)
+			logging.debug(f'{len(all_events)} total events')
 	return all_events
 
 def get_drugs( start_year = 2004, end_year = 2021):
@@ -114,7 +123,7 @@ def get_drugs( start_year = 2004, end_year = 2021):
 				f'./../../../Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/DRUG{str(year)[-2:]}Q{quarter}.txt',
 				f'./../../../Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/DRUG{str(year)[-2:]}Q{quarter}.TXT',
 				f'./../../../Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/drug{str(year)[-2:]}q{quarter}.TXT',
-				f'./../../../Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/reac{str(year)[-2:]}q{quarter}.txt'
+				f'./../../../Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/drug{str(year)[-2:]}q{quarter}.txt'
 			]
 			fl = [real_file for real_file in possible_files if os.path.isfile(real_file)]
 			if fl:
@@ -136,11 +145,15 @@ def read_kegg_annotation(annotation_file):
 	return fda_kegg_dict
 
 def parse_drugs(entry):
+	drugs_to_keep = ['PS', 'SS']
 	entry = entry.strip().split('$')
-	if entry[2] == 'PS' or entry[2] == 'SS':
-		return True
-	else:
-		return False
+	try:
+		if entry[2] in drugs_to_keep :
+			return (entry[0], entry[3])
+		elif entry[3] in drugs_to_keep:
+			return  (entry[0], entry[4])
+	except IndexError:
+		logging.warning(f'{entry} is not a valid drug entry')
 
 def check_and_create_folder(db_name):
 	folder =os.path.join('./../Data', db_name)
@@ -153,12 +166,15 @@ def get_freqs(drug, keywords, fda_dict, keyword_freq_percent, id_aers_dict):
 	all_cases = fda_dict.get(drug)
 	if not all_cases:
 		return(drug_kw_vector)
-	all_drug_events = reduce(lambda x,y: x+y, map(lambda x: id_aers_dict.get(x,[0]), set(all_cases)))
+	all_drug_events = [id_aers_dict.get(case,[0]) for case in set(all_cases)]
 	all_drug_events = [x for x in all_drug_events if x!=0]
+	all_drug_events = [item for sublist in all_drug_events for item in sublist]
+	keywords_set = {x:i for i,x in enumerate(keywords)}
 	for event in all_drug_events:
-		if event in keywords:
-			drug_kw_vector[keywords.index(event)] = keyword_freq_percent.get(event)
+		if event in keywords_set:
+			drug_kw_vector[keywords_set.get(event)] = keyword_freq_percent.get(event)
 	return drug_kw_vector
+
 
 ######################################## START MAIN #########################################
 #############################################################################################
@@ -181,9 +197,6 @@ def main():
 		4: logging.DEBUG,
 	}
 
-	level= log_levels[args.verbosity]
-	fmt = '[%(levelname)s] %(message)s'
-	logging.basicConfig(format=fmt, level=level)
 	# parse the ascii ones not the xmls
 
 	# set the logging info
@@ -214,37 +227,62 @@ def main():
 		CITE:
 		Takarabe, Masataka, et al. "Drug target prediction using adverse event report systems: 
 		a pharmacogenomic approach." Bioinformatics 28.18 (2012): i611-i618.
-	''')
+		''')
+
 	# get the drugs classified as PrimarySuspect or SecondarySuspect
-	all_drugs = list(filter(lambda entry: parse_drugs(entry), tqdm(all_drugs)))
-	all_drugs = [(data.split('$')[0], str(data.split('$')[3]).upper()) for data in tqdm(all_drugs)]
+	all_drugs = list(map(lambda entry: parse_drugs(entry), tqdm(all_drugs)))
+	all_drugs = [x for x in tqdm(all_drugs) if x!=None]
 	logging.info(f'Found {len(set([data[1] for data in all_drugs]))} unique drugs with PS or SS role')
-	
+
 	####################### Yamanashi -- KEGG annotation specific ###########################
 	# create the dicctionary with the drugs up to date for KEGG
 	annotation_file = f'./../../../Data/cross_side_information_DB/FDA/fda_kegg_dict{START_YEAR}_{END_YEAR}.txt'
 	if os.path.isfile(annotation_file):
-		logging.info(f'Found {annotation_file}')
+		logging.info(f'Found {annotation_file}, reading it')
 		fda_kegg_dict = read_kegg_annotation(annotation_file)
-	else: 
-		kegg_drug_names = rq.get('http://rest.kegg.jp/list/drug/').text.split('\n')
-		kegg_drug_names = [entry.upper() for entry in kegg_drug_names]
+		assert len(set([len(event) for event in fda_kegg_dict])) == 1, 'The FDA annotation is not well formatted'
+	else:
+		KEGG_NAME_DB = re.compile(r'(^[^\(\d{2}\)]*) ')
 		PATTERN_DB_KEGG = re.compile(r"(?<=DR:)[\w]+")
+		kegg_drug_names = rq.get('http://rest.kegg.jp/list/drug/').text.split('\n')
+		kegg_drug_names = [entry.upper() for entry in kegg_drug_names if entry]
+		kegg_dic = {}
+		for entry in tqdm(kegg_drug_names):
+			kegg_id, kegg_desc = entry.split('\t')
+			parsed_desc = [KEGG_NAME_DB.findall(pseudo.strip()) for pseudo in kegg_desc.split(';')]
+			parsed_desc = [item for sublist in parsed_desc for item in sublist]
+			for name in parsed_desc:
+				kegg_dic[name] = kegg_id.strip()
+		#
+		blacklist = ['TABLETS', 'CAPSULES', 'INJECTABLE', 'INJECTION', 'MG', 'VIAL', 'ML']
 		fda_kegg_dict = []
-		for fda_id, drugname in tqdm(all_drugs):
-			for kegg_entry in kegg_drug_names:
-				if drugname in kegg_entry:
-					kegg_id = PATTERN_DB_KEGG.findall(kegg_entry)[0]
-					fda_kegg_dict.append((fda_id, drugname, kegg_id))
-					break
+		for fda_id, drug_name in tqdm(all_drugs):
+			if fda_id == '92762311':
+				break
+			kegg_id = kegg_dic.get(drug_name, None)
+			if kegg_id:
+				fda_kegg_dict.append((fda_id.strip(), drug_name.strip(), kegg_id.strip()))
+			else:
+				drug_name_cleaned = re.sub(r'\([^)]*\)', '', drug_name)
+				drug_name_cleaned = re.sub("[(,)]","", drug_name_cleaned)
+				drug_name_cleaned = re.sub("[\d]+","", drug_name_cleaned)
+				drug_name_cleaned = [word for word in drug_name_cleaned.split() if word not in blacklist]
+				drug_name_cleaned = ' '.join(drug_name_cleaned).strip()
+				kegg_id = kegg_dic.get(drug_name_cleaned, None)
+				if kegg_id:
+					kegg_id = PATTERN_DB_KEGG.findall(kegg_id)[0].strip()
+					fda_kegg_dict.append((fda_id.strip(), drug_name_cleaned.strip(), kegg_id))
+		fda_kegg_dict = list(set(fda_kegg_dict))
+		assert len(set([len(event) for event in fda_kegg_dict])) == 1, 'The FDA annotation is not well formatted'
 		with open(annotation_file, 'w') as f:
-			_ =f.write('fda_incident, drugname, kegg_id\n')
+			_ =f.write('fda_incident, drug_name, kegg_id\n')
 			for entry in tqdm(fda_kegg_dict):
 				_ = f.write(f'{entry[0]}\t{entry[1]}\t{entry[2]}\n')
 	############################################################################
 	all_events =  get_events(START_YEAR, END_YEAR)
 
-	# get the events for ONLY the kept drugs
+	# get the events for ONLY for the kept drugs (PS and SS)
+	# beware with the Ids comming from later events, have two different number cases
 	ids_2_keep = set([drug_entry[0]  for drug_entry in all_drugs])
 	all_events = [event for event in tqdm(all_events) if event[0] in ids_2_keep]
 
@@ -262,7 +300,7 @@ def main():
 		''')
 	freq_percentage = { drug_id: envents/len(all_keywords) for drug_id, envents in freq.items() if envents > 5}
 	freq_percentage = { drug_id: envents for drug_id, envents in freq_percentage.items() if envents < 0.001}
-	unique_keywords= set(freq_percentage.keys())
+	unique_keywords = set(freq_percentage.keys())
 
 	drugs = read_and_extract_drugs(DB_PATH)
 	drugs = list(set(drugs))
@@ -271,15 +309,16 @@ def main():
 
 	#IdDrug dict
 	fda_kegg_dict_drug_id = {}
-	for idn, _, drugname in tqdm(fda_kegg_dict):
-		if drugname in fda_kegg_dict_drug_id:
-			fda_kegg_dict_drug_id[drugname].append(idn)
-		else:
-			fda_kegg_dict_drug_id[drugname] = [idn]
+	for event_code, _, kegg_id in tqdm(fda_kegg_dict):
+		if kegg_id:
+			if kegg_id in fda_kegg_dict_drug_id:
+				fda_kegg_dict_drug_id[kegg_id].append(event_code)
+			else:
+				fda_kegg_dict_drug_id[kegg_id] = [event_code]
 
-	#IDEvents AERS dict
+		#IDEvents AERS dict
 	id_events_aers = {}
-	for idn, aersname, _ in tqdm(all_events):
+	for idn, aersname in tqdm(all_events):
 		if idn in id_events_aers:
 			id_events_aers[idn].append(aersname)
 		else:

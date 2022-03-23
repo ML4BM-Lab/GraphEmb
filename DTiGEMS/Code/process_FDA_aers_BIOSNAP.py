@@ -2,16 +2,15 @@
 import os, sys
 import re
 import logging
-from attr import field
 import pandas as pd
 import zipfile
 import urllib.request
 import requests as rq
-import argparse
 from tqdm import tqdm
+from collections import Counter
 import multiprocessing as mp
 from functools import reduce
-from collections import Counter
+import argparse
 import xml.etree.ElementTree as ET
 
 
@@ -40,7 +39,14 @@ def read_and_extract_drugs(path):
 				drugs.append(drug)
 	return drugs
 
-def download_FAERS( start_year = 2004, end_year = 2021):
+def get_drugs_BIOSNAP(path):
+	with open(path, 'r') as f:
+		_ = next(f)
+		drugs = f.readlines()
+		drugs = [entry.strip().split('\t')[0] for entry in drugs]
+		return drugs
+
+def dowload_FAERS( start_year = 2004, end_year = 2021):
 	"""
 	Downloads the FAERS data from the FDA website
 	"""
@@ -60,7 +66,7 @@ def download_FAERS( start_year = 2004, end_year = 2021):
 					url = f'https://fis.fda.gov/content/Exports/aers_ascii_{year}Q{quarter}.zip'
 					urllib.request.urlretrieve(url, dets_file)
 			else:
-				logging.info(f'Already existing file for {year}-Q{quarter}. Skipping')
+				logging.debug(f'Already existing file for {year}-Q{quarter}. Skipping')
 
 def uncompress_FAERS(path_2_folder):
 	"""
@@ -91,26 +97,26 @@ def get_events( start_year = 2004, end_year = 2021):
 				f'./../../../Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/reac{str(year)[-2:]}q{quarter}.TXT',
 				f'./../../../Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/reac{str(year)[-2:]}q{quarter}.txt'
 				]
-		fl = [real_file for real_file in possible_files if os.path.isfile(real_file)]
-		if fl:
-			fl = fl[0]
-		else:
-			logging.warning(f'No file found for {year}-Q{quarter}')
-			continue
-		with open(fl, 'r') as f:
-			_ = next(f)
-			events = f.readlines()
-		events = [event.strip().split('$') for event in events]
-		if len(events[0]) == 3:
-			# LAERS type
-			events = [[event[0], event[1]] for event in events]
-		elif len(events[0]) == 4:
-			# FAERS type
-			events = [[event[0], event[2]] for event in events]
-		else:
-			logging.warning(f'Unknown file format for {year}-Q{quarter}')
-			events = None
-		all_events.extend(events)
+			fl = [real_file for real_file in possible_files if os.path.isfile(real_file)]
+			if fl:
+				fl = fl[0]
+			else:
+				logging.warning(f'No file found for {year}-Q{quarter}')
+				continue
+			logging.debug(f'Reading {fl}')
+			with open(fl, 'r') as f:
+				_ = next(f)
+				events = f.readlines()
+			events_cleaned = []
+			# later files from the fda, have 3 fields instead of 2
+			for event in events:
+				event = event.strip().split('$')
+				if len(event) == 3:
+					events_cleaned.append([event[0], event[1].upper()])
+				else:
+					events_cleaned.append([event[0], event[2].upper()])
+			all_events.extend(events_cleaned)
+			logging.debug(f'{len(all_events)} total events')
 	return all_events
 
 def get_drugs( start_year = 2004, end_year = 2021):
@@ -125,7 +131,7 @@ def get_drugs( start_year = 2004, end_year = 2021):
 				f'./../../../Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/DRUG{str(year)[-2:]}Q{quarter}.txt',
 				f'./../../../Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/DRUG{str(year)[-2:]}Q{quarter}.TXT',
 				f'./../../../Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/drug{str(year)[-2:]}q{quarter}.TXT',
-				f'./../../../Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/reac{str(year)[-2:]}q{quarter}.txt'
+				f'./../../../Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/drug{str(year)[-2:]}q{quarter}.txt'
 			]
 			fl = [real_file for real_file in possible_files if os.path.isfile(real_file)]
 			if fl:
@@ -139,26 +145,23 @@ def get_drugs( start_year = 2004, end_year = 2021):
 			all_drugs.extend(drugs)
 	return all_drugs
 
-def get_drugs_BIOSNAP(path):
-	with open(path, 'r') as f:
-		_ = next(f)
-		drugs = f.readlines()
-		drugs = [entry.strip().split('\t')[0] for entry in drugs]
-		return drugs
-
 def read_biosnap_annotation(annotation_file):
 	with open(annotation_file, 'r') as f:
 		_ = next(f)
-		fda_kegg_dict = f.readlines()
-	fda_kegg_dict = [entry.strip().split('\t') for entry in fda_kegg_dict]
-	return fda_kegg_dict
+		dictionary = f.readlines()
+	dictionary = [entry.strip().split('\t') for entry in dictionary]
+	return dictionary
 
 def parse_drugs(entry):
+	drugs_to_keep = ['PS', 'SS']
 	entry = entry.strip().split('$')
-	if entry[2] == 'PS' or entry[2] == 'SS':
-		return True
-	else:
-		return False
+	try:
+		if entry[2] in drugs_to_keep :
+			return (entry[0], entry[3])
+		elif entry[3] in drugs_to_keep:
+			return  (entry[0], entry[4])
+	except IndexError:
+		logging.warning(f'{entry} is not a valid drug entry')
 
 def check_and_create_folder(db_name):
 	folder =os.path.join('./../Data', db_name)
@@ -168,22 +171,17 @@ def check_and_create_folder(db_name):
 
 def get_freqs(drug, keywords, fda_dict, keyword_freq_percent, id_aers_dict):
 	drug_kw_vector = [0]*len(keywords)
-	all_cases = fda_dict.get(drug, None)
+	all_cases = fda_dict.get(drug)
 	if not all_cases:
-		# logging.debug(f'{drug} no side effects in the FDA database')
 		return(drug_kw_vector)
-	all_drug_events = reduce(lambda x,y: x+y, map(lambda x: id_aers_dict.get(x,[0]), set(all_cases)))
-	all_drug_events = [x for x in all_drug_events if x!= 0]
+	all_drug_events = [id_aers_dict.get(case,[0]) for case in set(all_cases)]
+	all_drug_events = [x for x in all_drug_events if x!=0]
+	all_drug_events = [item for sublist in all_drug_events for item in sublist]
+	keywords_set = {x:i for i,x in enumerate(keywords)}
 	for event in all_drug_events:
-		if event in keywords:
-			drug_kw_vector[keywords.index(event)] = keyword_freq_percent.get(event)
-	if drug_kw_vector:
-		return drug_kw_vector
-	else:
-		drug_kw_vector = [0]*len(keywords)
-		logging.debug(f'returning empty vector for {drug=}')
-		return drug_kw_vector
-
+		if event in keywords_set:
+			drug_kw_vector[keywords_set.get(event)] = keyword_freq_percent.get(event)
+	return drug_kw_vector
 
 ######################################## START MAIN #########################################
 #############################################################################################
@@ -206,10 +204,6 @@ def main():
 		4: logging.DEBUG,
 	}
 
-	level= log_levels[args.verbosity]
-	fmt = '[%(levelname)s] %(message)s'
-	logging.basicConfig(format=fmt, level=level)
-	# parse the ascii ones not the xmls
 
 	# set the logging info
 	level= log_levels[args.verbosity]
@@ -227,7 +221,7 @@ def main():
 	START_YEAR = 2004
 	END_YEAR = 2021
 
-	download_FAERS(START_YEAR,END_YEAR)
+	dowload_FAERS(START_YEAR,END_YEAR)
 	uncompress_FAERS('./../../../Data/cross_side_information_DB/FDA')
 
 	all_drugs = get_drugs(START_YEAR, END_YEAR)
@@ -241,15 +235,12 @@ def main():
 		a pharmacogenomic approach." Bioinformatics 28.18 (2012): i611-i618.
 	''')
 	# get the drugs classified as PrimarySuspect or SecondarySuspect
-	all_drugs = list(filter(lambda entry: parse_drugs(entry), tqdm(all_drugs)))
-	all_drugs = [(data.split('$')[0], str(data.split('$')[3]).upper()) for data in tqdm(all_drugs)]
+	all_drugs = list(map(lambda entry: parse_drugs(entry), tqdm(all_drugs)))
+	all_drugs = [x for x in tqdm(all_drugs) if x!=None]
 	logging.info(f'Found {len(set([data[1] for data in all_drugs]))} unique drugs with PS or SS role')
 	
 	####################### BIOSNAP -- DB annotation specific ###########################
 	# create the dicctionary with the drugs up to date for BIOSNAP-DrugBank
-
-
-
 	annotation_file = f'./../../../Data/cross_side_information_DB/FDA/fda_biosnap_db_dict{START_YEAR}_{END_YEAR}.txt'
 	if os.path.isfile(annotation_file):
 		logging.info(f'Found {annotation_file}')
@@ -258,29 +249,33 @@ def main():
 		logging.info(f'Parsing the DB')
 		tree = ET.parse('/home/margaret/data/jfuente/DTI/Data/cross_side_information_DB/DrugBank/Data/full_database.xml')
 		root = tree.getroot()
-		db_drugProd_drugId = []
+		# db_drugProd_drugId
+		biosnap_dic = {} # dict with generic or product name as key and drugbank_id as value
 		for drug_entry in tqdm(root):
 			drugbank_ID = drug_entry.find('{http://www.drugbank.ca}drugbank-id').text
+			name = drug_entry.find('{http://www.drugbank.ca}name').text.upper()
 			prod = drug_entry.find('{http://www.drugbank.ca}products')
 			prod_names = set([brandname.find('{http://www.drugbank.ca}name').text.upper() for brandname in prod])
+			if name:
+				biosnap_dic[name] = drugbank_ID
 			if len(prod_names) >= 1:
 				for prod in prod_names:
-					db_drugProd_drugId.append((prod, drugbank_ID))
-		db_drugProd_drugId = dict(db_drugProd_drugId)
+					biosnap_dic[prod] = drugbank_ID
 		blacklist = ['TABLETS', 'CAPSULES', 'INJECTABLE', 'INJECTION', 'MG', 'VIAL', 'ML']
 		fda_DB_dict = []
 		for fda_id, drug_name in tqdm(all_drugs):
-			if db_drugProd_drugId.get(drug_name, None):
-				fda_DB_dict.append((fda_id, drug_name, db_drugProd_drugId.get(drug_name)))
+			if biosnap_dic.get(drug_name, None):
+				fda_DB_dict.append((fda_id, drug_name, biosnap_dic.get(drug_name)))
 			else:
 				drug_name_cleaned = re.sub(r'\([^)]*\)', '', drug_name)
 				drug_name_cleaned = re.sub("[(,)]","", drug_name_cleaned)
 				drug_name_cleaned = re.sub("[\d]+","", drug_name_cleaned)
 				drug_name_cleaned = [word for word in drug_name_cleaned.split() if word not in blacklist]
 				drug_name_cleaned = ' '.join(drug_name_cleaned).strip()
-				if db_drugProd_drugId.get(drug_name_cleaned, None):
-					fda_DB_dict.append((fda_id, drug_name, db_drugProd_drugId.get(drug_name_cleaned)))
+				if biosnap_dic.get(drug_name_cleaned, None):
+					fda_DB_dict.append((fda_id, drug_name_cleaned, biosnap_dic.get(drug_name_cleaned)))
 		fda_DB_dict = list(set(fda_DB_dict))
+		assert len(set([len(event) for event in fda_DB_dict])) == 1, 'The FDA annotation is not well formatted'
 		with open(annotation_file, 'w') as f:
 			_ =f.write('fda_incident, drugname, DB_id\n')
 			for entry in fda_DB_dict:
@@ -331,7 +326,8 @@ def main():
 
 	aers_freq = []
 	for drug in tqdm(drugs):
-		aers_freq.append(get_freqs(drug, 
+		aers_freq.append(get_freqs(
+								drug, 
 								unique_keywords_vector, 
 								fda_db_dict_drug_id, 
 								freq_percentage, 
@@ -341,11 +337,12 @@ def main():
 	for freq in aers_freq:
 		aers_bit.append([1 if entry > 0 else 0 for entry in freq])
 
-	aers_freq_pd = pd.DataFrame(aers_freq, columns=unique_keywords_vector, index=drugs)
-	aers_bit_pd =  pd.DataFrame(aers_bit,  columns=unique_keywords_vector, index=drugs)
 	path = check_and_create_folder(db_name)
+	aers_freq_pd = pd.DataFrame(aers_freq, columns=unique_keywords_vector, index=drugs)
 	aers_freq_pd.to_csv(os.path.join(path, 'aers_freq.tsv'), sep='\t')
+	aers_bit_pd =  pd.DataFrame(aers_bit,  columns=unique_keywords_vector, index=drugs)
 	aers_bit_pd.to_csv(os.path.join(path, 'aers_bit.tsv'), sep='\t')
+	
 
 #####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
