@@ -4,3 +4,6 @@
 *.tsv
 *.csv
 *.tab
+*.fasta
+*.pickle
+*.pkl
