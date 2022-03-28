@@ -274,6 +274,7 @@ def main():
 				drug_name_cleaned = ' '.join(drug_name_cleaned).strip()
 				if biosnap_dic.get(drug_name_cleaned, None):
 					fda_DB_dict.append((fda_id, drug_name_cleaned, biosnap_dic.get(drug_name_cleaned)))
+					
 		fda_DB_dict = list(set(fda_DB_dict))
 		assert len(set([len(event) for event in fda_DB_dict])) == 1, 'The FDA annotation is not well formatted'
 		with open(annotation_file, 'w') as f:

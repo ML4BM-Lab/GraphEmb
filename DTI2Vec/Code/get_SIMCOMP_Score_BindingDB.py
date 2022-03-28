@@ -90,10 +90,10 @@ def main():
 	logging.basicConfig(format=fmt, level=level)
 
 	# sanity check for the DB
-	# DB_PATH = args.dbPath
+	DB_PATH = args.dbPath
+	#DB_PATH =  '/home/margaret/data/jfuente/DTI/Data/BindingDB/BindingDB_All_2021m11/BindingDB_Kd_filtered_columns_subset_HomoSapiens_noduplicities.tsv'
 	paper_cite = 'https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-016-0977-x#Sec19'
 	logging.info(f'\n\n{paper_cite}\n')
-	DB_PATH =  '/home/margaret/data/jfuente/DTI/Data/BindingDB/BindingDB_All_2021m11/BindingDB_Kd_filtered_columns_subset_HomoSapiens_noduplicities.tsv'
 	logging.info(f'Reading database from: {DB_PATH}')
 	db_name = get_DB_name(DB_PATH)
 

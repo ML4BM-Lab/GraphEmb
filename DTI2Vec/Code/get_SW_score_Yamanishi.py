@@ -1,5 +1,6 @@
 import argparse
 import logging
+import requests
 import os, sys, uuid
 import pandas as pd
 import subprocess as sp
@@ -8,8 +9,9 @@ from itertools import repeat
 from re import search
 from tqdm import tqdm
 from shutil import rmtree
-from GetDrugsAndGenes import getamino_KEGG
 from sklearn.preprocessing import MinMaxScaler
+
+
 def get_DB_name(path):
 	"""
 	This function returns the name of the DB.
@@ -40,6 +42,11 @@ def read_and_extract_targets(path):
 				_, target = line.split('\t')
 				targets.append(target.strip())
 	return targets
+
+def getamino_KEGG(protein):
+    r = requests.get(f'http://rest.kegg.jp/get/{protein}/aaseq')
+    aminoseq = ''.join(r.text.split('\n')[1:])
+    return aminoseq
 
 def replace_and_get_AA(ID):
 	"""
@@ -83,13 +90,23 @@ def check_and_create_fasta(target, seq):
 
 def get_SW_score(pair1, pair2):
 	global PATH
+	global already_written_fastas
 	target1, seq1 = pair1
 	target2, seq2 = pair2
-	fasta1 = os.path.join(PATH, target1.replace(':', '_')+'.fasta')
-	if not os.path.exists(fasta1):
+	
+	if target1 in already_written_fastas:
+		fasta1 = already_written_fastas.get(target1, None)
+	else:
+		fasta1 = os.path.join(PATH, target1.replace(':', '_')+'.fasta')
 		fasta1 = write_fasta(PATH, target1, seq1)
-	fasta2 = os.path.join(PATH, target2.replace(':', '_')+'.fasta')
-	fasta2 = write_fasta(PATH, target2, seq2)
+		already_written_fastas[target1] = fasta1
+	
+	if target2 in already_written_fastas:
+		fasta2 = already_written_fastas.get(target2, None)
+	else:
+		fasta2 = os.path.join(PATH, target2.replace(':', '_')+'.fasta')
+		fasta2 = write_fasta(PATH, target2, seq2)
+		already_written_fastas[target2] = fasta2
 	result_ID = str(uuid.uuid4())
 	result_file = os.path.join(PATH, result_ID+'_results.txt')
 	args = ['/home/margaret/data/gserranos/REST_API_embl/EMBOSS-6.6.0/emboss/water', 
@@ -174,9 +191,9 @@ def main():
 				_ = f.write('>'+target+'\n'+seq+'\n')
 
 	# get the SW scores
-	global PATH
 	PATH = create_remove_tmp_folder(os.path.join('/tmp/SmithWaterman' , db_name))
 	print(PATH)
+	already_written_fastas = {}
 	all_SmithWaterman = []
 	for pair1 in tqdm(targets_seqs):
 		tmp = []

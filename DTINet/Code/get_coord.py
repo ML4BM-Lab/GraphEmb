@@ -9,6 +9,8 @@ from tqdm import tqdm
 from re import search
 import xml.etree.ElementTree as ET
 import subprocess as sp
+from rdkit import RDLogger                     
+
 #### 
 
 '''
@@ -46,6 +48,8 @@ def main():
 
     args = parser.parse_args()
 
+    RDLogger.DisableLog('rdApp.*') 
+
     DB_PATH = args.dbPath
 
     list_of_pys = ['process_HPRD_DTINet.py', 'process_SIDER_DTINet.py', 'process_CTD_DTINet.py', 'process_DrugBank.py']
@@ -59,20 +63,7 @@ def main():
         except sp.CalledProcessError as e:
             print(e.output)
             break
-
-    if DB_PATH in ('BIOSNAP', 'BindingDB', 'Davis_et_al', 'DrugBank', 'E', 'GPCR', 'IC', 'NR'):
-        try:
-            if DB_PATH == 'DrugBank':
-                print('Already as tsv')
-            else:
-                return_code = sp.check_call(['python3', f'process_DTI_{DB_PATH}_new.py', DB_PATH])
-            #
-            if return_code == 0:
-                print('EXIT CODE 0')
-        except sp.CalledProcessError as e:
-            print(e.output)
-        except FileNotFoundError:
-            print(f"No 'process_DTI_{DB_PATH}_new.py' file yet")
+    # esto quitarlo de aqui y que get coord sea general para todos 
     logging.info(
         '''
         ------------------- FINISHED: get_coord.py ---------------------

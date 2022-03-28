@@ -6,6 +6,9 @@ import time
 import numpy as np
 import multiprocessing as mp
 
+###### check if it is used by any of the other scripts in the folder
+
+
 # ! CHANGE ABSOLUTE PATHS HERE
 
 # this was used to optain the dic_drugnames_cid.json

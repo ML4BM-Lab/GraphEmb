@@ -48,14 +48,17 @@ df['Label'] = [1]*len(df.index)
 print(df)
 
 #Obtain the unique drugs and genes
-drugs = df['DrugBank ID'].unique()
+#drugs = df['DrugBank ID'].unique()
 genes = df['Gene'].unique()
+
+#output_path = os.getcwd() + '/../Data/DrugBank/drugsDrugBank.txt'
+#df.to_csv(output_path, header=None, index = None, sep = ' ')
 
 #print(drugs)
 #print(genes)
 
 #Get the smiles and sequences of drugs and proteins
-fname = 'smiles_DrugBank.txt'
+fname = 'drugs_smiles.txt'
 path_smiles = os.getcwd() + '/../Data/DrugBank/' + fname 
 if not os.path.exists(path_smiles):
     tree = ET.parse('/home/margaret/data/jfuente/DTI/Data/DrugBank/full_database.xml')
@@ -67,7 +70,8 @@ if not os.path.exists(path_smiles):
     smiles = np.vectorize(getdrug_drugbank)(drugs)
     np.savetxt(path_smiles, smiles, fmt="%s")
 else:
-    smiles = np.genfromtxt(path_smiles, dtype = 'str')
+    drugs_smiles = pd.read_csv(path_smiles, delimiter=" ", header = None).to_dict()[0]
+    drugs = drugs_smiles.keys(()
 
 fname = 'targetsequences_DrugBank.txt'
 path_targetsequences = os.getcwd() + '/../Data/DrugBank/' + fname
@@ -111,4 +115,4 @@ df = df[cols]
 
 #Save it as a csv file
 output_path = os.getcwd() + '/../Data/DrugBank/DrugBank.txt'
-df.to_csv(output_path, header=None, index = None, sep = ' ', na_rep = ' ')
+df.to_csv(output_path, header=None, index = None, sep = ' ')
