@@ -78,13 +78,14 @@ def get_smiles(drug_list, db_path):
 	return drugs_smiles
 
 def check_and_create_folder(db_name):
-	if not os.path.exists(os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name)):
-		os.mkdir(os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name))
+	if not os.path.exists(os.path.join('/home/margaret/data/jfuente/DTI/Input4Models/DTI2Vec/Data', db_name)):
+		os.mkdir(os.path.join('/home/margaret/data/jfuente/DTI/Input4Models/DTI2Vec/Data', db_name))
 
 def write_smiles(db_name, drugs_smiles):
-	with open(os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name, 'drugs_smiles.tsv'), 'w') as f:
+	with open(os.path.join('/home/margaret/data/jfuente/DTI/Input4Models/DTI2Vec/Data', db_name, 'drugs_smiles.tsv'), 'w') as f:
 		for drug_id, smiles in drugs_smiles:
 			_ = f.write(f'{drug_id}\t{smiles}\n')
+	return
 
 def create_remove_tmp_folder(path):
 	if not os.path.exists(path):
@@ -94,8 +95,7 @@ def create_remove_tmp_folder(path):
 	else: 
 		return path
 
-def write_smile_per_file(drugs_smiles):
-	global PATH
+def write_smile_per_file(drugs_smiles, PATH):
 	for id, smile in tqdm(drugs_smiles, desc='Writing smiles'):
 		if smile:
 			with open(os.path.join(PATH, f'{id}.smi'), 'w') as f:
@@ -146,7 +146,7 @@ def main():
 
 	# write the smiles per file to compute
 	PATH = create_remove_tmp_folder(os.path.join('/tmp/SIMCOMP_sucedaneo' , db_name))
-	write_smile_per_file(drugs_smiles)
+	write_smile_per_file(drugs_smiles, PATH)
 	# compute the scores
 	response = sp.check_call(['java', '-jar', '/home/margaret/data/gserranos/SMILESbasedSimilarityKernels/SMILESSimv2.jar', PATH], )
 	if response == 0:

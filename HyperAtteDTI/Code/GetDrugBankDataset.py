@@ -46,6 +46,8 @@ colnames = ['DrugBank ID', 'Gene']
 df = pd.read_csv(data_path, names = colnames, index_col=False, sep='\t', skiprows = [0])
 df['Label'] = [1]*len(df.index)
 print(df)
+df.drop_duplicates(inplace=True)
+print(df)
 
 #Obtain the unique drugs and genes
 #drugs = df['DrugBank ID'].unique()
@@ -60,26 +62,18 @@ genes = df['Gene'].unique()
 #Get the smiles and sequences of drugs and proteins
 fname = 'drugs_smiles.txt'
 path_smiles = os.getcwd() + '/../Data/DrugBank/' + fname 
-if not os.path.exists(path_smiles):
-    tree = ET.parse('/home/margaret/data/jfuente/DTI/Data/DrugBank/full_database.xml')
-    root = tree.getroot()
-    smiles  = []
-    for drug_entry in tqdm(root):
-        print(drug_entry)
-		#smiles.append(get_list_drug_w_smiles(drug_entry))
-    smiles = np.vectorize(getdrug_drugbank)(drugs)
-    np.savetxt(path_smiles, smiles, fmt="%s")
-else:
-    drugs_smiles = pd.read_csv(path_smiles, delimiter=" ", header = None).to_dict()[0]
-    drugs = drugs_smiles.keys(()
+drugs_smiles = pd.read_csv(path_smiles, delimiter=" ", header = None)
+drugs_smiles = dict(zip(drugs_smiles[0], drugs_smiles[1]))
+#print(drugs_smiles)
+drugs = list(drugs_smiles.keys())
+
+#print(drugs_smiles)
 
 fname = 'targetsequences_DrugBank.txt'
 path_targetsequences = os.getcwd() + '/../Data/DrugBank/' + fname
-    
 if not os.path.exists(path_targetsequences):
     targetsequences = np.vectorize(getamino_uniprot)(genes)
     np.savetxt(path_targetsequences, targetsequences, fmt="%s")
-    
 else:
     targetsequences = np.genfromtxt(path_targetsequences, dtype = 'str')
 
@@ -87,17 +81,32 @@ else:
 #print(targetsequences)
 
 #Create dictionaries
-drugs_smiles = {d:s for d, s in zip(drugs, smiles)}
+#drugs_smiles = {d:s for d, s in zip(drugs, smiles)}
 genes_targetsequences = {g:t for g,t in zip(genes, targetsequences)}
 
+#Add columns for corresponding SMILES and Target Sequence of each pair
+df['SMILES'] = df['DrugBank ID'].map(drugs_smiles)
+df['Target Sequence'] = df['Gene'].map(genes_targetsequences)   
+print(len(df.index))
+df = df.dropna()
+print(len(df.index))
+
 #Randomnly choose unseen pairs
+#df['Prueba'] = df['DrugBank ID'] + df['Gene']
+#prueba = df['Prueba'].unique()
+#print(len(prueba))
 seenpairs = set(df['DrugBank ID'] + df['Gene'])
 unseenpairs = set()
 n = len(seenpairs)
+
+#duplicateRowsDF = df[df.duplicated()]
+#print(duplicateRowsDF)
+
+print(n)
 while n > 0:
     drug_sample = random.choice(drugs)
     gene_sample = random.choice(genes)
-    
+
     result = drug_sample + gene_sample
     if (result not in seenpairs and result not in unseenpairs):
         sample = pd.DataFrame(data = {'DrugBank ID':[drug_sample], 'Gene': [gene_sample], 'Label':[0]})

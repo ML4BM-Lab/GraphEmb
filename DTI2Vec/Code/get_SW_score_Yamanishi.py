@@ -22,11 +22,11 @@ def get_DB_name(path):
 			logging.info(f'Database: {db}')
 			if db in ['E', 'GPCR', 'IC', 'NR']:
 				db = os.path.join('Yamanashi_et_al_GoldStandard', db)
-				if not os.path.exists(os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db)):
-					os.mkdir(os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db))
+				if not os.path.exists(os.path.join('/home/margaret/data/jfuente/DTI/Input4Models/DTI2Vec/Data', db)):
+					os.mkdir(os.path.join('/home/margaret/data/jfuente/DTI/Input4Models/DTI2Vec/Data', db))
 				return db
 			else:
-				os.mkdir(os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db))
+				os.mkdir(os.path.join('/home/margaret/data/jfuente/DTI/Input4Models/DTI2Vec/Data', db))
 				return db
 	logging.error(f'Database: {db} not found')
 	sys.exit('Please provide a valid database')
@@ -132,8 +132,8 @@ def read_fasta(path):
 	return zip(names, seqs)
 
 def check_and_create_folder(db_name):
-	if not os.path.exists(os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name)):
-		os.mkdir(os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name))
+	if not os.path.exists(os.path.join('/home/margaret/data/jfuente/DTI/Input4Models/DTI2Vec/', db_name)):
+		os.mkdir(os.path.join('/home/margaret/data/jfuente/DTI/Input4Models/DTI2Vec/', db_name))
 
 ######################################## START MAIN #########################################
 #############################################################################################
@@ -184,7 +184,7 @@ def main():
 	targets_seqs = list(filter(lambda entry: entry[1] != '', targets_seqs))
 	
 	# write the sequences to fasta
-	file_path = os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name, 'Targets_AA_sequences.tsv')
+	file_path = os.path.join('/home/margaret/data/jfuente/DTI/Input4Models/DTI2Vec/Data/', db_name, 'Targets_AA_sequences.tsv')
 	if not os.path.exists(file_path):
 		with open(file_path, 'w') as f:
 			for target, seq in targets_seqs:
@@ -209,11 +209,11 @@ def main():
 	SmithWaterman_arr = pd.DataFrame(all_SmithWaterman,columns=targets,index=targets)
 	logging.info('Saving the array')
 	check_and_create_folder(db_name)
-	file_path = os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name, 'Drugs_SmithWaterman_scores.tsv')
+	file_path = os.path.join('/home/margaret/data/jfuente/DTI/Input4Models/DTI2Vec/', db_name, 'Drugs_SmithWaterman_scores.tsv')
 	SmithWaterman_arr.to_csv(file_path, sep='\t')
 	rmtree(PATH)
 	zscore_SmithWaterman_arr = pd.DataFrame(MinMaxScaler().fit_transform(SmithWaterman_arr),columns=targets,index=targets)
-	file_path = os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name, 'Drugs_SmithWaterman_scores_MinMax.tsv')
+	file_path = os.path.join('/home/margaret/data/jfuente/DTI/Input4Models/DTI2Vec/', db_name, 'Drugs_SmithWaterman_scores_MinMax.tsv')
 	zscore_SmithWaterman_arr.to_csv(file_path, sep='\t')
 
 

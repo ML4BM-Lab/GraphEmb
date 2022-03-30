@@ -22,11 +22,8 @@ def get_DB_name(path):
 			logging.info(f'Database: {db}')
 			if db in ['E', 'GPCR', 'IC', 'NR']:
 				db = os.path.join('Yamanashi_et_al_GoldStandard', db)
-				if not os.path.exists(os.path.join('/home/margaret/data/jfuente/DTI/Input4Models/DTI2Vec/', db)):
-					os.mkdir(os.path.join('/home/margaret/data/jfuente/DTI/Input4Models/DTI2Vec/', db))
 				return db
 			else:
-				os.mkdir(os.path.join('/home/margaret/data/jfuente/DTI/Input4Models/DTI2Vec/', db))
 				return db
 	logging.error(f'Database: {db} not found')
 	sys.exit('Please provide a valid database')
@@ -80,7 +77,7 @@ def create_remove_tmp_folder(path):
 def write_fasta(path, target, seq):
 	fl_name = os.path.join(path, target.replace(':', '_')+'.fasta')
 	if os.path.exists(fl_name):
-		logging.debug(f'File {fl_name} already exists')
+		# logging.debug(f'File {fl_name} already exists')
 		return fl_name
 	with open(fl_name, 'w') as f:
 		_ = f.write('>'+target+'\n'+seq+'\n')
@@ -94,8 +91,6 @@ def check_and_create_fasta(target, seq):
 	return fasta1
 
 def get_SW_score(pair1, pair2):
-	global PATH
-	global already_written_fastas
 	target1, seq1 = pair1
 	target2, seq2 = pair2
 	
@@ -171,7 +166,7 @@ def main():
 	logging.basicConfig(format=fmt, level=level)
 
 	# sanity check for the DB
-	# DB_PATH =  '/home/margaret/data/jfuente/DTI/Data/DrugBank/'
+	# DB_PATH = '/home/margaret/data/jfuente/DTI/Data/DrugBank/'
 	DB_PATH = args.dbPath
 	logging.info(f'Reading database from: {DB_PATH}')
 	db_name = get_DB_name(DB_PATH)
@@ -180,24 +175,33 @@ def main():
 	targets = read_and_extract_targets(DB_PATH)
 	targets = list(set(targets))
 
-	# get the AA sequences from KEGG
-	targets_seqs = []
-	for target in tqdm(targets, desc='Getting AA sequences from KEGG'):
-		targets_seqs.append(retrieve_sequences(target))
+	# check if already donwloaded sequences
+	folder_path = os.path.join('/home/margaret/data/jfuente/DTI/Input4Models/DTI2Vec/Data', db_name)
+	file_path = os.path.join(folder_path, 'Targets_AA_sequences.tsv')
+	if os.path.isfile(file_path):
+		logging.info(f'File {file_path} already exists')
+		targets_seqs = list(read_fasta(file_path))
+	else:
+		# get the AA sequences from UniProt
+		targets_seqs = []
+		for target in tqdm(targets, desc='Getting AA sequences from UniProt'):
+			targets_seqs.append(retrieve_sequences(target))
 
-	# remove entries without sequences
-	targets_seqs = list(filter(lambda entry: entry[1] != '', targets_seqs))
-	
-	# write the sequences to fasta
-	file_path = os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name, 'Targets_AA_sequences.tsv')
-	if not os.path.exists(file_path):
+		# remove entries without sequences
+		targets_seqs = list(filter(lambda entry: entry[1] != '', targets_seqs))
+		targets_seqs = [target for target in targets_seqs if target[1]]
+		# write the sequences to fasta
+		if not os.path.exists(folder_path):
+			os.makedirs(folder_path)
 		with open(file_path, 'w') as f:
 			for target, seq in targets_seqs:
 				_ = f.write('>'+target+'\n'+seq+'\n')
 
 	# get the SW scores
+	global PATH
 	PATH = create_remove_tmp_folder(os.path.join('/tmp/SmithWaterman' , db_name))
-	print(PATH)
+	logging.debug(f'Using folder: {PATH}')
+	global already_written_fastas
 	already_written_fastas = {}
 	all_SmithWaterman = []
 	for pair1 in tqdm(targets_seqs):
