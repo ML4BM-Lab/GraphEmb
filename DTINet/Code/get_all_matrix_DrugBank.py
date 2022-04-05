@@ -4,11 +4,8 @@ import pandas as pd
 from tqdm import tqdm
 import pubchempy as pcp
 import multiprocessing as mp
-import time
 import json
-from pubchempy import Compound
 from rdkit import Chem
-from rdkit import DataStructs
 import multiprocessing as mp
 import xml.etree.ElementTree as ET
 from itertools import repeat
@@ -18,99 +15,17 @@ from re import search
 import argparse
 import argparse
 from rdkit import RDLogger                     
-import subprocess as sp
 from shutil import rmtree
 from sklearn.preprocessing import MinMaxScaler
-
-
+import helper_functions_dtinet as hf
 
 '''
 logging.basicConfig()
 logging.getLogger('').setLevel(logging.INFO)
 '''
 
-def get_DB_name(path):
-	"""
-	This function returns the name of the DB.
-	"""
-	DB_NAMES = ['BIOSNAP', 'BindingDB', 'Davis_et_al', 'DrugBank', 'E', 'GPCR', 'IC', 'NR']
-	for db in DB_NAMES:
-		if search(db, path):
-			logging.info(f'Database: {db}')
-			if db in ['E', 'GPCR', 'IC', 'NR']:
-				db = os.path.join('Yamanashi_et_al_GoldStandard', db)
-				return db
-			else:
-				return db
-	logging.error(f'Database: {db} not found')
-	sys.exit('Please provide a valid database')
-
-def check_and_create_folder(db_name):
-	if not os.path.exists(os.path.join('../Data', db_name)):
-		os.mkdir(os.path.join('../Data', db_name))
-
 ####
-def get_compound_pubchem(drug):
-    return Compound.from_cid(drug).isomeric_smiles
 
-def get_smiles(drug_entry):
-	'''
-	Get list of drugs with smiles from DrugBank xml, 
-	for SMILES that are not in DrugBank retrieves them from PubChem
-	Then, check if we can create a fingerprint (if not, do not include)
-	'''
-	drugbank_ID = drug_entry.find('{http://www.drugbank.ca}drugbank-id').text
-	smiles = None
-	fp = None
-	for props in drug_entry.findall('.//{http://www.drugbank.ca}property'):
-		for prop in props: 
-			if(prop.text == 'SMILES'):
-				smiles = props[1].text
-				break
-	if not smiles:
-		for exids in drug_entry.findall('.//{http://www.drugbank.ca}external-identifier'):
-			for ids in exids:
-				if(ids.text == 'PubChem Compound'): 
-					pubchem_id = exids[1].text
-					smiles = get_compound_pubchem(pubchem_id)
-					break
-	if not smiles:
-		return(drugbank_ID, None)
-	elif Chem.MolFromSmiles(str(smiles)):
-		return(drugbank_ID, smiles)
-	return(drugbank_ID, None)
-
-def get_pairwise_tanimoto(smiles1,smiles2, dic): #dic == smile2fp
-	try:
-		for smile in [smiles1, smiles2]:
-			if not smile in dic:
-				mol1 = Chem.MolFromSmiles(str(smile))
-				fp1  = Chem.RDKFingerprint(mol1)
-				dic[smile] = fp1
-		tani = DataStructs.FingerprintSimilarity(dic[smiles1],dic[smiles2]) #pairwise similarity
-		return tani
-	except:
-		return None
-
-# ''.join(list_of_protein_seqs[0].split('\n')[1:])
-def get_amino_uniprot(proteinID):
-    r = requests.get(f'https://www.uniprot.org/uniprot/{proteinID}.fasta')
-    if r.status_code == 200 and r.text:
-        return (proteinID, ''.join(r.text.split('\n')[1:]))
-    else: 
-        #print('Protein sequence not found in uniprot database')
-        return (proteinID, None)
-
-def read_fasta(path):
-	names=[]
-	seqs = []
-	with open(path, 'r') as f:
-		for line in f:
-			if line.startswith('>'):
-				names.append(line.strip().replace('>', ''))
-			else:
-				seqs.append(line.strip())
-	return zip(names, seqs)
 
 def get_protein_nodes(file_path_prot, file_path_seqs, PPI, prot_dis, DTI):
 	#global PPI, prot_dis, DTI
@@ -127,7 +42,7 @@ def get_protein_nodes(file_path_prot, file_path_seqs, PPI, prot_dis, DTI):
 		list_of_protein_seqs  = []
 		weird_prots = []
 		for prot in tqdm(not_isolated_proteins): 
-			prot_id, prot_seq = get_amino_uniprot(prot)
+			prot_id, prot_seq = hf.get_amino_uniprot(prot)
 			if(prot_seq):
 				list_of_protein_nodes.append(prot_id)
 				list_of_protein_seqs.append(prot_seq)
@@ -140,7 +55,7 @@ def get_protein_nodes(file_path_prot, file_path_seqs, PPI, prot_dis, DTI):
 				_ = f.write('>'+list_of_protein_nodes[i]+'\n'+list_of_protein_seqs[i]+'\n')
 	else:
 		list_of_protein_nodes = np.loadtxt(file_path_prot, dtype='str').tolist()
-		list_of_protein_seqs = [ seq for _, seq in list(read_fasta(file_path_seqs)) ]
+		list_of_protein_seqs = [ seq for _, seq in list(hf.read_fasta(file_path_seqs)) ]
 	#
 	return list_of_protein_nodes, list_of_protein_seqs
 
@@ -161,7 +76,7 @@ def get_drug_nodes(file_path_drugs, file_path_dic_drug_smiles, drug_drug, drug_d
 		list_drugs  = []
 		list_smiles = []
 		for drug_entry in tqdm(root):
-			drug_id, smiles = get_smiles(drug_entry)
+			drug_id, smiles = hf.get_smiles(drug_entry)
 			if drug_id and smiles:
 				list_drugs.append(drug_id)
 				list_smiles.append(smiles)
@@ -209,7 +124,7 @@ def get_drug_similarity_matrix(file_path_sim_pickle, file_path_simdrug_mat, list
 		tmp = []
 		tmp.extend(repeat(smiles_drug_1, len(list_drugs))) ### CHANGE LATER!!!
 		with mp.Pool(processes = mp.cpu_count()-5) as pool:
-			results = pool.starmap(get_pairwise_tanimoto, zip(tmp, list_smiles, dic))
+			results = pool.starmap(hf.get_pairwise_tanimoto, zip(tmp, list_smiles, dic))
 		all_Sim_Tani.append(results)
 	## CHANGE LATER
 	df_all_Sim_Tani = pd.DataFrame(all_Sim_Tani, columns= list_drugs, index = list_drugs) # add columns, & index
@@ -218,67 +133,12 @@ def get_drug_similarity_matrix(file_path_sim_pickle, file_path_simdrug_mat, list
 	df_all_Sim_Tani.to_pickle(file_path_sim_pickle) # add here column %& index next time
 	# save csv for model
 	df_all_Sim_Tani.to_csv(file_path_simdrug_mat, sep='\t', header=False, index=False) # add here column %& index next time
-# SW
-def create_remove_tmp_folder(path):
-	if not os.path.exists(path):
-		logging.info('Creating tmp folder: {}'.format(path))
-		os.makedirs(path)
-		return path
-	else: 
-		return path
-
-def write_fasta(path, target, seq):
-	fl_name = os.path.join(path, target.replace(':', '_')+'.fasta')
-	if os.path.exists(fl_name):
-		logging.debug(f'File {fl_name} already exists')
-		return fl_name
-	with open(fl_name, 'w') as f:
-		_ = f.write('>'+target+'\n'+seq+'\n')
-	return fl_name
-
-def extract_score(results_file):
-	with open(results_file, 'r') as f:
-		for line in f:
-			if not line.startswith('# Score:'):
-				continue
-			else:
-				return float(line.split()[-1])
-
-def check_and_create_fasta(target, seq):
-	global PATH
-	fasta1 = os.path.join(PATH, target.replace(':', '_')+'.fasta')
-	if not os.path.exists(fasta1):
-		fasta1 = write_fasta(PATH, target, seq)
-	return fasta1
-
-def get_SW_score(pair1, pair2):
-	global PATH
-	target1, seq1 = pair1
-	target2, seq2 = pair2
-	fasta1 = os.path.join(PATH, target1.replace(':', '_')+'.fasta')
-	if not os.path.exists(fasta1):
-		fasta1 = write_fasta(PATH, target1, seq1)
-	fasta2 = os.path.join(PATH, target2.replace(':', '_')+'.fasta')
-	fasta2 = write_fasta(PATH, target2, seq2)
-	result_ID = str(uuid.uuid4())
-	result_file = os.path.join(PATH, result_ID+'_results.txt')
-	args = ['/home/margaret/data/gserranos/REST_API_embl/EMBOSS-6.6.0/emboss/water', 
-			'-asequence', fasta1 , '-bsequence', fasta2, 
-			'-gapopen', '10.0', '-gapext', '0.5', 
-			'-outfile', result_file]
-	try:
-		_ = sp.check_call(args, stdout=sp.DEVNULL, stderr=sp.DEVNULL)
-		score = extract_score(result_file)
-		os.remove(result_file)
-		return score
-	except:
-		print(target1, target2)
 
 def get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_of_protein_nodes, list_of_protein_seqs):
 	global PATH
 	# db_name = 'DrugBank' # comentar
 	logging.info('Calculating SW')
-	PATH = create_remove_tmp_folder(os.path.join('/tmp/SmithWaterman' , db_name))
+	PATH = hf.create_remove_tmp_folder(os.path.join('/tmp/SmithWaterman' , db_name))
 	# print(PATH)
 	target_seqs = list(zip(list_of_protein_nodes, list_of_protein_seqs))
 	all_SmithWaterman = []
@@ -289,7 +149,7 @@ def get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_
 			continue
 		tmp.extend(repeat(pair1, len(target_seqs)))
 		with mp.Pool(processes=mp.cpu_count()-5) as pool:
-			results = pool.starmap(get_SW_score, zip(tmp, target_seqs))
+			results = pool.starmap(hf.get_SW_score, zip(tmp, target_seqs))
 		all_SmithWaterman.append(results)
 
 	logging.info('Creating matrix & applying MinMaxScaler() in range (0,1)')
@@ -305,7 +165,6 @@ def get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_
 
 ######################################## START MAIN #########################################
 #############################################################################################
-
 
 def main():
 	'''
@@ -353,8 +212,8 @@ def main():
 	# sanity check
 	DB_PATH = args.dbPath
 	logging.info(f'Working in output folder for: {DB_PATH}')
-	db_name = get_DB_name(DB_PATH)
-	check_and_create_folder(db_name)
+	db_name = hf.get_DB_name(DB_PATH)
+	hf.check_and_create_folder(db_name)
 	# Create relative output path
 	wdir = os.path.join('../Data', db_name)
 	# wdir = '../Data/DrugBank'
@@ -466,7 +325,7 @@ def main():
 	matrix_prot_dis = matrix_prot_dis.astype(int)
 	logging.info(f'        * matrix shape {matrix_prot_dis.shape}')
 	logging.info(f'        * # protein-disease edges {matrix_prot_dis.sum().sum()}')
-	matrix_prot_dis.to_csv(os.path.join(wdir, 'mat_protein_dis.txt'), index=False, header=False, sep=" ") 
+	matrix_prot_dis.to_csv(os.path.join(wdir, 'mat_protein_disease.txt'), index=False, header=False, sep=" ") 
 
 	# DTI  (DRUG - PROTEIN) ----> Changes for each Database
 	logging.info('   - Drug Protein Interaction Matrix (DTIs)')
@@ -505,9 +364,7 @@ def main():
 	else:
 		logging.info('Matrix already in folder')
 
-
 #############################################
-
 
 
 #####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

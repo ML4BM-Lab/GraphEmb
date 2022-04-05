@@ -6,39 +6,9 @@ import json
 from tqdm import tqdm
 from re import search
 import xml.etree.ElementTree as ET
+import helper_functions_dtinet as hf
 
 
-def get_DB_name(path):
-	"""
-	This function returns the name of the DB.
-	"""
-	DB_NAMES = ['BIOSNAP', 'BindingDB', 'Davis_et_al', 'DrugBank', 'E', 'GPCR', 'IC', 'NR']
-	for db in DB_NAMES:
-		if search(db, path):
-			logging.info(f'Database: {db}')
-			if db in ['E', 'GPCR', 'IC', 'NR']:
-				db = os.path.join('Yamanashi_et_al_GoldStandard', db)
-				return db
-			else:
-				return db
-	logging.error(f'Database: {db} not found')
-	sys.exit('Please provide a valid database')
-
-
-def check_and_create_folder(db_name):
-	if not os.path.exists(os.path.join('../Data', db_name)):
-		os.mkdir(os.path.join('../Data', db_name))
-
-
-
-
-def get_drug_drug_coordinates(drug_entry, drug_drug_coodinates):
-	drugbank_ID = drug_entry.find('{http://www.drugbank.ca}drugbank-id').text
-	all_interactions =  drug_entry.findall('.//{http://www.drugbank.ca}drug-interactions')[0]
-	for inter in all_interactions: # aqui iteramos en targets
-		coordinate = (drugbank_ID, list(inter)[0].text)	
-		drug_drug_coodinates.append(coordinate)
-	return drug_drug_coodinates
 
 
 ######################################## START MAIN #########################################
@@ -72,6 +42,7 @@ def main():
     fmt = '[%(levelname)s] %(message)s'
     logging.basicConfig(format=fmt, level=level)
     #######
+    logging.info("============== DrugBank ==============")
     ###  output details
     logging.info(
         '''
@@ -90,69 +61,67 @@ def main():
 
     # OUTPUT DIRECTORY
     DB_PATH = args.dbPath
-    db_name = get_DB_name(DB_PATH)
-    check_and_create_folder(db_name)
+    db_name = hf.get_DB_name(DB_PATH)
+    hf.check_and_create_folder(db_name)
     # Create relative output path
     output_path = os.path.join('../Data', db_name)
     ## SIDER DATA FOLDER
     #data_path = '../../../Data/cross_side_information_DB/SIDER'
     # info 
-    #logging.info(f'Processing {data_path[40:]} in {output_path}')
+    logging.info(f'Processing DrugBank in {output_path}')
 
     ### do stuff
-    logging.info('Reading DrugBank xml file...')
-    tree = ET.parse('../../../Data/cross_side_information_DB/DrugBank/Data/full_database.xml')
+    logging.debug('Reading DrugBank xml file...')
+    tree = ET.parse('../../DB/Data/cross_side_information_DB/DrugBank/Data/full_database.xml')
     root = tree.getroot()
 
     ########### DRUG NODES ###########
-
     drug_IDs = []
     drug_names = []
-    for drug_entry in tqdm(root):
+    for drug_entry in tqdm(root, desc='Retrieving Drug IDs from DrugBank', position=0, leave=True):
         drugbank_ID = drug_entry.find('{http://www.drugbank.ca}drugbank-id').text
         name = drug_entry.find('{http://www.drugbank.ca}name').text # incluir aqui name sin check
         drug_names.append(name)
         drug_IDs.append(drugbank_ID)
 
     # Drug nodes (all_drugs.txt). All nodes in DB (w\o filter) 
-    logging.info(f'Writing all_drugs.txt...')
+    logging.debug(f'Writing all_drugs.txt...')
     with open(os.path.join(output_path, 'all_drugs.txt'), 'w') as f:
         #_ = f.write('#DrugBankID\n')
         for item in drug_IDs:
             _ = f.write("%s\n" % item)
-
     # Write dictionary (drugbank_ID and name)
-    logging.info(f'Writing all_drug_dic_map.txt...')
+    logging.debug(f'Writing all_drug_dic_map.txt...')
     with open(os.path.join(output_path,'all_drug_dic_map.txt'), 'w') as f:
         for i in range(len(drug_IDs)):
             _ = f.write("%s:%s\n" % (drug_IDs[i],drug_names[i]))
-
     # json
     if args.json == True:
         dic_drugnames_DBID = dict(zip(drug_IDs, drug_names)) 
         file_name_json = 'dic_drugnames_DBID.json'
-        logging.info(f'Writing {file_name_json}...')
+        logging.debug(f'Writing {file_name_json}...')
         with open(os.path.join(output_path,file_name_json), 'w', encoding='utf-8') as f:
             json.dump(dic_drugnames_DBID, f, ensure_ascii=False, indent=4)
 
     ######### Drug-Drug Interactions #########
+    logging.info(f'    Getting Drug-Drug coordinates...')
     drug_drug_coodinates = []
-    for drug_entry in tqdm(root):
-        drug_drug_coodinates = get_drug_drug_coordinates(drug_entry, drug_drug_coodinates)
+    for drug_entry in tqdm(root, desc='Retrieving drug-drug interactions from DrugBank',  position=0, leave=True):
+        drug_drug_coodinates = hf.get_drug_drug_coordinates(drug_entry, drug_drug_coodinates)
     #coordinates df
     df_d = pd.DataFrame(drug_drug_coodinates, columns=['Drug_ID_A', 'Drug_ID_B']) 
     df_d = df_d.drop_duplicates()
-    logging.info(f'shape of coordinate file is: {df_d.shape}')
-    logging.info('Writing coordinate file drug-drug effect...')
+    logging.info(f'    shape of coordinate file is: {df_d.shape}')
+    logging.debug('Writing coordinate file drug-drug effect...')
     df_d.to_csv(os.path.join(output_path, 'coordinates_drug_drug.tsv'), header=True,index=False ,sep="\t")
 
 
 
 
 
-#####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#####++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 if __name__ == "__main__":
     main()
-#####-------------------------------------------------------------------------------------------------------------
-####################### END OF THE CODE ##########################################################################
+#####------------------------------------------------------------------------------------------
+####################### END OF THE CODE ########################################################

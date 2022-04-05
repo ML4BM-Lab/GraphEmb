@@ -13,6 +13,7 @@ data = DTI(name = 'DAVIS')
 df = data.get_data()
 #print(df.columns)
 df = df.rename(columns ={'Drug':'SMILES', 'Target':'Target Sequence'})
+print(df)
 
 drugs = df['SMILES'].unique()
 genes = df['Target Sequence'].unique()

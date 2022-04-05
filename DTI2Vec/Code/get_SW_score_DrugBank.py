@@ -91,6 +91,8 @@ def check_and_create_fasta(target, seq):
 	return fasta1
 
 def get_SW_score(pair1, pair2):
+	global PATH
+	global already_written_fastas
 	target1, seq1 = pair1
 	target2, seq2 = pair2
 	
@@ -118,7 +120,7 @@ def get_SW_score(pair1, pair2):
 		score = extract_score(result_file)
 		return score
 	except:
-		print(target1, target2)
+		logging.warning(f'Not able to compute SW score for : {target1}, {target2}')
 
 def read_fasta(path):
 	names=[]
@@ -198,10 +200,8 @@ def main():
 				_ = f.write('>'+target+'\n'+seq+'\n')
 
 	# get the SW scores
-	global PATH
 	PATH = create_remove_tmp_folder(os.path.join('/tmp/SmithWaterman' , db_name))
-	logging.debug(f'Using folder: {PATH}')
-	global already_written_fastas
+	print(PATH)
 	already_written_fastas = {}
 	all_SmithWaterman = []
 	for pair1 in tqdm(targets_seqs):
@@ -213,6 +213,7 @@ def main():
 		with mp.Pool(processes=mp.cpu_count()-5) as pool:
 			results = pool.starmap(get_SW_score, zip(tmp, targets_seqs))
 		all_SmithWaterman.append(results)
+
 
 	targets = [ target for target, _ in targets_seqs ]
 	SmithWaterman_arr = pd.DataFrame(all_SmithWaterman,columns=targets,index=targets)

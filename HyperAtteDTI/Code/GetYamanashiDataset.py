@@ -3,6 +3,7 @@ import pandas as pd
 import random
 import os
 from pubchempy import Compound
+from rdkit import Chem
 import requests
 random.seed(1)
 
@@ -14,26 +15,16 @@ def getamino_KEGG(protein):
 def get_drug_pubchem(drug):
     return Compound.from_cid(drug).isomeric_smiles
 
-
+def get_drug_kegg(drug):
+    r = requests.get(f'http://rest.kegg.jp/get/{drug}/mol')
+    mol = Chem.MolFromMolBlock(r.text) 
+    return Chem.MolToSmiles(mol)
 
 def get_dataset(type):
     #Read csv to dataframe for positive pairs
-    colnames = ['Drug ID Kegg', 'Gene']
-    data_path =os.getcwd() + '/../../../Data/Yamanashi_et_al_GoldStandard/' + type.upper()+'/interactions/' + type+'_admat_dgc_mat_2_line.txt'
+    colnames = ['Drug ID', 'Gene']
+    data_path =os.getcwd() + '/../../DB/Data/Yamanashi_et_al_GoldStandard/' + type.upper()+'/interactions/' + type+'_admat_dgc_mat_2_line.txt'
     df = pd.read_csv(data_path, header = None, names = colnames, index_col=False, sep='\t')
-
-    colnames = ['pubchem','dr']
-    data_path = os.getcwd()+ '/../Data/Yamanashi_et_al_GoldStandard/pubchem.txt'
-    pubchem_dr = pd.read_csv(data_path, header = None, names = colnames, sep='\t')
-
-    pubchem_dr['pubchem'] = pubchem_dr['pubchem'].map(lambda x: x.lstrip('pubchem:'))
-    pubchem_dr['dr'] = pubchem_dr['dr'].map(lambda x: x.lstrip('dr:'))
-
-    pubchem_dr_dict = dict(zip(pubchem_dr['dr'], pubchem_dr['pubchem']))
-
-    df['Drug ID'] = df['Drug ID Kegg'].map(pubchem_dr_dict)
-
-    df = df.drop(columns = ['Drug ID Kegg'])
 
     df['Label'] = 1
 
@@ -51,7 +42,7 @@ def get_dataset(type):
     path_smiles = os.getcwd() + '/../Data/Yamanashi_et_al_GoldStandard/' + fname
     
     if not os.path.exists(path_smiles):
-        smiles = np.vectorize(get_drug_pubchem)(drugs)
+        smiles = np.vectorize(get_drug_kegg)(drugs)
         np.savetxt(path_smiles, smiles, fmt="%s")
     else:
         smiles = np.genfromtxt(path_smiles, dtype = 'str')

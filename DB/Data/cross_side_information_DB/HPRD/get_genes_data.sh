@@ -1,0 +1,1 @@
+grep "Gene_Name\|GeneCards" /home/uveleiro/data/jfuente/DTI/Data/cross_side_information_DB/HPRD/HUMAN_9606_idmapping.dat > genes_data.dat

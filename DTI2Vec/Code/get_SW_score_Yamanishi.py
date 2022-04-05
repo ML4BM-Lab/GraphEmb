@@ -118,7 +118,7 @@ def get_SW_score(pair1, pair2):
 		score = extract_score(result_file)
 		return score
 	except:
-		print(target1, target2)
+		logging.warning(f'Not able to compute SW score for : {target1}, {target2}')
 
 def read_fasta(path):
 	names=[]

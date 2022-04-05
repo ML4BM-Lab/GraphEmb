@@ -25,26 +25,20 @@ def getamino_uniprot(protein):
 ###-------------------------------------------------------------------------------------------------##
 
 #Read csv to dataframe for positive pairs
-data_path = os.getcwd() + '/../../../Data/BIOSNAP/ChG-Miner_miner-chem-gene/ChG-Miner_miner-chem-gene.tsv'
-
-#df = pd.read_csv('ChG-Miner_miner-chem-gene/ChG-Miner_miner-chem-gene.tsv', index_col = False, sep='\t', skiprows  = [13542])   #row 13542 is a header
+data_path = os.getcwd() + '/../../DB/Data/BIOSNAP/ChG-Miner_miner-chem-gene/ChG-Miner_miner-chem-gene.tsv'
 colnames = ['DrugBank ID', 'Gene']
 df = pd.read_csv(data_path, names = colnames, header = None, index_col = False, sep='\t', skiprows  = [0, 13542])   #rows 0 and 13542 are headers
-df['Label'] = [1]*len(df.index)
+#df['Label'] = [1]*len(df.index)
+df['Label'] = 1
 #print(df)
 
 #Obtain the unique drugs and genes
 drugs = df['DrugBank ID'].unique()
 genes = df['Gene'].unique()
 
-#print(drugs)
-#print(genes)
-
 #Get the smiles and sequences of drugs and proteins
-
 fname = 'smiles_BIOSNAP.txt'
 path_smiles = os.getcwd() + '/../Data/BIOSNAP/' + fname
-    
 if not os.path.exists(path_smiles):
     smiles = np.vectorize(getdrug_drugbank)(drugs)
     np.savetxt(path_smiles, smiles, fmt="%s")
@@ -53,16 +47,11 @@ else:
 
 fname = 'targetsequences_BIOSNAP.txt'
 path_targetsequences = os.getcwd() + '/../Data/BIOSNAP/' + fname
-    
 if not os.path.exists(path_targetsequences):
     targetsequences = np.vectorize(getamino_uniprot)(genes)
     np.savetxt(path_targetsequences, targetsequences, fmt="%s")
-    
 else:
     targetsequences = np.genfromtxt(path_targetsequences, dtype = 'str')
-
-#print(smiles)
-#print(targetsequences)
 
 #Create dictionaries
 drugs_smiles = {d:s for d, s in zip(drugs, smiles)}

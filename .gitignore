@@ -16,3 +16,5 @@
 *.zip
 *.gz
 *.tar
+*.xml
+*.pyc
