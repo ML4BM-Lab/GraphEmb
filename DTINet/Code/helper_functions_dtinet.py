@@ -132,13 +132,6 @@ def create_remove_tmp_folder(path):
 	else: 
 		return path
 
-def extract_score(results_file):
-	with open(results_file, 'r') as f:
-		for line in f:
-			if not line.startswith('# Score:'):
-				continue
-			else:
-				return float(line.split()[-1])
 
 def check_and_create_fasta(target, seq):
 	global PATH
@@ -148,28 +141,6 @@ def check_and_create_fasta(target, seq):
 	return fasta1
 
 # SW
-def get_SW_score(pair1, pair2):
-	global PATH
-	target1, seq1 = pair1
-	target2, seq2 = pair2
-	fasta1 = os.path.join(PATH, target1.replace(':', '_')+'.fasta')
-	if not os.path.exists(fasta1):
-		fasta1 = write_fasta(PATH, target1, seq1)
-	fasta2 = os.path.join(PATH, target2.replace(':', '_')+'.fasta')
-	fasta2 = write_fasta(PATH, target2, seq2)
-	result_ID = str(uuid.uuid4())
-	result_file = os.path.join(PATH, result_ID+'_results.txt')
-	args = ['/home/margaret/data/gserranos/REST_API_embl/EMBOSS-6.6.0/emboss/water', 
-			'-asequence', fasta1 , '-bsequence', fasta2, 
-			'-gapopen', '10.0', '-gapext', '0.5', 
-			'-outfile', result_file]
-	try:
-		_ = sp.check_call(args, stdout=sp.DEVNULL, stderr=sp.DEVNULL)
-		score = extract_score(result_file)
-		os.remove(result_file)
-		return score
-	except:
-		print(target1, target2)
 
 def get_amino_uniprot(proteinID):
     r = requests.get(f'https://www.uniprot.org/uniprot/{proteinID}.fasta')
@@ -191,6 +162,7 @@ def get_pairwise_tanimoto(smiles1,smiles2, dic): #dic == smile2fp
 		return tani
 	except:
 		return None
+
 
 #
 def check_drug(drug_entry):
@@ -259,3 +231,34 @@ def get_dict_hsa2uni():
 			up.append(upi.lstrip('up:'))
 			hsa.append(hsai)
 	return dict(zip(hsa, up))
+
+# new from get_SW_score_Yamanishi.py in DTI2Vec
+def get_SW_score(pair1, pair2, tmp_path):
+	target1, _ = pair1
+	target2, _ = pair2
+	fasta1 = os.path.join(tmp_path, target1.replace(':', '_')+'.fasta')
+	fasta2 = os.path.join(tmp_path, target2.replace(':', '_')+'.fasta')
+	args = ['/home/margaret/data/gserranos/REST_API_embl/EMBOSS-6.6.0/emboss/water', 
+			'-asequence', fasta1 , '-bsequence', fasta2, 
+			'-gapopen', '10.0', '-gapext', '0.5', 
+			'-stdout']
+	try:
+		score = sp.Popen(args, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.DEVNULL)
+		score = score.communicate(b"\n")
+		score = score[0].decode().split('\n')
+		score = extract_score(score)
+		return score
+	except:
+		logging.warning(f'Not able to compute SW score for : {target1}, {target2}')
+
+def extract_score(score):
+	score = [line for line in score if line.startswith('# Score:')]
+	if score:
+		return float(score[0].split()[-1])
+	else:
+		return None
+
+def write_all_fastas(fastas, path):
+	for header, seq in fastas:
+		write_fasta(path, header, seq)
+	logging.info('All fastas written')

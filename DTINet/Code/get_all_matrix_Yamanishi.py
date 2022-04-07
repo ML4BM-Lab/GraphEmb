@@ -14,7 +14,7 @@ import xml.etree.ElementTree as ET
 from itertools import repeat
 import requests
 import logging
-from re import search
+from re import X, search
 import argparse
 import argparse
 from rdkit import RDLogger                     
@@ -24,6 +24,8 @@ from sklearn.preprocessing import MinMaxScaler
 import helper_functions_dtinet as hf
 
 
+# modified 
+# only nodes in DTIs!! no null rows
 
 def get_protein_nodes(file_path_prot, file_path_seqs, PPI, prot_dis, DTI):
 	#global PPI, prot_dis, DTI
@@ -38,6 +40,8 @@ def get_protein_nodes(file_path_prot, file_path_seqs, PPI, prot_dis, DTI):
 		not_isolated_proteins = list(proteins_linked_to_proteins.union(proteins_linked_to_disease, proteins_linked_to_drugs)) # 11941
 		#not_isolated_proteins # not any specific order 
 		'''
+		'''
+		#### SECOND 
 		# GET PROTEIN NODES
 		# LOAD HPRD NODES & TAKE ONLY THOSE THAT HAVE AT LEAST ONE RELATED DISEASE
 		## aqui no estoy teniendo en cuenta las proteinas que estan en DTIs!!! 
@@ -46,6 +50,11 @@ def get_protein_nodes(file_path_prot, file_path_seqs, PPI, prot_dis, DTI):
 		# load protein linked to disease
 		proteins_linked_to_disease = set(prot_dis.UniprotID.tolist()) # 8985
 		not_isolated_proteins = list(proteins_linked_to_proteins.intersection(proteins_linked_to_disease)) # 8985
+		'''
+		# TRY ONLY WITH PROTEINS IN DTIs
+		# Try only with proteins in dti
+		proteins_linked_to_drugs = set(DTI.Protein.tolist()) # 4884 ##### 
+		not_isolated_proteins = list(proteins_linked_to_drugs)
 		## CHECK SEQUENCE
 		logging.info('Checking if sequence is available in Uniprot & retrieving it...')
 		list_of_protein_nodes = []
@@ -104,20 +113,25 @@ def get_drug_nodes(file_path_drugs, file_path_dic_drug_smiles, drug_drug, drug_d
 		not_isolated_drugs = list(drugs_linked_to_drugs.union(drugs_linked_to_disease, drugs_linked_to_sideeffect, drugs_linked_to_proteins )) ### 9720
 		not_isolated_drugs.sort()
 		'''
+		'''
 		## NOW TAKE ONLY THOSE DRUGS THAT HAVE DISEASES & THOSE THAT HAVE SE & INTERSECT
 		drugs_linked_to_disease = set(drug_dis.DrugBankID.tolist()) # 2754
 		drugs_linked_to_sideeffect = set(drug_se.DrugBank_ID.tolist()) # 998
 		not_isolated_drugs = drugs_linked_to_disease.intersection(drugs_linked_to_sideeffect) # 860
+		'''
+		### THIRD TIME
+		# Only drugs from DTIs
+		drugs_linked_to_proteins = set(DTI.Drug.tolist()) # 7627 ###### <--------- THIS IS THE ONLY ONE THAT CHANGES FOR EACH DATABASE
+		not_isolated_drugs = list(drugs_linked_to_proteins)
 		# Intersec with available SMILES
 		list_of_drug_nodes = list(set(not_isolated_drugs).intersection(set(list_drugs))) #  ##############---->>> ** aqui ya estaria!
 		list_of_drug_nodes.sort()
 		#len(set(not_isolated_drugs).intersection(set(list_drug_w_smiles))) # 8638
-		
+		#
 		logging.info(f'There are {len(list_of_drug_nodes)} isolated drugs with available smiles from {len(not_isolated_drugs)} total isolated nodes (diff: {len(not_isolated_drugs)-len(list_of_drug_nodes)})')
 		# save files
 		logging.info(f'Saving files...')
 		np.savetxt(os.path.join(file_path_drugs), list_of_drug_nodes, fmt='%s') # list
-		
 		with open(file_path_dic_drug_smiles, 'w', encoding='utf-8') as f:
 			json.dump(dict_drugid_smiles, f, ensure_ascii=False, indent=4)
 	else:
@@ -127,24 +141,24 @@ def get_drug_nodes(file_path_drugs, file_path_dic_drug_smiles, drug_drug, drug_d
 		with open(file_path_dic_drug_smiles, 'r') as f:
 			dict_drugid_smiles = json.load(f)
 	return list_of_drug_nodes, dict_drugid_smiles
+
 #sim
 def get_drug_similarity_matrix(file_path_sim_pickle, file_path_simdrug_mat, list_of_drug_nodes, dict_drugid_smiles):
-	# check file
 	list_drugs = list_of_drug_nodes
-	list_smiles = [dict_drugid_smiles[i] for i in list_drugs] # change for get dict 
+	list_smiles = [dict_drugid_smiles[i] for i in list_drugs] # 
 	all_Sim_Tani = []
 	dic = {}
-	for i in tqdm(range(len(list_drugs))): ### CHANGE LATER
-		print(i+1, end='\r')
-		if i%500==0: logging.info(f'it: {i}')
-		id_drug_1 = list_drugs[i]
+	for drug in tqdm(range(len(list_drugs)), desc='Retrieving Pairwise Tanimoto for drugs', position=0, leave=True): 
+		id_drug_1 = list_drugs[drug]
 		smiles_drug_1 = list_smiles[list_drugs.index(id_drug_1)]
+		sim_for_drug = []
 		tmp = []
-		tmp.extend(repeat(smiles_drug_1, len(list_drugs))) ### CHANGE LATER!!!
-		with mp.Pool(processes = mp.cpu_count()-5) as pool:
-			results = pool.starmap(hf.get_pairwise_tanimoto, zip(tmp, list_smiles, dic))
-		all_Sim_Tani.append(results)
-	## CHANGE LATER
+		tmp.extend(repeat(smiles_drug_1, len(list_drugs))) 
+		for j in range(len(tmp)):
+			result = hf.get_pairwise_tanimoto(tmp[j], list_smiles[j], dic)
+			sim_for_drug.append(result)
+		all_Sim_Tani.append(sim_for_drug)
+	#
 	df_all_Sim_Tani = pd.DataFrame(all_Sim_Tani, columns= list_drugs, index = list_drugs) # add columns, & index
 	logging.info(f'        * Drug Similarity Matrix Shape {df_all_Sim_Tani.shape}')
 	# save pickle
@@ -153,23 +167,24 @@ def get_drug_similarity_matrix(file_path_sim_pickle, file_path_simdrug_mat, list
 	df_all_Sim_Tani.to_csv(file_path_simdrug_mat, sep='\t', header=False, index=False) # add here column %& index next time
 # SW
 def get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_of_protein_nodes, list_of_protein_seqs):
-	global PATH
-	# db_name = 'DrugBank' # comentar
-	logging.info('Calculating SW')
-	PATH = hf.create_remove_tmp_folder(os.path.join('/tmp/SmithWaterman' , db_name))
-	# print(PATH)
-	target_seqs = list(zip(list_of_protein_nodes, list_of_protein_seqs))
+	targets_seqs = list(zip(list_of_protein_nodes, list_of_protein_seqs))
+	# get SW scores
+	tmp_path  = hf.create_remove_tmp_folder(os.path.join('/tmp/SmithWaterman' , db_name))
+	logging.info(f'Creating temporary folder: {tmp_path}')
+	hf.write_all_fastas(targets_seqs, tmp_path)
 	all_SmithWaterman = []
-	for pair1 in tqdm(target_seqs):
+	n_targets= len(targets_seqs)
+	for pair1 in tqdm(targets_seqs):
 		tmp = []
 		if not pair1[1]:
 			logging.info(f'No sequence for {pair1[0]}')
 			continue
-		tmp.extend(repeat(pair1, len(target_seqs)))
+		tmp.extend(repeat(pair1, n_targets))
+		paths = repeat(tmp_path, n_targets)
 		with mp.Pool(processes=mp.cpu_count()-5) as pool:
-			results = pool.starmap(hf.get_SW_score, zip(tmp, target_seqs))
+			results = pool.starmap(hf.get_SW_score, zip(tmp, targets_seqs, paths))
 		all_SmithWaterman.append(results)
-	#
+	
 	logging.info('Creating matrix & applying MinMaxScaler() in range (0,1)')
 	SmithWaterman_arr = pd.DataFrame(all_SmithWaterman, columns=list_of_protein_nodes, index=list_of_protein_nodes)
 	zscore_SmithWaterman_arr = pd.DataFrame(MinMaxScaler().fit_transform(SmithWaterman_arr),columns=list_of_protein_nodes, index=list_of_protein_nodes)
@@ -178,7 +193,7 @@ def get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_
 	zscore_SmithWaterman_arr.to_pickle(file_path_SW_pickle) # add here column %& index next time
 	# save csv for model
 	zscore_SmithWaterman_arr.to_csv(file_path_SW_mat, sep='\t', header=False, index=False) # add here column %& index next time
-	rmtree(PATH)
+	rmtree(tmp_path)
 
 
 
@@ -270,6 +285,7 @@ def main():
 	## number of total nodes
 	logging.info(f'This network has {len(list_of_protein_nodes) +  len(list_of_drug_nodes) + len(list_of_disease_nodes) + len(list_of_se_nodes)} nodes in total')
 
+	'''
 	#################
 	# THIRD: BUILDING MATRIX
 	# once we have the list, we have the index and columns for all matrix!!
@@ -285,7 +301,7 @@ def main():
 	matrix_drug_dis = matrix_drug_dis.astype(int)
 	logging.info(f'        * matrix shape {matrix_drug_dis.shape}')
 	logging.info(f'        * # drug-disease assoc edges {matrix_drug_dis.sum().sum()}')
-	matrix_drug_dis.to_csv(os.path.join(wdir, 'mat_drug_dis.txt'), index=False, header=False, sep=" ") 
+	matrix_drug_dis.to_csv(os.path.join(wdir, 'mat_drug_disease.txt'), index=False, header=False, sep=" ") 
 
 	########## Drug Side Effect Matrix
 	logging.info('   - Drug Side Effect Matrix')
@@ -349,8 +365,8 @@ def main():
 	logging.info(f'        * # drug-protein edges {matrix_drug_protein.sum().sum()}')
 	# pd.Series(np.diag(df), index=[df.index, df.columns]) ejemplo de contar 1s en la diagonal!! cambiar aqui
 	matrix_drug_protein.to_csv(os.path.join(wdir, 'mat_drug_protein.txt'), index=False, header=False, sep=" ") 
-
 	'''
+
 	# Drug Similarity Matrix
 	logging.info('-'*30)
 	logging.info('Drug Similarity matrix....')
@@ -365,7 +381,7 @@ def main():
 		#pass
 	else:
 		logging.info('Matrix already in folder')
-
+	'''
 	################## PROTEIN SIMILARITY MATRIX  
 	logging.info('-'*30)
 	logging.info('Protein Similarity Matrix....')
@@ -375,7 +391,8 @@ def main():
 		get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_of_protein_nodes, list_of_protein_seqs)
 	else:
 		logging.info('Matrix already in folder')
-	'''
+	'''	
+		
 
 #############################################
 
@@ -387,5 +404,3 @@ if __name__ == "__main__":
     main()
 #####-------------------------------------------------------------------------------------------------------------
 ####################### END OF THE CODE ##########################################################################
-
-
