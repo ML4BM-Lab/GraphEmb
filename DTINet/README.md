@@ -1,34 +1,36 @@
 # Preprocessing of Databases
 
-preprocessing_DTINet_DrugBank.py (for example, not available yet)
+Run (file not available yet)
+```
+python3 preprocessing_DTINet_DrugBank.py (for example, not available yet)
+```
 
 Script that calls:
 1. get_coord.py
-    * meaning:
+    This script obtaind all necesary edge lists from complementary databases
     * Calls:
       1. process_HPRD_DTINet.py
       2. process_SIDER_DTINet.py
       3. process_CTD_DTINet.py
       4. process_DrugBank.py
 2. get_all_matrix_DrugBank.py
+    This script obtains the DTIs and uses the output from previous script to create the needed matrix. 
 
 
-## Script List
 
-- process_SIDER
-- process_HPRD
-- process_Drugbank
-- process_CTD
+## List of scripts in 'DTINet/Code/':
+
+- ... FIRST 
+- process_SIDER_DTINet.py
+- process_HPRD_DTINet.py
+- process_Drugbank_DTINet.py
+- process_CTD_DTINet.py
 - get_coord.py 
-- get_all_matrix.py 
+- get_all_matrix_DrugBank.py 
+- get_all_matrix_Yamanishi.py
+- ...
 
-
-# Input data needed for DTINet
-
-Processed data needed: (download + preproc )
-
-
-## What do we retrieve from databases? 
+## What do we retrieve from each database? 
 * DrugBank database 
     - Drug nodes
     - *** DTI *** - change DB in each folder
