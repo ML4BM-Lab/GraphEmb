@@ -11,7 +11,7 @@ import time
 import pubchempy as pcp
 import multiprocessing as mp
 import helper_functions_dtinet as hf
-
+#from parallelbar import progress_map
 
 ######################################## START MAIN #########################################
 #############################################################################################
@@ -22,7 +22,7 @@ def main():
     CTD
     '''
     parser = argparse.ArgumentParser() 
-    parser.add_argument("-v", "--verbose", dest="verbosity", action="count", default=3,
+    parser.add_argument("-v", "--verbose", dest="verbosity", action="count", default=4,
                     help="Verbosity (between 1-4 occurrences with more leading to more "
                         "verbose logging). CRITICAL=0, ERROR=1, WARN=2, INFO=3, "
                         "DEBUG=4")
@@ -56,7 +56,7 @@ def main():
             - disease.txt
             - disease_dict_map.txt (or json)
             - coordinates_protein_disease.tsv
-            - dic_drugnames_cid.json  
+            - !!! nno !! dic_drugnames_cid.json  
         
         DTINet uses from CTD the processed files:
             - mat_protein_disease.txt
@@ -187,6 +187,7 @@ def main():
     # This fule can be obtained running: get_dic_names_to_CID.py
     #with open(PATH_dic_drugnames_cid, 'r') as f:
     #    dic_drugnames_cid = json.load(f)
+    '''
     file_dic_drugnames = 'dic_drugnames_cid.json'
     file_path_json_drugnames = os.path.join(output_path, file_dic_drugnames)
     if (not os.path.exists(file_path_json_drugnames)):
@@ -196,7 +197,11 @@ def main():
         drugnames = list(set(drugnames))
         # multiprocss
         pool = mp.Pool(3)
-        cid_keys = pool.map(hf.get_cid, drugnames)
+        #cid_keys = pool.map(hf.get_cid, drugnames[:10]) ##
+        ### probar con pmap
+        cid_keys = progress_map(hf.get_cid, drugnames, n_cpu=3, chunk_size=1, core_progress=True)
+        #print(cid_keys)
+        ### ?
         dic_drugnames_cid = dict(zip(drugnames, cid_keys)) 
         #save this dictionary in output path
         with open(file_path_json_drugnames, 'w', encoding='utf-8') as f:
@@ -205,10 +210,12 @@ def main():
         logging.debug('Reading dic_drugnames_cid.json ...')
         with open(file_path_json_drugnames, 'r') as f:
             dic_drugnames_cid = json.load(f)
-    
+    '''
+
     # Then, we need to go back to DrugBank
     # and make a relation between PubChem and DrugBank
     ################## esto esta repetido en SIDER ######
+    '''
     logging.debug('Reading DrugBank xml file...')
     dic_cid_dbid = hf.pubchem_to_drugbankid()
 
@@ -219,6 +226,11 @@ def main():
     chem_dis.shape # loosing 1158846 entries here
     chem_dis['PubChemID'] = chem_dis['PubChemID'].astype(int).astype(str)
     chem_dis['DrugBankID'] = chem_dis['PubChemID'].apply(lambda x: dic_cid_dbid[x] if x in dic_cid_dbid else np.nan)
+    '''
+    logging.debug('Reading DrugBank xml file...')
+    drugbank_dic = hf.drugname_drugbankid()
+
+    chem_dis['DrugBankID'] = chem_dis['ChemicalName'].map(drugbank_dic)
     chem_dis = chem_dis.dropna()
     # creation of a coordinate dataframe:
     coordinates_drug_dis = chem_dis[['DrugBankID', 'DiseaseID']]

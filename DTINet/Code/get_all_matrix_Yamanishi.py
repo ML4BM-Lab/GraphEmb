@@ -165,6 +165,7 @@ def get_drug_similarity_matrix(file_path_sim_pickle, file_path_simdrug_mat, list
 	df_all_Sim_Tani.to_pickle(file_path_sim_pickle) # add here column %& index next time
 	# save csv for model
 	df_all_Sim_Tani.to_csv(file_path_simdrug_mat, sep='\t', header=False, index=False) # add here column %& index next time
+
 # SW
 def get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_of_protein_nodes, list_of_protein_seqs):
 	targets_seqs = list(zip(list_of_protein_nodes, list_of_protein_seqs))
@@ -181,7 +182,7 @@ def get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_
 			continue
 		tmp.extend(repeat(pair1, n_targets))
 		paths = repeat(tmp_path, n_targets)
-		with mp.Pool(processes=mp.cpu_count()-5) as pool:
+		with mp.Pool(processes=mp.cpu_count()-20) as pool: # change !
 			results = pool.starmap(hf.get_SW_score, zip(tmp, targets_seqs, paths))
 		all_SmithWaterman.append(results)
 	
@@ -193,7 +194,7 @@ def get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_
 	zscore_SmithWaterman_arr.to_pickle(file_path_SW_pickle) # add here column %& index next time
 	# save csv for model
 	zscore_SmithWaterman_arr.to_csv(file_path_SW_mat, sep='\t', header=False, index=False) # add here column %& index next time
-	rmtree(tmp_path)
+	#rmtree(tmp_path) # not remove for big matrix ! 
 
 
 

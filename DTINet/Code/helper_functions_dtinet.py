@@ -15,6 +15,7 @@ import subprocess as sp
 from pubchempy import Compound
 from rdkit import Chem
 from rdkit import DataStructs
+import multiprocessing as mp
 
 '''
 from importlib import reload
@@ -45,8 +46,8 @@ def check_and_create_folder(db_name):
 # funct
 def get_cid(compound_name):
     try:
-        comp_id = pcp.get_compounds(str(compound_name), 'name')[0].cid
-        time.sleep(1) # increase if error
+        comp_id = pcp.get_compounds(str(compound_name), 'name')[0].cid 
+        time.sleep(2) # increase if error
     except IndexError:
         comp_id = np.nan
     return comp_id
@@ -262,3 +263,22 @@ def write_all_fastas(fastas, path):
 	for header, seq in fastas:
 		write_fasta(path, header, seq)
 	logging.info('All fastas written')
+
+
+
+def drugname_drugbankid():
+    tree = ET.parse('../../DB/Data/DrugBank/full_database.xml')
+    root = tree.getroot()
+    drugbank_dic = {} # dict with generic or product name as key and drugbank_id as value
+    for drug_entry in tqdm(root):
+        drugbank_ID = drug_entry.find('{http://www.drugbank.ca}drugbank-id').text
+        #if drugbank_ID in all_entries:
+        name = drug_entry.find('{http://www.drugbank.ca}name').text.lower()
+        prod = drug_entry.find('{http://www.drugbank.ca}products')
+        prod_names = set([brandname.find('{http://www.drugbank.ca}name').text.upper() for brandname in prod])
+        if name:
+            drugbank_dic[name] = drugbank_ID
+        if len(prod_names) >= 1:
+            for prod in prod_names:
+                drugbank_dic[prod] = drugbank_ID
+    return drugbank_dic
