@@ -52,7 +52,7 @@ def main():
         This script generates the following files:
             - all_drugs.txt
             - all_drug_dic_map.txt (/ dic_drugnames_DBID.json)
-            - coordinates_drug_se.tsv
+            - edgelist_drug_drug.tsv
         
         DTINet uses from DrugBank the processed files:
             - mat_drug_drug.txt
@@ -113,7 +113,7 @@ def main():
     df_d = df_d.drop_duplicates()
     logging.info(f'    shape of coordinate file is: {df_d.shape}')
     logging.debug('Writing coordinate file drug-drug effect...')
-    df_d.to_csv(os.path.join(output_path, 'coordinates_drug_drug.tsv'), header=True,index=False ,sep="\t")
+    df_d.to_csv(os.path.join(output_path, 'edgelist_drug_drug.tsv'), header=True,index=False ,sep="\t")
 
 
 

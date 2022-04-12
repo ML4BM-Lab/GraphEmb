@@ -1,17 +1,13 @@
-import os, sys, uuid
+import os
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-import pubchempy as pcp
 import multiprocessing as mp
 import json
-from rdkit import Chem
 import multiprocessing as mp
 import xml.etree.ElementTree as ET
 from itertools import repeat
-import requests
 import logging
-from re import search
 import argparse
 import argparse
 from rdkit import RDLogger                     
@@ -27,9 +23,7 @@ logging.getLogger('').setLevel(logging.INFO)
 ####
 # run with no 0s
 
-
-def get_protein_nodes(file_path_prot, file_path_seqs, PPI, prot_dis, DTI):
-	#global PPI, prot_dis, DTI
+def get_protein_nodes(file_path_prot, file_path_seqs, file_path_dic_protein_seq, dti):
 	if (not os.path.exists(file_path_prot)) or (not os.path.exists(file_path_seqs)):
 		logging.info('Getting Protein Nodes & Sequences ..')
 		''' PREVIOUS IDEA
@@ -40,7 +34,7 @@ def get_protein_nodes(file_path_prot, file_path_seqs, PPI, prot_dis, DTI):
 		not_isolated_proteins = list(proteins_linked_to_proteins.union(proteins_linked_to_disease, proteins_linked_to_drugs)) # 11941
 		#not_isolated_proteins # not any specific order 
 		'''
-		proteins_linked_to_drugs = set(DTI.Protein.tolist()) # 
+		proteins_linked_to_drugs = set(dti.Protein.tolist()) # 
 		not_isolated_proteins = list(proteins_linked_to_drugs)
 		# CHECK SEQUENCE
 		logging.info('Checking if sequence is available in Uniprot & retrieving it...')
@@ -54,20 +48,23 @@ def get_protein_nodes(file_path_prot, file_path_seqs, PPI, prot_dis, DTI):
 				list_of_protein_seqs.append(prot_seq)
 			else:  
 				weird_prots.append(prot_id)
+		dict_protein_sequence = dict(zip(list_of_protein_nodes, list_of_protein_seqs))
 		logging.debug(f'The following proteins were not found in uniprot:\n {weird_prots}')
 		np.savetxt(os.path.join(file_path_prot), list_of_protein_nodes, fmt='%s')
 		with open(file_path_seqs, 'w') as f:
 			for i in range(len(list_of_protein_nodes)):
 				_ = f.write('>'+list_of_protein_nodes[i]+'\n'+list_of_protein_seqs[i]+'\n')
+		with open(file_path_dic_protein_seq, 'w', encoding='utf-8') as f:
+			json.dump(dict_protein_sequence, f, ensure_ascii=False, indent=4)
 	else:
 		list_of_protein_nodes = np.loadtxt(file_path_prot, dtype='str').tolist()
 		list_of_protein_seqs = [ seq for _, seq in list(hf.read_fasta(file_path_seqs)) ]
+		with open(file_path_dic_protein_seq, 'r') as f:
+			dict_protein_sequence = json.load(f)
 	#
-	return list_of_protein_nodes, list_of_protein_seqs
+	return list_of_protein_nodes, dict_protein_sequence
 
-def get_drug_nodes(file_path_drugs, file_path_dic_drug_smiles, drug_drug, drug_dis, drug_se, DTI):
-	# need to define al global the drug matrix !!
-	#global drug_drug, drug_dis, drug_se, DTI
+def get_drug_nodes(file_path_drugs, file_path_dic_drug_smiles, dti):
 	# check
 	if ((not os.path.exists(file_path_drugs)) or (not os.path.exists(file_path_dic_drug_smiles))):
 		logging.info('Getting Drug Nodes...')
@@ -89,7 +86,7 @@ def get_drug_nodes(file_path_drugs, file_path_dic_drug_smiles, drug_drug, drug_d
 		# 
 		assert len(list_drugs) == len(list_smiles), 'The length of the Drug IDs does not match the number of SMILES'
 		dict_drugid_smiles = dict(zip(list_drugs, list_smiles))
-
+		#
 		''' ## PREVIOUS IDEA
 		# FIND NODES (UNION & INTERSECT) 
 		drugs_linked_to_drugs = set(drug_drug.D1.tolist() + drug_drug.D2.tolist()) # 4418
@@ -99,9 +96,8 @@ def get_drug_nodes(file_path_drugs, file_path_dic_drug_smiles, drug_drug, drug_d
 		not_isolated_drugs = list(drugs_linked_to_drugs.union(drugs_linked_to_disease, drugs_linked_to_sideeffect, drugs_linked_to_proteins )) ### 9720
 		not_isolated_drugs.sort()
 		'''
-		# THIRD TIME no 0s
-		# only drugs from DTIs
-		drugs_linked_to_proteins = set(DTI.Drug.tolist()) # 7627 ###### <--------- THIS IS THE ONLY ONE THAT CHANGES FOR EACH DATABASE
+		# THIRD TIME no 0s: only drugs from DTIs
+		drugs_linked_to_proteins = set(dti.Drug.tolist()) # 7627 ###### <--------- THIS IS THE ONLY ONE THAT CHANGES FOR EACH DATABASE
 		not_isolated_drugs = list(drugs_linked_to_proteins)
 		# intersec with available SMILES
 		list_of_drug_nodes = list(set(not_isolated_drugs).intersection(set(list_drugs))) #  ##############---->>> ** aqui ya estaria!
@@ -111,7 +107,7 @@ def get_drug_nodes(file_path_drugs, file_path_dic_drug_smiles, drug_drug, drug_d
 		# save files
 		logging.info(f'Saving files...')
 		np.savetxt(os.path.join(file_path_drugs), list_of_drug_nodes, fmt='%s') # list
-		
+		#
 		with open(file_path_dic_drug_smiles, 'w', encoding='utf-8') as f:
 			json.dump(dict_drugid_smiles, f, ensure_ascii=False, indent=4)
 	else:
@@ -121,6 +117,7 @@ def get_drug_nodes(file_path_drugs, file_path_dic_drug_smiles, drug_drug, drug_d
 		with open(file_path_dic_drug_smiles, 'r') as f:
 			dict_drugid_smiles = json.load(f)
 	return list_of_drug_nodes, dict_drugid_smiles
+
 #sim
 #sim
 def get_drug_similarity_matrix(file_path_sim_pickle, file_path_simdrug_mat, list_of_drug_nodes, dict_drugid_smiles):
@@ -146,7 +143,8 @@ def get_drug_similarity_matrix(file_path_sim_pickle, file_path_simdrug_mat, list
 	# save csv for model
 	df_all_Sim_Tani.to_csv(file_path_simdrug_mat, sep='\t', header=False, index=False) # add here column %& index next time
 
-def get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_of_protein_nodes, list_of_protein_seqs):
+def get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_of_protein_nodes, dict_protein_sequence):
+	list_of_protein_seqs = [dict_protein_sequence[i] for i in list_of_protein_nodes] # 
 	targets_seqs = list(zip(list_of_protein_nodes, list_of_protein_seqs))
 	# get SW scores
 	tmp_path  = hf.create_remove_tmp_folder(os.path.join('/tmp/SmithWaterman' , db_name))
@@ -176,13 +174,12 @@ def get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_
 	rmtree(tmp_path) # comment for  big matrix ! 
 
 
-
 ######################################## START MAIN #########################################
 #############################################################################################
 
 def main():
 	'''
-	ff
+	DrugBank
 	'''
 	parser = argparse.ArgumentParser() 
 	parser.add_argument("-v", "--verbose", dest="verbosity", action="count", default=3,
@@ -191,7 +188,6 @@ def main():
 						"DEBUG=4")
 	parser.add_argument('-json', help="If selected, outputs a dictionary in json", action="store_true")
 	parser.add_argument("dbPath", help="Path to the database output ('BIOSNAP', 'BindingDB', 'Davis_et_al', 'DrugBank_FDA', 'E', 'GPCR', 'IC', 'NR')", type=str)
-
 	args = parser.parse_args()
 	RDLogger.DisableLog('rdApp.*')   # disablen warnigns in rdkit
 	# -) log info; 
@@ -213,13 +209,14 @@ def main():
 	logging.info(
 		'''
 		This script needs:
-			- common coordinate .tsv files (generated by get_coord.py)
-			- DTI for each model (as tsv coordinate file)
-		
+			- Common coordinate .tsv files (generated by get_coord.py)
+			- DrugBank DTI edge list 
 		Returns:
 			- mat*.txt
 			- Similarity_Matrix_Drugs.txt
 			- Similarity_Matrix_Proteins.txt
+		Considering only those nodes that have DTIs
+		=> mat_drug_protein.txt not any row/column null
 		'''
 		)
 	# OUTPUT DIRECTORY
@@ -231,21 +228,21 @@ def main():
 	# Create relative output path
 	wdir = os.path.join('../Data', db_name)
 	# wdir = '../Data/DrugBank'
-
 	##########################################
 	### FIST: LOAD DATA
 	logging.info('Loadding Data from tsv files....')
-	drug_dis = pd.read_csv(os.path.join(wdir, 'coordinates_drug_disease.tsv'), sep='\t')
-	drug_se = pd.read_csv(os.path.join(wdir, 'coordinates_drug_se.tsv'), sep='\t')
-	drug_drug = pd.read_csv(os.path.join(wdir, 'coordinates_drug_drug.tsv'), sep='\t')
+	drug_dis = pd.read_csv(os.path.join(wdir, 'edgelist_drug_disease.tsv'), sep='\t')
+	drug_se = pd.read_csv(os.path.join(wdir, 'edgelist_drug_se.tsv'), sep='\t')
+	drug_drug = pd.read_csv(os.path.join(wdir, 'edgelist_drug_drug.tsv'), sep='\t')
 	drug_drug.columns = ['D1', 'D2']
-	PPI = pd.read_csv(os.path.join(wdir,'coordinates_PPI.tsv'), sep='\t')
-	PPI.columns = ['P1', 'P2']
-	prot_dis = pd.read_csv(os.path.join(wdir, 'coordinates_protein_disease.tsv'), sep='\t', usecols=['UniprotID', 'DiseaseID'])
+	ppi = pd.read_csv(os.path.join(wdir,'edgelist_PPI.tsv'), sep='\t')
+	ppi.columns = ['P1', 'P2']
+	prot_dis = pd.read_csv(os.path.join(wdir, 'edgelist_protein_disease.tsv'), sep='\t', usecols=['UniprotID', 'DiseaseID'])
 	# this is the only one that changes in each model 
-	DTI = pd.read_csv(os.path.join(os.getcwd(), '../../DB/Data/DrugBank/DrugBank_DTIs.tsv'), sep='\t') 
-	DTI.columns = ['Drug', 'Protein']
-	DTI = DTI.drop_duplicates()
+	dti = pd.read_csv(os.path.join(os.getcwd(), '../../DB/Data/DrugBank/DrugBank_DTIs.tsv'), sep='\t') 
+	dti.columns = ['Drug', 'Protein']
+	dti = dti.drop_duplicates()
+	logging.info(f'DTI original shape {dti.shape}')
 
 	### SECOND: GET FILTERED NODES 
 	logging.info('-'*30)
@@ -254,27 +251,43 @@ def main():
 	# file_path_drugs = os.path.join(wdir, 'tmp_drugs.txt')
 	file_path_drugs = os.path.join(wdir, 'drug.txt')
 	file_path_dic_drug_smiles=  os.path.join(wdir, 'dic_smiles.json')
-	list_of_drug_nodes, dict_drugid_smiles = get_drug_nodes(file_path_drugs, file_path_dic_drug_smiles, drug_drug, drug_dis, drug_se, DTI)
-	logging.info(f'This network has {len(list_of_drug_nodes)} drug nodes')
-
+	list_of_drug_nodes, dict_drugid_smiles = get_drug_nodes(file_path_drugs, file_path_dic_drug_smiles, dti)
 	# PROTEIN NODES
 	file_path_prot = os.path.join(wdir, 'protein.txt')
 	file_path_seqs = os.path.join(wdir, 'protein_seqs.fasta')
-	list_of_protein_nodes, list_of_protein_seqs = get_protein_nodes(file_path_prot, file_path_seqs, PPI, prot_dis, DTI)
+	file_path_dic_protein_seq = os.path.join(wdir, 'dic_protein_seq.json')
+	list_of_protein_nodes, dict_protein_sequence = get_protein_nodes(file_path_prot, file_path_seqs, file_path_dic_protein_seq, dti)
+	
+	# Before continue, we need to clean from DTI those nodes that are not present in out network
+	# these are: list_of_drug_nodes, list_of_protein_nodes
+	drop_drugs = list(set(list_of_drug_nodes).symmetric_difference(dti.Drug.unique().tolist()))
+	drop_proteins = list(set(list_of_protein_nodes).symmetric_difference(dti.Protein.unique().tolist()))
+	index_drop_drugs = dti[dti.Drug.isin(drop_drugs)].index
+	dti = dti.drop(index=index_drop_drugs)
+	index_drop_proteins = dti[dti.Protein.isin(drop_proteins)].index
+	dti = dti.drop(index=index_drop_proteins)
+	# now DTI dataframe should not convert into a null row/column
+	list_of_drug_nodes = dti.Drug.unique().tolist()
+	list_of_protein_nodes = dti.Protein.unique().tolist()
+	# overwrite
+	np.savetxt(os.path.join(file_path_drugs), list_of_drug_nodes, fmt='%s') # list
+	np.savetxt(os.path.join(file_path_prot), list_of_protein_nodes, fmt='%s')
+	#########
+	# log network information
+	logging.info(f'This network has {len(list_of_drug_nodes)} drug nodes')
 	logging.info(f'This network has {len(list_of_protein_nodes)} protein nodes')
-
-	# DISEASE NODES 
+	### DISEASE NODES 
 	list_of_disease_nodes = set(drug_dis.DiseaseID).union(set(prot_dis.DiseaseID)) 
 	logging.info(f'This network has {len(list_of_disease_nodes)} disease nodes')
-
-	# SIDE EFFECT NODES
+	### SIDE EFFECT NODES
 	list_of_se_nodes = drug_se.se.unique().tolist()
 	logging.info(f'This network has {len(list_of_se_nodes)} side-effect nodes')
-
 	## number of total nodes
 	logging.info(f'This network has {len(list_of_protein_nodes) +  len(list_of_drug_nodes) + len(list_of_disease_nodes) + len(list_of_se_nodes)} nodes in total')
-
-	#################
+	
+	########################################################################
+	#######################################################################
+	'''
 	# THIRD: BUILDING MATRIX
 	# once we have the list, we have the index and columns for all matrix!!
 	logging.info('-'*30)
@@ -314,12 +327,12 @@ def main():
 	logging.info(f'        * # drug-drug interaction edges {edges_drug_drug}')
 	matrix_drug_drug.to_csv(os.path.join(wdir, 'mat_drug_drug.txt'), index=False, header=False, sep=" ") 
 
-	## Protein-Protein  Matrix
+	## Protein-Protein Matrix
 	logging.info('   - Protein Protein Matrix')
-	PPI_t = PPI[['P2','P1']]
-	PPI_t.columns = ['P1', 'P2']
-	PPI = PPI.append(PPI_t, ignore_index=True)
-	matrix_protein_protein_ = pd.get_dummies(PPI.set_index('P1')['P2']).max(level=0)
+	ppi_t = ppi[['P2','P1']]
+	ppi_t.columns = ['P1', 'P2']
+	ppi = ppi.append(ppi_t, ignore_index=True)
+	matrix_protein_protein_ = pd.get_dummies(ppi.set_index('P1')['P2']).max(level=0)
 	matrix_protein_protein_.columns
 	len(set(matrix_protein_protein_.columns))
 	logging.info(f'        * # unique proteins that interact (in HPRD) {len(set(matrix_protein_protein_.columns))}; using prot nodes: {len(list_of_protein_nodes)}')
@@ -345,8 +358,8 @@ def main():
 
 	# DTI  (DRUG - PROTEIN) ----> Changes for each Database
 	logging.info('   - Drug Protein Interaction Matrix (DTIs)')
-	DTI = DTI.drop_duplicates()
-	matrix_drug_protein_ = pd.get_dummies(DTI.set_index('Drug')['Protein']).max(level=0)
+	dti = dti.drop_duplicates()
+	matrix_drug_protein_ = pd.get_dummies(dti.set_index('Drug')['Protein']).max(level=0)
 	logging.info(f'        * # unique drugs in DTI info {len(set(matrix_drug_protein_.index))}; # unique drugs in DTI info {len(set(matrix_drug_protein_.columns))}')
 	matrix_drug_protein = pd.DataFrame(matrix_drug_protein_, columns= list_of_protein_nodes, index= list_of_drug_nodes)
 	matrix_drug_protein = matrix_drug_protein.fillna(int(0))
@@ -370,17 +383,18 @@ def main():
 	else:
 		logging.info('Matrix already in folder')
 	'''
+	
 	################## PROTEIN SIMILARITY MATRIX  
 	logging.info('-'*30)
 	logging.info('Protein Similarity Matrix....')
 	file_path_SW_pickle = os.path.join(wdir, 'prot_sim.pkl')
 	file_path_SW_mat = os.path.join(wdir, 'Similarity_Matrix_Proteins.txt')
 	if (not os.path.exists(file_path_SW_mat)):
-		get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_of_protein_nodes, list_of_protein_seqs)
+		get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_of_protein_nodes, dict_protein_sequence)
 	else:
 		logging.info('Matrix already in folder')
-	'''
-#############################################
+
+################################################################
 
 
 #####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

@@ -50,8 +50,7 @@ def main():
             - DrugBank xml file
         This script generates the following files:
             - se.txt
-            - coordinates_drug_disease.tsv
-            - coordinates_protein_disease.tsv
+            - edgelist_drug_se.tsv
         DTINet uses from SIDER the processed files:
             - mat_drug_disease.txt
             - mat_protein_disease.txt
@@ -110,7 +109,7 @@ def main():
     # finish
     logging.info(f'    Shape of coordinate file is: {coordinates_drug_se.shape}')
     logging.debug('Writing coordinate file drug-side effect...')
-    coordinates_drug_se.to_csv(os.path.join(output_path, 'coordinates_drug_se.tsv'), header=True, index=False ,sep="\t")
+    coordinates_drug_se.to_csv(os.path.join(output_path, 'edgelist_drug_se.tsv'), header=True, index=False ,sep="\t")
 
 
 #####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

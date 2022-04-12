@@ -55,8 +55,8 @@ def main():
         This script generates the following files:
             - disease.txt
             - disease_dict_map.txt (or json)
-            - coordinates_protein_disease.tsv
-            - !!! nno !! dic_drugnames_cid.json  
+            - edgelist_protein_disease.tsv
+            - edgelist_drug_disease.tsv
         
         DTINet uses from CTD the processed files:
             - mat_protein_disease.txt
@@ -159,7 +159,7 @@ def main():
     protein_disease = protein_disease.drop_duplicates()
     logging.info(f'    shape of coordinate file is: {protein_disease.shape}')
     logging.debug('Writing coordinates_protein_disease.tsv...')
-    protein_disease.to_csv(os.path.join(output_path, 'coordinates_protein_disease.tsv'), index=False, header=True, sep="\t")
+    protein_disease.to_csv(os.path.join(output_path, 'edgelist_protein_disease.tsv'), index=False, header=True, sep="\t")
 
 
     ####################### DRUG - DISEASE ASSOC ####################### ---------------------------------------->>> ******
@@ -232,12 +232,12 @@ def main():
 
     chem_dis['DrugBankID'] = chem_dis['ChemicalName'].map(drugbank_dic)
     chem_dis = chem_dis.dropna()
-    # creation of a coordinate dataframe:
+    # creation an edge list as dataframe:
     coordinates_drug_dis = chem_dis[['DrugBankID', 'DiseaseID']]
     coordinates_drug_dis = coordinates_drug_dis.drop_duplicates()
     logging.info(f'     shape of coordinate file is: {coordinates_drug_dis.shape}')
-    logging.debug('Writing coordinate file drug-disease...')
-    coordinates_drug_dis.to_csv(os.path.join(output_path, 'coordinates_drug_disease.tsv'), index=False, header=True, sep="\t")
+    logging.debug('Writing edge list file drug-disease...')
+    coordinates_drug_dis.to_csv(os.path.join(output_path, 'edgelist_drug_disease.tsv'), index=False, header=True, sep="\t")
 
 
 #####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

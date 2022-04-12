@@ -45,43 +45,47 @@ def check_and_create_folder(db_name):
 
 # funct
 def get_cid(compound_name):
-    try:
-        comp_id = pcp.get_compounds(str(compound_name), 'name')[0].cid 
-        time.sleep(2) # increase if error
-    except IndexError:
-        comp_id = np.nan
-    return comp_id
+	'''
+	Not used (?)
+	This function returns the compound id (PubChem) given a name
+	'''
+	try:
+		comp_id = pcp.get_compounds(str(compound_name), 'name')[0].cid 
+		time.sleep(2) # increase if error
+	except IndexError:
+		comp_id = np.nan
+	return comp_id
 
 def get_compound_pubchem(drug):
-    return Compound.from_cid(drug).isomeric_smiles
+	return Compound.from_cid(drug).isomeric_smiles
 
 def pubchem_to_drugbankid():
-    '''
-    Parse  DrugBank DB xml and 
-    create a dictionary from PubChemID to DrugBankID
-    '''
-    logging.debug('Reading DrugBank xml database')
-    tree = ET.parse('../../DB/Data/cross_side_information_DB/DrugBank/Data/full_database.xml')
-    logging.debug('Succesfully read!')
-    root = tree.getroot()
-    dbids = []
-    pubchemids = []
-    for drug_entry in tqdm(root, desc='Retrieving Drugbank  & PubChem ID', position=0, leave=True):
-        drugbank_ID = drug_entry.find('{http://www.drugbank.ca}drugbank-id').text
-        pubchem_id = np.nan # to not repeat id if it does not appear later
-        for props in drug_entry.findall('.//{http://www.drugbank.ca}external-identifier'):
-            for prop in props:
-                if(prop.text == 'PubChem Compound'): 
-                    pubchem_id = props[1].text
-                break # romper una vez que encuentre el pubchem 
-        dbids.append(drugbank_ID)
-        pubchemids.append(pubchem_id)
-    #
-    dic_cid_dbid = dict((zip(pubchemids, dbids)))
-    # first element is nan, delete
-    dic_cid_dbid[list(dic_cid_dbid.keys())[0]]
-    dic_cid_dbid.pop(list(dic_cid_dbid.keys())[0])
-    return dic_cid_dbid
+	'''
+	Parse  DrugBank DB xml and 
+	create a dictionary from PubChemID to DrugBankID
+	'''
+	logging.debug('Reading DrugBank xml database')
+	tree = ET.parse('../../DB/Data/cross_side_information_DB/DrugBank/Data/full_database.xml')
+	logging.debug('Succesfully read!')
+	root = tree.getroot()
+	dbids = []
+	pubchemids = []
+	for drug_entry in tqdm(root, desc='Retrieving Drugbank  & PubChem ID', position=0, leave=True):
+		drugbank_ID = drug_entry.find('{http://www.drugbank.ca}drugbank-id').text
+		pubchem_id = np.nan # to not repeat id if it does not appear later
+		for props in drug_entry.findall('.//{http://www.drugbank.ca}external-identifier'):
+			for prop in props:
+				if(prop.text == 'PubChem Compound'): 
+					pubchem_id = props[1].text
+				break # romper una vez que encuentre el pubchem 
+		dbids.append(drugbank_ID)
+		pubchemids.append(pubchem_id)
+	#
+	dic_cid_dbid = dict((zip(pubchemids, dbids)))
+	# first element is nan, delete
+	dic_cid_dbid[list(dic_cid_dbid.keys())[0]]
+	dic_cid_dbid.pop(list(dic_cid_dbid.keys())[0])
+	return dic_cid_dbid
 
 def get_drug_drug_coordinates(drug_entry, drug_drug_coodinates):
 	drugbank_ID = drug_entry.find('{http://www.drugbank.ca}drugbank-id').text
@@ -92,18 +96,18 @@ def get_drug_drug_coordinates(drug_entry, drug_drug_coodinates):
 	return drug_drug_coodinates
 
 def select_drugbankid(x):
-    '''
-    This function returns the pubchem id depending on what code is available in data
+	'''
+	This function returns the pubchem id depending on what code is available in data
 	in order to retrieve the max possible information.
-    '''
-    if x['Pubchem_map_flat'] == x['Pubchem_map_stereo']:
-        return x['Pubchem_map_flat']
-    elif (x['Pubchem_map_flat'] !=x['Pubchem_map_stereo'] and (x['Pubchem_map_stereo']) != np.nan ) :
-        return x['Pubchem_map_stereo']
-    elif (x['Pubchem_map_flat'] !=x['Pubchem_map_stereo'] and (np.isnan(x['Pubchem_map_flat']) == False)):
-        return x['Pubchem_map_flat']
-    else:
-        return np.nan
+	'''
+	if x['Pubchem_map_flat'] == x['Pubchem_map_stereo']:
+		return x['Pubchem_map_flat']
+	elif (x['Pubchem_map_flat'] !=x['Pubchem_map_stereo'] and (x['Pubchem_map_stereo']) != np.nan ) :
+		return x['Pubchem_map_stereo']
+	elif (x['Pubchem_map_flat'] !=x['Pubchem_map_stereo'] and (np.isnan(x['Pubchem_map_flat']) == False)):
+		return x['Pubchem_map_flat']
+	else:
+		return np.nan
 
 def read_fasta(path):
 	names=[]
@@ -141,15 +145,14 @@ def check_and_create_fasta(target, seq):
 		fasta1 = write_fasta(PATH, target, seq)
 	return fasta1
 
-# SW
 
 def get_amino_uniprot(proteinID):
-    r = requests.get(f'https://www.uniprot.org/uniprot/{proteinID}.fasta')
-    if r.status_code == 200 and r.text:
-        return (proteinID, ''.join(r.text.split('\n')[1:]))
-    else: 
-        #print('Protein sequence not found in uniprot database')
-        return (proteinID, None)
+	r = requests.get(f'https://www.uniprot.org/uniprot/{proteinID}.fasta')
+	if r.status_code == 200 and r.text:
+		return (proteinID, ''.join(r.text.split('\n')[1:]))
+	else: 
+		#print('Protein sequence not found in uniprot database')
+		return (proteinID, None)
 
 
 def get_pairwise_tanimoto(smiles1,smiles2, dic): #dic == smile2fp
@@ -167,28 +170,28 @@ def get_pairwise_tanimoto(smiles1,smiles2, dic): #dic == smile2fp
 
 #
 def check_drug(drug_entry):
-    try:
-        drugbank_ID = drug_entry.find('{http://www.drugbank.ca}drugbank-id').text
-        kegg_index = [ _.text for _ in drug_entry.findall('.//{http://www.drugbank.ca}resource')].index('KEGG Drug')
-        kegg_ID = drug_entry.findall('.//{http://www.drugbank.ca}identifier')[kegg_index].text
-        return drugbank_ID, kegg_ID
-    except ValueError:
-        return None, None
+	try:
+		drugbank_ID = drug_entry.find('{http://www.drugbank.ca}drugbank-id').text
+		kegg_index = [ _.text for _ in drug_entry.findall('.//{http://www.drugbank.ca}resource')].index('KEGG Drug')
+		kegg_ID = drug_entry.findall('.//{http://www.drugbank.ca}identifier')[kegg_index].text
+		return drugbank_ID, kegg_ID
+	except ValueError:
+		return None, None
 
 def get_dict_kegg2db():
-    logging.debug('Reading DrugBank xml file...')
-    tree = ET.parse('../../DB/Data/cross_side_information_DB/DrugBank/Data/full_database.xml')
-    logging.debug('Succesfully read!')
-    root = tree.getroot()
-    dbids = []
-    keggids = []
-    for drug_entry in tqdm(root):
-        drugbank_ID, kegg_ID = check_drug(drug_entry)
-        if drugbank_ID and kegg_ID:
-            dbids.append(drugbank_ID)
-            keggids.append(kegg_ID)
-    kegg2db = dict(zip(keggids, dbids))
-    return kegg2db
+	logging.debug('Reading DrugBank xml file...')
+	tree = ET.parse('../../DB/Data/cross_side_information_DB/DrugBank/Data/full_database.xml')
+	logging.debug('Succesfully read!')
+	root = tree.getroot()
+	dbids = []
+	keggids = []
+	for drug_entry in tqdm(root):
+		drugbank_ID, kegg_ID = check_drug(drug_entry)
+		if drugbank_ID and kegg_ID:
+			dbids.append(drugbank_ID)
+			keggids.append(kegg_ID)
+	kegg2db = dict(zip(keggids, dbids))
+	return kegg2db
 
 def get_smiles(drug_entry):
 	'''
@@ -267,18 +270,22 @@ def write_all_fastas(fastas, path):
 
 
 def drugname_drugbankid():
-    tree = ET.parse('../../DB/Data/DrugBank/full_database.xml')
-    root = tree.getroot()
-    drugbank_dic = {} # dict with generic or product name as key and drugbank_id as value
-    for drug_entry in tqdm(root):
-        drugbank_ID = drug_entry.find('{http://www.drugbank.ca}drugbank-id').text
-        #if drugbank_ID in all_entries:
-        name = drug_entry.find('{http://www.drugbank.ca}name').text.lower()
-        prod = drug_entry.find('{http://www.drugbank.ca}products')
-        prod_names = set([brandname.find('{http://www.drugbank.ca}name').text.upper() for brandname in prod])
-        if name:
-            drugbank_dic[name] = drugbank_ID
-        if len(prod_names) >= 1:
-            for prod in prod_names:
-                drugbank_dic[prod] = drugbank_ID
-    return drugbank_dic
+	'''
+	This function creates a dictionary from drugbank name to DrugbankID
+	(parsin the DrugBank xml file)
+	'''
+	tree = ET.parse('../../DB/Data/DrugBank/full_database.xml')
+	root = tree.getroot()
+	drugbank_dic = {} # dict with generic or product name as key and drugbank_id as value
+	for drug_entry in tqdm(root):
+		drugbank_ID = drug_entry.find('{http://www.drugbank.ca}drugbank-id').text
+		#if drugbank_ID in all_entries:
+		name = drug_entry.find('{http://www.drugbank.ca}name').text.lower()
+		prod = drug_entry.find('{http://www.drugbank.ca}products')
+		prod_names = set([brandname.find('{http://www.drugbank.ca}name').text.upper() for brandname in prod])
+		if name:
+			drugbank_dic[name] = drugbank_ID
+		if len(prod_names) >= 1:
+			for prod in prod_names:
+				drugbank_dic[prod] = drugbank_ID
+	return drugbank_dic

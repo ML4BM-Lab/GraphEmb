@@ -50,7 +50,7 @@ def main():
         This script generates the following files:
             - all_protein.txt 
             - protein_dict_map.txt (or json)
-            - coordinates_PPI.tsv
+            - edgelist_PPI.tsv
         DTINet uses from HPRD:
             - protein.txt 
             - protein_dict_map.txt
@@ -123,7 +123,7 @@ def main():
     df_PPI = df_PPI.drop_duplicates()
     # save coordinate files
     logging.debug(f'Writting PPI coordinate file...')
-    df_PPI.to_csv(os.path.join(output_path, 'coordinates_PPI.tsv'), index=False, header=True, sep='\t')
+    df_PPI.to_csv(os.path.join(output_path, 'edgelist_PPI.tsv'), index=False, header=True, sep='\t')
     logging.info(f'    Shape of coordinate file is: {df_PPI.shape}')
 
     ########### 
