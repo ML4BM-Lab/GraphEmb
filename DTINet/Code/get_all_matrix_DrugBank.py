@@ -308,7 +308,7 @@ def main():
 	
 	########################################################################
 	#######################################################################
-
+	'''
 	# THIRD: BUILDING MATRIX
 	# once we have the list, we have the index and columns for all matrix!!
 	logging.info('-'*30)
@@ -413,7 +413,7 @@ def main():
 		get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_of_protein_nodes, dict_protein_sequence)
 	else:
 		logging.info('Matrix already in folder')
-	'''
+
 ################################################################
 
 

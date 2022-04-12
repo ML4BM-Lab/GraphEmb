@@ -17,6 +17,7 @@ Script that calls:
       2. process_SIDER_DTINet.py
       3. process_CTD_DTINet.py
       4. process_DrugBank.py
+-- DTI tsv ! 
 2. get_all_matrix_DrugBank.py
     This script obtains the DTIs and uses the output from previous script to create the needed matrix. 
 
