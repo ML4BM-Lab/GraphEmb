@@ -20,8 +20,6 @@ logging.basicConfig()
 logging.getLogger('').setLevel(logging.INFO)
 '''
 
-### need to change disease  & se nodes
-
 ####
 # run with no 0s
 # changing here fot yamanishi DTIs
@@ -198,7 +196,8 @@ def main():
 	fmt = '[%(levelname)s] %(message)s'
 	logging.basicConfig(format=fmt, level=level)
 
-    #######
+	#######
+	logging.info("========= Creating matrices =========")
 	### log output detals
 	logging.info(
 		'''
@@ -282,7 +281,7 @@ def main():
 	index_drop_se = drug_se[drug_se.DrugBank_ID.isin(drop_se_drugs)].index
 	drug_se = drug_se.drop(index=index_drop_se)
 	list_of_se_nodes = drug_se.se.unique().tolist()
-    
+
 	# Overwrite files for matrix w\o header / index
 	np.savetxt(file_path_drugs, list_of_drug_nodes, fmt='%s') # list
 	np.savetxt((file_path_prot), list_of_protein_nodes, fmt='%s')
@@ -308,7 +307,7 @@ def main():
 	######### Drug-Disease Matrix
 	logging.info('   - Drug Disease Matrix')
 	matrix_drug_dis_ = pd.get_dummies(drug_dis.set_index('DrugBankID')['DiseaseID']).max(level=0) 
-	logging.info(f'        * # unique diseases in drugs {len(set(matrix_drug_dis_.columns))} from {len(list_of_disease_nodes)} total nodes')
+	#logging.info(f'        * # unique diseases in drugs {len(set(matrix_drug_dis_.columns))} from {len(list_of_disease_nodes)} total nodes')
 	matrix_drug_dis = pd.DataFrame(matrix_drug_dis_, columns= list_of_disease_nodes, index= list_of_drug_nodes)
 	matrix_drug_dis = matrix_drug_dis.fillna(int(0))
 	matrix_drug_dis = matrix_drug_dis.astype(int)
@@ -330,7 +329,7 @@ def main():
 	## Drug Drug Matrix  
 	logging.info('   - Drug Drug Matrix')
 	matrix_drug_drug_ = pd.get_dummies(drug_drug.set_index('D1')['D2']).max(level=0)
-	logging.info(f'        * # unique drugs * that interact {len(set(matrix_drug_drug_.columns))}')
+	#logging.info(f'        * # unique drugs * that interact {len(set(matrix_drug_drug_.columns))}')
 	matrix_drug_drug = pd.DataFrame(matrix_drug_drug_, columns= list_of_drug_nodes, index= list_of_drug_nodes)
 	matrix_drug_drug = matrix_drug_drug.fillna(int(0))
 	matrix_drug_drug = matrix_drug_drug.astype(int)
@@ -347,7 +346,7 @@ def main():
 	matrix_protein_protein_ = pd.get_dummies(ppi.set_index('P1')['P2']).max(level=0)
 	matrix_protein_protein_.columns
 	len(set(matrix_protein_protein_.columns))
-	logging.info(f'        * # unique proteins that interact (in HPRD) {len(set(matrix_protein_protein_.columns))}; using prot nodes: {len(list_of_protein_nodes)}')
+	#logging.info(f'        * # unique proteins that interact (in HPRD) {len(set(matrix_protein_protein_.columns))}; using prot nodes: {len(list_of_protein_nodes)}')
 	matrix_protein_protein = pd.DataFrame(matrix_protein_protein_, columns= list_of_protein_nodes, index= list_of_protein_nodes)
 	matrix_protein_protein = matrix_protein_protein.fillna(int(0))
 	matrix_protein_protein = matrix_protein_protein.astype(int)
@@ -359,7 +358,7 @@ def main():
 	# Protein Disease Matrix 
 	logging.info('   - Protein Disease Matrix')
 	matrix_prot_dis_ = pd.get_dummies(prot_dis.set_index('UniprotID')['DiseaseID']).max(level=0)
-	logging.info(f'        * # unique drugs * that interact {len(set(matrix_prot_dis_.columns))}')
+	#logging.info(f'        * # unique drugs * that interact {len(set(matrix_prot_dis_.columns))}')
 	prot_dis.drop_duplicates()
 	matrix_prot_dis = pd.DataFrame(matrix_prot_dis_, columns= list_of_disease_nodes, index= list_of_protein_nodes)
 	matrix_prot_dis = matrix_prot_dis.fillna(int(0))
@@ -372,7 +371,7 @@ def main():
 	logging.info('   - Drug Protein Interaction Matrix (DTIs)')
 	dti = dti.drop_duplicates()
 	matrix_drug_protein_ = pd.get_dummies(dti.set_index('Drug')['Protein']).max(level=0)
-	logging.info(f'        * # unique drugs in DTI info {len(set(matrix_drug_protein_.index))}; # unique drugs in DTI info {len(set(matrix_drug_protein_.columns))}')
+	#logging.info(f'        * # unique drugs in DTI info {len(set(matrix_drug_protein_.index))}; # unique drugs in DTI info {len(set(matrix_drug_protein_.columns))}')
 	matrix_drug_protein = pd.DataFrame(matrix_drug_protein_, columns= list_of_protein_nodes, index= list_of_drug_nodes)
 	matrix_drug_protein = matrix_drug_protein.fillna(int(0))
 	matrix_drug_protein = matrix_drug_protein.astype(int)
@@ -405,13 +404,15 @@ def main():
 	else:
 		logging.info('Matrix already in folder')
 
+	logging.info(f'All preprocessing done for {DB_PATH}!!!')
+
 ################################################################
 
 
 #####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 if __name__ == "__main__":
-    main()
+	main()
 #####-------------------------------------------------------------------------------------------------------------
 ####################### END OF THE CODE ##########################################################################
 
