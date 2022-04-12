@@ -1,8 +1,12 @@
 # Preprocessing of Databases
 
-Run (file not available yet)
+Run (file not available for all databases yet)
 ```
-python3 preprocessing_DTINet_DrugBank.py (for example, not available yet)
+python3 run_preprocess_Yamanisihi.py 
+python3 run_preprocess_DrugBank.py *
+python3 run_preprocess_BIOSNAP.py *
+python3 run_preprocess_Davis.py *
+python3 run_preprocess_BindingDB.py *
 ```
 
 Script that calls:
