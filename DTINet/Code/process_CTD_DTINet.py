@@ -53,7 +53,6 @@ def main():
             - all_protein.txt
         
         This script generates the following files:
-            - disease.txt
             - disease_dict_map.txt (or json)
             - edgelist_protein_disease.tsv
             - edgelist_drug_disease.tsv
@@ -95,8 +94,8 @@ def main():
     # dis_dict.DiseaseID = dis_dict.iloc[:, 1:2].applymap(lambda s: s[5:] if type(s) == str else s)
 
     # export to files:::: diseases.txt is a list of diseases
-    logging.debug(f'Writting disease.txt')
-    np.savetxt(os.path.join(output_path,'disease.txt') , dis_dict.DiseaseName.values, newline='\n', fmt='%s')
+    #logging.debug(f'Writting disease.txt')
+    #np.savetxt(os.path.join(output_path,'disease.txt') , dis_dict.DiseaseName.values, newline='\n', fmt='%s')
     # export to files:::: disease_dict_map.txt is a disctionary of diseases and identifiers
     logging.debug(f'Writting disease_dict_map.txt')
     np.savetxt(os.path.join(output_path, 'disease_dict_map.txt'), dis_dict.DiseaseName.values + ',' + dis_dict.DiseaseID.values, newline='\n', fmt='%s')

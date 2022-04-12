@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import logging
 import argparse
-import requests
 import helper_functions_dtinet as hf
 
 
@@ -53,10 +52,6 @@ def main():
     # Create relative output path
     wdir = os.path.join('../Data', db_name)
     logging.debug(f'working directory is: {wdir}')
-    # wdir = '../Data/DrugBank'
-    # load yamanishi data --> change when creating function <<<<< PARSE !
-    # yamdb = 'E' # change here for go to other DB
-    # wdir = '../Data/Yamanashi_et_al_GoldStandard/' + yamdb
     colnames_data = ['Kegg_ID', 'Gene']
     data_path = '../../DB/Data/Yamanashi_et_al_GoldStandard/' + DB_PATH.upper()+'/interactions/' + DB_PATH.lower() +'_admat_dgc_mat_2_line.txt'
     df = pd.read_csv(data_path, header = None, names = colnames_data, index_col=False, sep='\t')
@@ -64,7 +59,7 @@ def main():
     logging.debug(f'{(df.head(2))}')
 
     # change from hsa: to Uniprot ---> wget 
-    ##
+    logging.info('Loading hsa2uni dictionary...')
     hsa2uni = hf.get_dict_hsa2uni()
     ##
     '''
@@ -78,7 +73,7 @@ def main():
     df['Uniprot'] = df['Gene'].map(hsa2uni)
     logging.debug(f'{(df.head(2))}')
     # Change from KEGG Drug ID to DrugBank  
-    logging.debug("Loading kegg2db dict...")
+    logging.debug("Loading kegg2db dictionary...")
     kegg2db = hf.get_dict_kegg2db()
     df['DrugBank_ID'] = df['Kegg_ID'].map(kegg2db)
     # Process df before saving
