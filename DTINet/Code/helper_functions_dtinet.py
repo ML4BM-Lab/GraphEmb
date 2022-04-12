@@ -236,6 +236,22 @@ def get_dict_hsa2uni():
 			hsa.append(hsai)
 	return dict(zip(hsa, up))
 
+
+def get_dict_kegg2pubchemsid():
+	'''
+	http://rest.kegg.jp/conv/drug/pubchem 
+	return a dict to change from kegg to PubChem ID SID!!
+	'''
+	r = requests.get('http://rest.kegg.jp/conv/drug/pubchem')
+	rlines = r.text.split('\n')
+	pubs, keggs = [], []
+	for line in rlines:
+		if line != '':
+			pub, kegg = line.split('\t')
+			pubs.append(pub.lstrip('pubchem:'))
+			keggs.append(kegg.lstrip('dr:'))
+	return dict(zip(keggs, pubs))
+
 # new from get_SW_score_Yamanishi.py in DTI2Vec
 def get_SW_score(pair1, pair2, tmp_path):
 	target1, _ = pair1
