@@ -49,3 +49,11 @@ Script that calls:
     - Side-effect nodes
     - drug-side-effect associations 
 
+## Execute docker
+
+
+#### Create container from image (specifying name)
+```
+$ docker run --name dtinet_original -it dtinet_matlab bash
+```
+.... WORKING HERE ....
