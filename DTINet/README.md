@@ -57,8 +57,49 @@ Script that calls:
 ## Execute docker
 
 
-#### Create container from image (specifying name)
+##### Create container from image (specifying name)
+
 ```
 $ docker run --name dtinet_original -it dtinet_matlab bash
 ```
 .... WORKING HERE ....
+
+##### Keep
+```
+$ docker restart dtinet_original 
+```
+
+#### Copy files
+```
+docker cp  /home/uveleiro/data/jfuente/DTI/Input4Models/DTINet/Data/DrugBank dtinet_drugbank:/DTINet
+```
+
+#### entrar
+docker exec -it dtinet_original bash
+
+##### remove files in folders if necesary (data, feature, network)
+avoid any problem. safety check,
+
+#### copy files from folder to data
+mat*.txt, Sim*.txt
+
+#### Run DTINet Matlab Scripts
+First time it will ask for a Email & Pasword
+```
+matlab -nodisplay -nosplash -nodesktop -r "run('src/compute_similarity.m');exit;"
+
+matlab -nodisplay -nosplash -nodesktop -r "run('src/run_DCA.m');exit;"
+
+matlab -nodisplay -nosplash -nodesktop -r "run('src/run_DTINet.m');exit;"
+```
+last one mayabe is better to execute as nohup
+
+
+#### Outside docker & nohup
+```
+nohup docker exec nombre_container python3 /..../..../.py > path2file.out &
+#el file.out se guarda en margaret
+```
+
+#### inside docker
+nohup  matlab -nodisplay -nosplash -nodesktop -r "run('src/run_DTINet.m');exit;" > log_DTINet_DrugBank.out &

@@ -16,6 +16,7 @@ from pubchempy import Compound
 from rdkit import Chem
 from rdkit import DataStructs
 import multiprocessing as mp
+import random
 
 '''
 from importlib import reload
@@ -290,8 +291,10 @@ def drugname_drugbankid():
 	This function creates a dictionary from drugbank name to DrugbankID
 	(parsin the DrugBank xml file)
 	'''
+	logging.debug("Reading xml")
 	tree = ET.parse('../../DB/Data/DrugBank/full_database.xml')
 	root = tree.getroot()
+	logging.debug("creating dict")
 	drugbank_dic = {} # dict with generic or product name as key and drugbank_id as value
 	for drug_entry in tqdm(root):
 		drugbank_ID = drug_entry.find('{http://www.drugbank.ca}drugbank-id').text
@@ -305,3 +308,44 @@ def drugname_drugbankid():
 			for prod in prod_names:
 				drugbank_dic[prod] = drugbank_ID
 	return drugbank_dic
+
+
+
+def get_dic_cid2sid(drug_list, chunk_size = 100, time_sleep = 1):
+	'''
+	*** explain ***
+	'''
+	n = chunk_size
+	list_drug_list = [drug_list[i:i + n] for i in range(0, len(drug_list), n)]
+	d = {}
+	for lts in tqdm(list_drug_list):
+		pclist = ','.join(lts)
+		r = requests.get(f'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{pclist}/sids/JSON')
+		data = r.json()['InformationList']['Information'] #data is a list of dictionaries
+		for dicti in data:
+			if dicti.get('SID'):
+				cid = str(dicti.get('CID'))
+				sids = [str(si) for si in dicti.get('SID')]
+				d[cid] = sids
+		time.sleep(time_sleep)
+	return d
+
+
+def get_dic_cid2syn(drug_list, chunk_size = 100, time_sleep = 1):
+	'''
+	*** explain ***
+	'''
+	n = chunk_size
+	list_drug_list = [drug_list[i:i + n] for i in range(0, len(drug_list), n)]
+	d = {}
+	for lts in tqdm(list_drug_list):
+		pclist = ','.join(lts)
+		r = requests.get(f'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{pclist}/synonyms/JSON')
+		data = r.json()['InformationList']['Information'] #data is a list of dictionaries
+		for dicti in data:
+			if dicti.get('Synonym'):
+				cid = str(dicti.get('CID'))
+				syns = [str(si) for si in dicti.get('Synonym')]
+				d[cid] = syns
+		time.sleep(time_sleep)
+	return d
