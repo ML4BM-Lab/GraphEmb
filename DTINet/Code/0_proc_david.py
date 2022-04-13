@@ -11,6 +11,19 @@ import requests
 import logging
 
 
+'''
+def get_cid2sid(file_path_dict_cid2sid, list_cids):
+	if (not os.path.exists(file_path_dict_cid2sid)):
+		logging.debug('dic_cid2sid.json does not exist, creating it...')
+		cid2sid = hf.get_dic_cid2sid(list_cids)
+		with open(file_path_dict_cid2sid, 'w') as outfile:
+			json.dump(cid2sid, outfile)
+	else:
+		logging.debug('Reading dic_cid2sid.json')
+		with open(file_path_dict_cid2sid, 'r') as f:
+			cid2sid = json.load(f)
+	return cid2sid
+'''
 
 logging.basicConfig()
 logging.getLogger('').setLevel(logging.DEBUG)
