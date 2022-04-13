@@ -36,21 +36,21 @@ def main():
 	paper_cite = 'https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-016-0890-3'
 	logging.info(f'\n{paper_cite}\n')
 	DB_PATH = args.dbPath
-	# DB_PATH =  './../../DB/Data/Davis_et_al/Davis_30.tsv'
+	# DB_PATH =  './../../DB/Data/Davis_et_al/tdc_package_preprocessing/DAVIS_et_al.tsv'
 	logging.info(f'Reading database from: {DB_PATH}')
 	db_name = hf.get_DB_name(DB_PATH)
 
 	drugs = list(set(hf.get_drugs_Davis(DB_PATH)))
 
 	sider_SE_dict = hf.get_side_effects_sider('./../../DB/Data/cross_side_information_DB/SIDER/meddra_all_se.tsv')
-	davis_SIDER_dict = hf.get_Davis_SIDER_dict('./../../DB/Data/cross_side_information_DB/STITCH/dict_STITCH_PC.tsv')
+	davis_SIDER_dict = hf.get_PubChem_SIDER_dict('./../../DB/Data/cross_side_information_DB/STITCH/dict_STITCH_PC.tsv')
 
 	drug_side_effects = []
 	all_side_effects = []
 	for drug in drugs:
-		kegg_stitch_ID = davis_SIDER_dict.get(str(drug), None)
-		if kegg_stitch_ID:
-			sider_SE = sider_SE_dict.get(kegg_stitch_ID, None)
+		davis_stitch_ID = davis_SIDER_dict.get(str(drug), None)
+		if davis_stitch_ID:
+			sider_SE = sider_SE_dict.get(davis_stitch_ID, None)
 			if sider_SE:
 				all_side_effects.append(sider_SE)
 				drug_side_effects.append((drug, sider_SE))
@@ -84,6 +84,7 @@ def main():
 
 	path = hf.check_and_create_folder(db_name)
 	sider_bit.to_csv(os.path.join(path, 'Davis_Drug_SIDER_SideEffect.tsv'), sep='\t')
+	sider_bit.to_pickle(os.path.join(path, 'Davis_Drug_SIDER_SideEffect.pickle'))
 
 
 #####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

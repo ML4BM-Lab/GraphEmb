@@ -5,12 +5,20 @@ import zipfile
 import urllib.request
 from tqdm import tqdm
 import requests
+import itertools 
+import xml.etree.ElementTree as ET
+import pubchempy as pcp
+import multiprocessing as mp 
+from random import randint
+from time import sleep
+from parallelbar import progress_map
 
 def get_DB_name(path):
 	"""
 	This function returns the name of the DB.
 	"""
-	DB_NAMES = ['bindingDB', 'BindingDB', 'Davis_et_al', 'DrugBank', 'E', 'GPCR', 'IC', 'NR']
+	DB_NAMES = ['bindingDB', 'BindingDB', 'Davis_et_al', 'DrugBank', 
+	'E', 'GPCR', 'IC', 'NR', 'BIOSNAP']
 	for db in DB_NAMES:
 		if re.search(db, path):
 			logging.info(f'Database: {db}')
@@ -21,6 +29,18 @@ def get_DB_name(path):
 				return db
 	logging.error(f'Database: {db} not found')
 	sys.exit('Please provide a valid database')
+
+def read_dtis(path):
+	""""
+	Read the dti file and return the dti along with 
+	the numerical dictionary sorted by name
+	"""
+	with open(path, 'r') as f:
+		dtis = f.readlines()
+	dtis = [entry.strip().split('\t') for entry in dtis]
+	all_elements = list(set(element for entry in dtis for element in entry))
+	dictionary = {node : index  for index, node  in enumerate(sorted(all_elements))}
+	return dtis, dictionary 
 
 def read_and_extract_drugs(path):
 	drugs = []
@@ -35,7 +55,7 @@ def get_drugs_bindingDB(path):
 	with open(path, 'r') as f:
 		_ = next(f)
 		drugs = f.readlines()
-	drugs = [entry.strip().split('\t')[6] for entry in drugs]
+	drugs = [int(float(entry.strip().split('\t')[1])) for entry in drugs]
 	return drugs
 
 def get_drugs_Davis(path):
@@ -50,6 +70,13 @@ def get_drugs_DrugBank(path):
 	drugs = []
 	with open(path, 'r') as f:
 		_ = next(f)
+		drugs = f.readlines()
+	drugs = [entry.strip().split('\t')[0] for entry in drugs]
+	return drugs
+
+def get_drugs_BIOSNAP(path):
+	with open(path, 'r') as f:
+		_= next(f)
 		drugs = f.readlines()
 	drugs = [entry.strip().split('\t')[0] for entry in drugs]
 	return drugs
@@ -209,12 +236,12 @@ def get_freqs(drug, keywords, fda_dict, keyword_freq_percent, id_aers_dict):
 	return drug_kw_vector
 
 def clean_name(blacklist, drug_name):
-    drug_name_cleaned = re.sub(r'\([^)]*\)', '', drug_name)
-    drug_name_cleaned = re.sub("[(,)]","", drug_name_cleaned)
-    drug_name_cleaned = re.sub("[\d]+","", drug_name_cleaned)
-    drug_name_cleaned = [word for word in drug_name_cleaned.split() if word not in blacklist]
-    drug_name_cleaned = ' '.join(drug_name_cleaned).strip()
-    return drug_name_cleaned
+	drug_name_cleaned = re.sub(r'\([^)]*\)', '', drug_name)
+	drug_name_cleaned = re.sub("[(,)]","", drug_name_cleaned)
+	drug_name_cleaned = re.sub("[\d]+","", drug_name_cleaned)
+	drug_name_cleaned = [word for word in drug_name_cleaned.split() if word not in blacklist]
+	drug_name_cleaned = ' '.join(drug_name_cleaned).strip()
+	return drug_name_cleaned
 
 def get_frequencies(fda_DB_dict, all_events, freq_percentage, drugs, unique_keywords_vector):
 	#IdDrug dict
@@ -298,17 +325,7 @@ def get_Kegg_SIDER_dict(path):
 def get_yamanashi_subDB(path):
 	return re.search(r'(?<=\/)[\w]+', path).group()
 
-# def get_Davis_SIDER_dict(path):
-# 	logging.info('Creating correlations Davis-STITCH')
-# 	CID_PATTERN = re.compile(r'(?<=CIDm)[\d]+')
-# 	with open(path, 'r') as fl:
-# 		_ = next(fl)
-# 		dictionary = fl.readlines()
-# 	dictionary = [(entry.strip().split('\t')) for entry in dictionary]
-# 	dictionary = [(entry[-1], CID_PATTERN.search(entry[0]).group()) for entry in tqdm(dictionary, desc='Creating dictionary')  ]
-# 	return dict(dictionary)
-
-def get_Davis_SIDER_dict(path):
+def get_PubChem_SIDER_dict(path):
 	logging.info('Creating correlations Davis-STITCH')
 	CID_PATTERN = re.compile(r'(?<=CIDm)[\d]+')
 	dictionary = {}
@@ -324,3 +341,142 @@ def get_Davis_SIDER_dict(path):
 			# else:
 			# 	dictionary[pc_id] = [stitch]
 	return dictionary
+
+def get_Binding_to_Pubchem(drugs):
+	tree = ET.parse('./../../DB/Data/cross_side_information_DB/DrugBank/Data/full_database.xml')
+	root = tree.getroot()
+	binding_to_pbC = {}
+	for drug_entry in tqdm(root, desc='retrieving Pubchem IDs'):
+		drugbank_ID = drug_entry.find('{http://www.drugbank.ca}drugbank-id').text
+		if drugbank_ID in drugs:
+			external_ids =  drug_entry.find('{http://www.drugbank.ca}external-identifiers')
+			if external_ids is not None:
+				all_ext_ids = [ext_id[0].text for ext_id in external_ids]
+			if 'PubChem Compound' in all_ext_ids:
+				binding_to_pbC[drugbank_ID] = external_ids[all_ext_ids.index('PubChem Compound')][1].text
+				continue
+			elif 'PubChem Substance' in all_ext_ids:
+				binding_to_pbC[drugbank_ID] = external_ids[all_ext_ids.index('PubChem Substance')][1].text
+				continue
+			else:
+				logging.debug('Drug from DB not found in PubChem: {}'.format(drugbank_ID))
+	return binding_to_pbC
+
+def get_STITCH_from_Pubchem(compounds, substances):
+	pubchem_to_stitch = {}
+	with open('./../../DB/Data/cross_side_information_DB/STITCH/dict_STITCH_PC.tsv', 'r') as fl:
+		_ = next(fl)
+		for line in tqdm(fl, desc='Creating dictionary with Compounds', total=68_373_242):
+			ln = line.strip().split('\t')
+			if ln[-1] in compounds:
+				pubchem_to_stitch[ln[-1]] = ln[0]
+
+	with open('./../../DB/Data/cross_side_information_DB/STITCH/dict_STITCH_PS.tsv', 'r') as fl:
+		_ = next(fl)
+		for line in tqdm(fl, desc='Creating dictionary with Substances', total=192_713_372):
+			ln = line.strip().split('\t')
+			if ln[-1] in substances:
+				pubchem_to_stitch[ln[-1]] = ln[0]
+
+	return pubchem_to_stitch
+
+# def get_names_from_Pubchem(drugs):
+# 	synonyms = 3
+# 	pbchem_to_names = {}
+# 	for drug in tqdm(drugs, desc='Retrieving names from Pubchem'):
+# 		names = pcp.get_synonyms(str(drug))
+# 		sleep(randint(1,5))
+# 		if names:
+# 			names = names[0].get('Synonym')[:synonyms]
+# 			for name in names:
+# 				pbchem_to_names[name] = drug
+# 		else:
+# 			id = pcp.Substance.from_sid(drug).cids
+# 			if  id:
+# 				names = pcp.get_synonyms(id)
+# 				if names:
+# 					names = names[0].get('Synonym')[:synonyms]
+# 					for name in names:
+# 						pbchem_to_names[name] = drug
+# 				else:
+# 					logging.debug('Drug not found in Pubchem: {}'.format(drug))
+# 			else:
+# 					logging.debug('Drug not found in Pubchem: {}'.format(drug))
+# 	return pbchem_to_names
+
+
+# def get_names_from_Pubchem_mp(drugs, ncores):
+# 	results = progress_map(get_names_from_pubchem, drugs, n_cpu=ncores, chunk_size=1, core_progress=True)
+# 	# with mp.Pool(ncores) as pool:
+# 	# 	results = pool.map(get_names_from_pubchem, drugs)
+# 	return results
+
+
+# def get_names_from_pubchem(drug):
+# 	synonyms = 3
+# 	names = pcp.get_synonyms(str(drug))
+# 	sleep(randint(1,5))
+# 	if names:
+# 		names = names[0].get('Synonym')[:synonyms]
+# 		return((drug, names))
+# 	else:
+# 		id = pcp.Substance.from_sid(drug).cids
+# 		if  id:
+# 			names = pcp.get_synonyms(id)
+# 			if names:
+# 				names = names[0].get('Synonym')[:synonyms]
+# 				return((drug, names))
+
+
+def getDB_from_binding(drugs,root=None):
+	binding_to_DB = {}
+	if not root:
+		tree = ET.parse('./../../DB/Data/cross_side_information_DB/DrugBank/Data/full_database.xml')
+		root = tree.getroot()
+	for drug_entry in tqdm(root, desc='Retrieving DB IDs'):
+		drugbank_ID = drug_entry.find('{http://www.drugbank.ca}drugbank-id').text
+		external_ids =  drug_entry.find('{http://www.drugbank.ca}external-identifiers')
+		if external_ids is not None:
+			all_ext_ids = [ext_id[0].text for ext_id in external_ids]
+		if 'PubChem Compound' in all_ext_ids:
+			pubchem_compound = int(external_ids[all_ext_ids.index('PubChem Compound')][1].text)
+			if pubchem_compound in drugs:
+				binding_to_DB[pubchem_compound] = drugbank_ID
+				continue
+		elif 'PubChem Substance' in all_ext_ids:
+			pubchem_substance =  external_ids[all_ext_ids.index('PubChem Substance')][1].text
+			if pubchem_substance in drugs:
+				binding_to_DB[pubchem_substance] = drugbank_ID
+				continue
+	return binding_to_DB
+
+def get_drugNames_from_Pubchem_web(drugs):
+	puchchem_id_name = {}
+	SYNONYMS = 5
+	# split the list in chunks of 1000 to make requests
+	size = 100
+	drugs = [str(drug) for drug in drugs]
+	split_list= lambda big_list, x: [big_list[i:i+x] for i in range(0, len(big_list), x)]
+	drug_chunks = split_list(drugs, size)
+	for chunk in tqdm(drug_chunks):
+		chunk = ','.join(chunk)
+		url = f'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{chunk}/synonyms/json'
+		response = requests.get(url)
+		if response.status_code == 200:
+			jsons = response.json()
+		if response.status_code == 404:
+			url = f'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/sid/{chunk}/synonyms/json'
+			response = requests.get(url)
+			jsons = response.json()
+		for id in jsons.get('InformationList').get('Information') :
+			cid = id.get('CID')
+			names = id.get('Synonym')
+			if names:
+				names = names[:SYNONYMS]
+				if cid in puchchem_id_name:
+					puchchem_id_name[cid].append(names)
+				else:
+					puchchem_id_name[cid] = names
+	return puchchem_id_name
+
+

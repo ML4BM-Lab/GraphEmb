@@ -1,22 +1,9 @@
-import os, sys
-import numpy as np
+import os
 import pandas as pd
 from tqdm import tqdm
-import pubchempy as pcp
-import multiprocessing as mp
-import time
-import json
 from pubchempy import Compound
 from rdkit import Chem
-from rdkit import DataStructs
-import multiprocessing as mp
 import xml.etree.ElementTree as ET
-from itertools import repeat
-import requests
-import logging
-from re import search
-import argparse
-import argparse
 
 def get_compound_pubchem(drug):
 	try:
@@ -53,22 +40,20 @@ def get_smiles(drug_entry):
 	else:
 		return(drugbank_ID, smiles)
 
-tree = ET.parse('/home/margaret/data/jfuente/DTI/Data/DrugBank/full_database.xml')
-root = tree.getroot()
-# list_drugs_w_smiles  = []
-# for drug_entry in tqdm(root):
-#list_drugs_w_smiles.append(get_list_drug_w_smiles(drug_entry))
-list_drugs  = []
-list_smiles = []
-for drug_entry in tqdm(root):
-	drug_id, smiles = get_smiles(drug_entry)
-	if drug_id and smiles:
-		list_drugs.append(drug_id)
-		list_smiles.append(smiles) 
-assert len(list_drugs) == len(list_smiles), 'The length of the Drug IDs does not match the number of SMILES'
-dict_drugid_smiles = dict(zip(list_drugs, list_smiles))
+def get_drug_smiles_drugbank(output_folder):
+	tree = ET.parse(os.getcwd()+ '/../../DB/Data/DrugBank/full_database.xml')
+	root = tree.getroot()
+	list_drugs  = []
+	list_smiles = []
+	for drug_entry in tqdm(root):
+		drug_id, smiles = get_smiles(drug_entry)
+		if drug_id and smiles:
+			list_drugs.append(drug_id)
+			list_smiles.append(smiles) 
+	assert len(list_drugs) == len(list_smiles), 'The length of the Drug IDs does not match the number of SMILES'
+	df = pd.DataFrame()
+	df['DrugBank_ID'] = list_drugs
+	df['SMILES'] = list_smiles
 
-df = pd.DataFrame(dict_drugid_smiles.items(), columns=['DrugBank_ID', 'SMILES'])
-
-output_path = os.getcwd() + '/../Data/DrugBank/drugs_smiles.txt'
-df.to_csv(output_path, header=None, index = None, sep = ' ')
+	output_path = os.getcwd() + '/../Data/'+output_folder+'/drugs_smiles.txt'
+	df.to_csv(output_path, header=None, index = None, sep = ' ')

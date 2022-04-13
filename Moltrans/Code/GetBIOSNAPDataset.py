@@ -3,6 +3,7 @@ import pandas as pd
 import random
 import requests
 import os
+from getSmilesDrugBank import *
 random.seed(1)
 
 ###-----------------------------------------------BIOSNAP-------------------------------------------##
@@ -21,72 +22,79 @@ def getdrug_drugbank(drug):
 def getamino_uniprot(protein):
     r = requests.get(f'https://www.uniprot.org/uniprot/{protein}.fasta')
     aminoseq = ''.join(r.text.split('\n')[1:])
-    return aminoseq
+    if aminoseq == '':
+        return (protein, None)
+    return (protein,aminoseq)
 ###-------------------------------------------------------------------------------------------------##
 
 #Read csv to dataframe for positive pairs
-data_path = os.getcwd() + '/../../../Data/BIOSNAP/ChG-Miner_miner-chem-gene/ChG-Miner_miner-chem-gene.tsv'
-
-#df = pd.read_csv('ChG-Miner_miner-chem-gene/ChG-Miner_miner-chem-gene.tsv', index_col = False, sep='\t', skiprows  = [13542])   #row 13542 is a header
+data_path = os.getcwd() + '/../../DB/Data/BIOSNAP/ChG-Miner_miner-chem-gene/ChG-Miner_miner-chem-gene.tsv'
 colnames = ['DrugBank ID', 'Gene']
 df = pd.read_csv(data_path, names = colnames, header = None, index_col = False, sep='\t', skiprows  = [0, 13542])   #rows 0 and 13542 are headers
-df['Label'] = [1]*len(df.index)
-#print(df)
+df['Label'] = 1
 
-#Obtain the unique drugs and genes
-drugs = df['DrugBank ID'].unique()
+#Get the drugs and the smiles
+fname = 'drugs_smiles.txt'
+path_smiles = os.getcwd() + '/../Data/BIOSNAP/' + fname 
+if not os.path.exists(path_smiles):
+    get_drug_smiles_drugbank('BIOSNAP')
+fname = 'drugs_smiles.txt'
+path_smiles = os.getcwd() + '/../Data/BIOSNAP/' + fname 
+drugs_smiles = pd.read_csv(path_smiles, delimiter=" ", header = None)
+drugs_smiles = dict(zip(drugs_smiles[0], drugs_smiles[1]))
+drugs = list(drugs_smiles.keys())
+
+#Obtain the unique genes
 genes = df['Gene'].unique()
 
-#print(drugs)
-#print(genes)
-
-#Get the smiles and sequences of drugs and proteins
-
-fname = 'smiles_BIOSNAP.txt'
-path_smiles = os.getcwd() + '/../Data/BIOSNAP/' + fname
-    
-if not os.path.exists(path_smiles):
-    smiles = np.vectorize(getdrug_drugbank)(drugs)
-    np.savetxt(path_smiles, smiles, fmt="%s")
-else:
-    smiles = np.genfromtxt(path_smiles, dtype = 'str')
-
-fname = 'targetsequences_BIOSNAP.txt'
-path_targetsequences = os.getcwd() + '/../Data/BIOSNAP/' + fname
-    
+list_genes=[]
+list_targetsequences = []
+fname = 'genes_targetsequences.txt'
+path_targetsequences = os.getcwd() + '/../Data/BIOSNAP/' + fname 
 if not os.path.exists(path_targetsequences):
-    targetsequences = np.vectorize(getamino_uniprot)(genes)
-    np.savetxt(path_targetsequences, targetsequences, fmt="%s")
-    
-else:
-    targetsequences = np.genfromtxt(path_targetsequences, dtype = 'str')
+    for gene in genes:
+        gene, targetsequence = getamino_uniprot(gene)
+        if gene and targetsequence:
+            list_genes.append(gene)
+            list_targetsequences.append(targetsequence)
+    assert len(list_genes) == len(list_targetsequences),'The length of the Genes  does not match the number of target sequences'
+    df_genes = pd.DataFrame()
+    df_genes['Gene'] = list_genes
+    df_genes['Target Sequence'] = list_targetsequences
+    output_path = os.getcwd() + '/../Data/BIOSNAP/genes_targetsequences.txt'
+    df_genes.to_csv(output_path, header=None, index = None, sep = ' ')
 
-#print(smiles)
-#print(targetsequences)
-
-#Create dictionaries
-drugs_smiles = {d:s for d, s in zip(drugs, smiles)}
-genes_targetsequences = {g:t for g,t in zip(genes, targetsequences)}
-
-#Randomnly choose unseen pairs
-seenpairs = set(df['DrugBank ID'] + df['Gene']) #create set of strings of drug+gene
-unseenpairs = set()
-n = len(seenpairs)
-while n > 0:
-    drug_sample = random.choice(drugs)
-    gene_sample = random.choice(genes)
-    
-    result = drug_sample + gene_sample
-    if (result not in seenpairs and result not in unseenpairs):
-        sample = pd.DataFrame(data = {'DrugBank ID':[drug_sample], 'Gene': [gene_sample], 'Label':[0]})
-        df = pd.concat([df, sample], ignore_index = True)
-        unseenpairs.add(result)
-        n-=1
-    
+genes_targetsequences = pd.read_csv(path_targetsequences, delimiter=" ", header = None)
+genes_targetsequences = dict(zip(genes_targetsequences[0], genes_targetsequences[1]))
+genes = list(genes_targetsequences.keys())  
 
 #Add columns for corresponding SMILES and Target Sequence of each pair
 df['SMILES'] = df['DrugBank ID'].map(drugs_smiles)
-df['Target Sequence'] = df['Gene'].map(genes_targetsequences)    
+df['Target Sequence'] = df['Gene'].map(genes_targetsequences)
+df = df.dropna()
+
+#Randomnly choose unseen pairs
+seenpairs = set(df['DrugBank ID'] + df['Gene'])
+unseenpairs = set()
+n = len(seenpairs)
+
+df_unseenpairs = pd.DataFrame(columns = ['DrugBank ID', 'Gene', 'Label'])
+while n > 0:
+    drug_sample = random.choice(drugs)
+    gene_sample = random.choice(genes)
+
+    result = drug_sample + gene_sample
+    if (result not in seenpairs and result not in unseenpairs):
+        sample = pd.DataFrame(data = {'DrugBank ID':[drug_sample], 'Gene': [gene_sample], 'Label':[0]})
+        df_unseenpairs = pd.concat([df_unseenpairs, sample], ignore_index = True)
+        unseenpairs.add(result)
+        n-=1
+    
+#Add columns for corresponding SMILES and Target Sequence of each unseen pairs
+df_unseenpairs['SMILES'] = df_unseenpairs['DrugBank ID'].map(drugs_smiles)
+df_unseenpairs['Target Sequence'] = df_unseenpairs['Gene'].map(genes_targetsequences)   
+
+df = pd.concat([df, df_unseenpairs], ignore_index = True)
 
 #Save it as a csv file
 output_path = os.getcwd() + '/../Data/BIOSNAP/BIOSNAP.csv'

@@ -19,9 +19,10 @@ df['Label'] = [1 if x < threshold else 0 for x in df['Y']]
 
 print(df['Label'].value_counts())
 
+#Change column names
 cols = ['Drug_ID', 'Target_ID', 'SMILES', 'Target Sequence', 'Label']
 df = df[cols]
 
-#Save it as a csv files
+#Save it as a txt file
 output_path = os.getcwd() + '/../Data/BindingDB/BindingDB.txt'
 df.to_csv(output_path,  header=None, index = None, sep = ' ')

@@ -159,7 +159,7 @@ def main():
 	level= log_levels[args.verbosity]
 	fmt = '[%(levelname)s] %(message)s'
 	logging.basicConfig(format=fmt, level=level)
-
+	//TODO: modify the input database     /home/margaret/data/jfuente/DTI/Input4Models/DB/Data/Davis_et_al/tdc_package_preprocessing
 	# DB_PATH =  '/home/margaret/data/jfuente/DTI/Data/Davis_et_al/Davis_30.tsv'
 	DB_PATH = args.dbPath
 	logging.info(f'Reading database from: {DB_PATH}')

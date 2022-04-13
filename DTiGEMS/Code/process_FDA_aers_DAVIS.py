@@ -50,7 +50,7 @@ def main():
 	
 	####################### DAVIS -- DB annotation specific ###########################
 	# create the dicctionary with the drugs up to date for BINDINGDB-DrugBank
-	annotation_file = f'./../../DB/Data/cross_side_information_DB/FDA/Davis_Drug_FDA_dict{START_YEAR}_{END_YEAR}.txt'
+	annotation_file = f'./../../DB/Data/croxss_side_information_DB/FDA/Davis_Drug_FDA_dict{START_YEAR}_{END_YEAR}.txt'
 	if os.path.isfile(annotation_file):
 		logging.info(f'Found {annotation_file}')
 		fda_DB_dict = hf.read_annotation(annotation_file)

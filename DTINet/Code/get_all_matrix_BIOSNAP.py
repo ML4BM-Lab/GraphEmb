@@ -21,7 +21,7 @@ logging.getLogger('').setLevel(logging.INFO)
 '''
 
 ####
-# run with no 0s --------->>> change DTIS! 
+# run with no 0s 
 
 def get_protein_nodes(file_path_prot, file_path_seqs, file_path_dic_protein_seq, dti):
 	if (not os.path.exists(file_path_prot)) or (not os.path.exists(file_path_seqs)):
@@ -309,6 +309,7 @@ def main():
 	
 	########################################################################
 	#######################################################################
+	'''
 	# THIRD: BUILDING MATRIX
 	# once we have the list, we have the index and columns for all matrix!!
 	logging.info('-'*30)
@@ -413,7 +414,7 @@ def main():
 		get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_of_protein_nodes, dict_protein_sequence)
 	else:
 		logging.info('Matrix already in folder')
-	'''
+
 ################################################################
 
 
