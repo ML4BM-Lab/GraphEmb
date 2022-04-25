@@ -54,8 +54,8 @@ Script that calls:
     - Side-effect nodes
     - drug-side-effect associations 
 
-## Execute docker
 
+## Execute docker
 
 ##### Create container from image (specifying name)
 
