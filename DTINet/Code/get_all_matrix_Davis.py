@@ -24,101 +24,6 @@ logging.getLogger('').setLevel(logging.INFO)
 ####
 # run with no 0s
 
-def get_protein_nodes(file_path_prot, file_path_seqs, file_path_dic_protein_seq, dti):
-	if (not os.path.exists(file_path_prot)) or (not os.path.exists(file_path_seqs)):
-		logging.info('Getting Protein Nodes & Sequences ..')
-		''' PREVIOUS IDEA
-		## need to do an interesection as well with those that  do not have available sequence
-		proteins_linked_to_proteins = set(PPI.P1.tolist() + PPI.P2.tolist()) # 9183 
-		proteins_linked_to_disease = set(prot_dis.UniprotID.tolist()) # 8985
-		proteins_linked_to_drugs = set(DTI.Protein.tolist()) # 4884 ##### <------------------ THIS IS THE ONLY ONE THAT CHANGES FOR EACH DATABASE
-		not_isolated_proteins = list(proteins_linked_to_proteins.union(proteins_linked_to_disease, proteins_linked_to_drugs)) # 11941
-		#not_isolated_proteins # not any specific order 
-		'''
-		proteins_linked_to_drugs = set(dti.Protein.tolist()) # 
-		not_isolated_proteins = list(proteins_linked_to_drugs)
-		# CHECK SEQUENCE
-		logging.info('Checking if sequence is available in Uniprot & retrieving it...')
-		list_of_protein_nodes = []
-		list_of_protein_seqs  = []
-		weird_prots = []
-		for prot in tqdm(not_isolated_proteins, desc='Retrieving sequences from Uniprot', position=0, leave=True): 
-			prot_id, prot_seq = hf.get_amino_uniprot(prot)
-			if(prot_seq):
-				list_of_protein_nodes.append(prot_id)
-				list_of_protein_seqs.append(prot_seq)
-			else:  
-				weird_prots.append(prot_id)
-		dict_protein_sequence = dict(zip(list_of_protein_nodes, list_of_protein_seqs))
-		logging.debug(f'The following proteins were not found in uniprot:\n {weird_prots}')
-		np.savetxt(os.path.join(file_path_prot), list_of_protein_nodes, fmt='%s')
-		with open(file_path_seqs, 'w') as f:
-			for i in range(len(list_of_protein_nodes)):
-				_ = f.write('>'+list_of_protein_nodes[i]+'\n'+list_of_protein_seqs[i]+'\n')
-		with open(file_path_dic_protein_seq, 'w', encoding='utf-8') as f:
-			json.dump(dict_protein_sequence, f, ensure_ascii=False, indent=4)
-	else:
-		list_of_protein_nodes = np.loadtxt(file_path_prot, dtype='str').tolist()
-		list_of_protein_seqs = [ seq for _, seq in list(hf.read_fasta(file_path_seqs)) ]
-		with open(file_path_dic_protein_seq, 'r') as f:
-			dict_protein_sequence = json.load(f)
-	#
-	return list_of_protein_nodes, dict_protein_sequence
-
-def get_drug_nodes(file_path_drugs, file_path_dic_drug_smiles, dti):
-	# check
-	if ((not os.path.exists(file_path_drugs)) or (not os.path.exists(file_path_dic_drug_smiles))):
-		logging.info('Getting Drug Nodes...')
-		## get a list of tuples (drug, smiles)
-		logging.info('Reading DrugBank xml file')
-		tree = ET.parse(os.path.join(os.getcwd(), '../../DB/Data/DrugBank/full_database.xml'))
-		root = tree.getroot()
-		logging.info('Retrieving a list of drugs with SMILES')
-		# list_drugs_w_smiles  = []
-		# for drug_entry in tqdm(root):
-		#	list_drugs_w_smiles.append(get_list_drug_w_smiles(drug_entry))
-		list_drugs  = []
-		list_smiles = []
-		for drug_entry in tqdm(root, position=0, leave=True):
-			drug_id, smiles = hf.get_smiles(drug_entry)
-			if drug_id and smiles:
-				list_drugs.append(drug_id)
-				list_smiles.append(smiles)
-		# 
-		assert len(list_drugs) == len(list_smiles), 'The length of the Drug IDs does not match the number of SMILES'
-		dict_drugid_smiles = dict(zip(list_drugs, list_smiles))
-		#
-		''' ## PREVIOUS IDEA
-		# FIND NODES (UNION & INTERSECT) 
-		drugs_linked_to_drugs = set(drug_drug.D1.tolist() + drug_drug.D2.tolist()) # 4418
-		drugs_linked_to_disease = set(drug_dis.DrugBankID.tolist()) # 2754
-		drugs_linked_to_sideeffect = set(drug_se.DrugBank_ID.tolist()) # 675
-		drugs_linked_to_proteins = set(DTI.Drug.tolist()) # 7627 ###### <--------- THIS IS THE ONLY ONE THAT CHANGES FOR EACH DATABASE
-		not_isolated_drugs = list(drugs_linked_to_drugs.union(drugs_linked_to_disease, drugs_linked_to_sideeffect, drugs_linked_to_proteins )) ### 9720
-		not_isolated_drugs.sort()
-		'''
-		# THIRD TIME no 0s: only drugs from DTIs
-		drugs_linked_to_proteins = set(dti.Drug.tolist()) # 7627 ###### <--------- THIS IS THE ONLY ONE THAT CHANGES FOR EACH DATABASE
-		not_isolated_drugs = list(drugs_linked_to_proteins)
-		# intersec with available SMILES
-		list_of_drug_nodes = list(set(not_isolated_drugs).intersection(set(list_drugs))) #  ##############---->>> ** aqui ya estaria!
-		list_of_drug_nodes.sort()
-		#len(set(not_isolated_drugs).intersection(set(list_drug_w_smiles))) # 8638
-		logging.info(f'There are {len(list_of_drug_nodes)} isolated drugs with available smiles from {len(not_isolated_drugs)} total isolated nodes (diff: {len(not_isolated_drugs)-len(list_of_drug_nodes)})')
-		# save files
-		logging.info(f'Saving files...')
-		np.savetxt(os.path.join(file_path_drugs), list_of_drug_nodes, fmt='%s') # list
-		#
-		with open(file_path_dic_drug_smiles, 'w', encoding='utf-8') as f:
-			json.dump(dict_drugid_smiles, f, ensure_ascii=False, indent=4)
-	else:
-		logging.info('Reading from existing files...')
-		list_of_drug_nodes = np.loadtxt(file_path_drugs, dtype='str').tolist()
-		# save json 
-		with open(file_path_dic_drug_smiles, 'r') as f:
-			dict_drugid_smiles = json.load(f)
-	return list_of_drug_nodes, dict_drugid_smiles
-
 #sim
 #sim
 def get_drug_similarity_matrix(file_path_sim_pickle, file_path_simdrug_mat, list_of_drug_nodes, dict_drugid_smiles):
@@ -255,6 +160,7 @@ def main():
 	list_of_drug_nodes = dti.Drug.unique().tolist()
 	list_of_protein_nodes = dti.Protein.unique().tolist()
 	#wdir = '../Data/Davis_et_al'
+	# load data !!! 
 	file_path_dic_drug_smiles=  os.path.join(wdir, 'dic_smiles.json')
 	file_path_dic_protein_seq = os.path.join(wdir, 'dic_protein_seq.json')
 
@@ -263,7 +169,6 @@ def main():
 
 	with open(file_path_dic_protein_seq, 'r') as f:
 		dict_protein_sequence = json.load(f)
-
 
 	# we do not need to take any drop_Drugs now:
 	# Before continue, we need to clean from DTI those nodes that are not present in out network
