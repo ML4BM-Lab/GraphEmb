@@ -20,9 +20,9 @@ from rdkit import RDLogger
 def main():
     '''
     Seq run:
-    run get_coord
-    run DTI_Yamanishi
-    run get_all matrix Yamanishi
+    run get_coord for Davis
+    run DTI_Davis
+    run get_all matrix Davis
 
     '''
     parser = argparse.ArgumentParser() 
@@ -30,13 +30,13 @@ def main():
                     help="Verbosity (between 1-4 occurrences with more leading to more "
                         "verbose logging). CRITICAL=0, ERROR=1, WARN=2, INFO=3, "
                         "DEBUG=4")
-    parser.add_argument("dbPath", help="Path to the database output ('E', 'GPCR', 'IC', 'NR')", type=str)
+    parser.add_argument("dbPath", help="Path to the database output 'Davis_et_al' ", type=str)
     args = parser.parse_args()
     DB_PATH = args.dbPath
-    if DB_PATH not in ['E', 'GPCR', 'IC', 'NR']:
-        raise NameError('This script is for Yamanishi!')
-    # files to exect sequ
-    list_of_pys = ['get_coord.py', 'DTI_Yamanishi.py', 'get_all_matrix_Davis.py']
+    if DB_PATH != 'Davis_et_al':
+        raise NameError('This script is for Davis et al Dabatase')
+    # list of scripts to execute sequentially
+    list_of_pys = ['get_coord.py', 'DTI_Davis.py', 'get_all_matrix_Davis.py']
     # check that exception works; check other options
     for script in list_of_pys:
         try:

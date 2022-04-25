@@ -54,25 +54,31 @@ def main():
     wdir = os.path.join('../Data', db_name)
     logging.debug(f'working directory is: {wdir}')
 
-    db_file_path = '../../DB/Data/Davis_et_al/tdc_package_preprocessing/DAVIS_et_al.tsv'
-    davis = pd.read_csv(db_file_path, sep="\t", header=0, usecols=['Drug_ID', 'SMILES', 'Target_ID', 'Target Sequence'])
+    db_file_path = '../../DB/Data/Davis_et_al/tdc_package_preprocessing/DAVIS_et_al_w_labels.tsv'
+    davis = pd.read_csv(db_file_path, sep="\t", header=0, usecols=['Drug_ID', 'SMILES', 'Target_ID', 'Target Sequence', 'Label'])
     davis = davis.rename({'Drug_ID': 'PubChemID', 'Target_ID': 'GeneName', 'Target Sequence': 'Sequence'}, axis=1)
     logging.debug(davis.head(2))
-
-    logging.debug("Changing from PubChemID to DrugBankID")
-
     mod_davis = davis.copy()
-    # mod_davis = mod_davis.drop(columns=['SMILES', 'GeneName', 'Sequence'])
-    ##### work with drugs
+    # we only need the positive edges for writing a edge list
+    # then drop those with 0
+    logging.debug('Drop null int for edge list')
+    logging.debug(f'Shape before removing Label ==0 {mod_davis.shape}')
+    mod_davis = mod_davis.drop(mod_davis[mod_davis.Label == 0].index)
+    logging.debug(f'Shape after removing 0s {mod_davis.shape}')
+    mod_davis = mod_davis.drop(columns='Label')
+
+    ## DRUG IDENTIFIERS
+    logging.debug("Changing from PubChemID to DrugBankID")
+    
+    #  Pubchem fmt
     mod_davis.loc[:, 'PubChemID'] = mod_davis.loc[:, 'PubChemID'].astype(int) # not float
     mod_davis.loc[:, 'PubChemID'] = mod_davis.loc[:, 'PubChemID'].astype(str) # not float
     logging.debug(mod_davis.head(2))
 
-
     logging.debug("Checking in dictionary parsing DrugBank")
     dic_cid_dbid = hf.pubchem_to_drugbankid()
     mod_davis['DrugBankID'] = mod_davis['PubChemID'].map(dic_cid_dbid)
-    mod_davis.head()
+    logging.debug(mod_davis.head(3))
     drugs_before_request = len(mod_davis.DrugBankID.unique())
     logging.debug(f'Loosing {len(mod_davis.PubChemID.unique()) - len(mod_davis.DrugBankID.unique())} drugs')
 
@@ -122,7 +128,7 @@ def main():
     found_d2 = list(d2.keys())
     logging.debug(f'found {len(found_d2)} drugs!')
 
-    ###### working here --------->>> ** * 
+    #
     logging.debug('Now we can NOW apply the maps...')
     mod_davis['DrugBankID_A'] = mod_davis['PubChemID'].map(d1)
     mod_davis['DrugBankID_B'] = mod_davis['PubChemID'].map(d2)
@@ -137,6 +143,7 @@ def main():
     mod_davis = mod_davis.drop(columns=['PubChemID', 'DrugBankID_A', 'DrugBankID_B'])
     mod_davis = mod_davis.dropna()
 
+    #### PROTEIN IDENTIFIERS
     ####### this step is not needed for Binding DB
     logging.info('We need to change from GeneName to UniprotID')
     logging.debug('Using bioMART to create a dictionary...')
@@ -151,7 +158,7 @@ def main():
     mod_davis = mod_davis.dropna().drop_duplicates()
 
     mod_davis = mod_davis.drop(columns='GeneName')
-
+    
     logging.info("Now we are ready to extract information!")
     dtis_davis = mod_davis[['DrugBankID', 'UniprotID']]
     #list_of_drug_nodes = mod_davis.DrugBankID.unique().tolist()
@@ -159,9 +166,11 @@ def main():
     # check if all can retrieve a fp later
     dict_protein_sequence = dict(zip( mod_davis.UniprotID.tolist(), mod_davis.Sequence.tolist() ))
 
-
+    logging.debug(mod_davis.head(4))
+    logging.debug(f'Thera are {len(mod_davis.DrugBankID.unique())} unique drugs')
+    logging.debug(f'Thera are {len(mod_davis.UniprotID.unique())} unique proteins')
     logging.info("Saving files")
-
+    
     dtis_davis.to_csv(os.path.join(wdir, f'DTI_{DB_PATH}.tsv'), header=True,index=False ,sep="\t")
 
     file_path_dic_protein_seq = os.path.join(wdir, 'dic_protein_seq.json')

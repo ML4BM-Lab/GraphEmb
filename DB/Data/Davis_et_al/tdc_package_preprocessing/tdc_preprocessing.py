@@ -15,7 +15,7 @@ df = df.rename(columns = {'Drug':'SMILES',
                         'Target':'Target Sequence'})
 
 #Save
-output_path = os.getcwd() + '/DAVIS_et_al_max_affinity.tsv'
+output_path = os.getcwd() + '/DAVIS_et_al.tsv'
 df.to_csv(output_path,sep='\t')
 
 #Load it
@@ -34,3 +34,7 @@ print(df['Label'].value_counts())
 
 #Save it as a csv files
 df = pd.read_csv(output_path,sep='\t',index_col=0)
+
+output_path_2 = os.getcwd() + '/DAVIS_et_al_w_labels.tsv'
+
+df.to_csv(output_path_2,sep='\t')
