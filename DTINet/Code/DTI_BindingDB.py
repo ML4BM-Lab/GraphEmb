@@ -35,12 +35,12 @@ def main():
     fmt = '[%(levelname)s] %(message)s'
     logging.basicConfig(format=fmt, level=level)
     #######
-    logging.info("============== DTIs Yamanishi ==============")
+    logging.info("============== DTIs BindingDB ==============")
     ### log output detals
     logging.info(
         '''
         This script needs:
-            - Drug Target Interactions for Davis et al
+            - Drug Target Interactions for BindingBD et al
         Returns:
             - DTI tsv file --- only? 
         '''
@@ -64,8 +64,10 @@ def main():
 
     mod_bind = bindingdb.copy()
 
-    threshold = 30
+    logging.debug(f'There are {len(mod_bind.PubChemID.unique())} unique drugs at the beginning')
+    logging.debug(f'There are {len(mod_bind.UniprotID.unique())} unique proteins at the beginning')
 
+    threshold = 30
     mod_bind['Label'] = [1 if x < threshold else 0 for x in mod_bind['Y']]
     mod_bind = mod_bind.drop(columns='Y')
 
@@ -74,6 +76,8 @@ def main():
     mod_bind = mod_bind.drop(mod_bind[mod_bind.Label == 0].index)
     logging.debug(f'Shape after removing 0s {mod_bind.shape}')
     mod_bind = mod_bind.drop(columns='Label')
+    logging.debug(f'There are {len(mod_bind.PubChemID.unique())} unique drugs now')
+    logging.debug(f'There are {len(mod_bind.UniprotID.unique())} unique proteins now')
 
     # mod_bind = mod_bind.drop(columns=['SMILES', 'GeneName', 'Sequence'])
     ##### work with drugs
@@ -154,18 +158,18 @@ def main():
 
 
     logging.info("Now we are ready to extract information!")
-    dtis_davis = mod_bind[['DrugBankID', 'UniprotID']]
+    dtis_binding = mod_bind[['DrugBankID', 'UniprotID']]
     #list_of_drug_nodes = mod_bind.DrugBankID.unique().tolist()
     dict_drugid_smiles = dict(zip( mod_bind.DrugBankID.tolist(), mod_bind.SMILES.tolist() ))
     # check if all can retrieve a fp later
     dict_protein_sequence = dict(zip( mod_bind.UniprotID.tolist(), mod_bind.Sequence.tolist() ))
 
     logging.debug(mod_bind.head(4))
-    logging.debug(f'Thera are {len(mod_bind.DrugBankID.unique())} unique drugs')
-    logging.debug(f'Thera are {len(mod_bind.UniprotID.unique())} unique proteins')
+    logging.debug(f'Thera are {len(dtis_binding.DrugBankID.unique())} unique drugs')
+    logging.debug(f'Thera are {len(dtis_binding.UniprotID.unique())} unique proteins')
     logging.info("Saving files...")
     
-    dtis_davis.to_csv(os.path.join(wdir, f'DTI_{DB_PATH}.tsv'), header=True,index=False ,sep="\t")
+    dtis_binding.to_csv(os.path.join(wdir, f'DTI_{DB_PATH}.tsv'), header=True,index=False ,sep="\t")
 
     file_path_dic_protein_seq = os.path.join(wdir, 'dic_protein_seq.json')
     with open(file_path_dic_protein_seq, 'w', encoding='utf-8') as f:
@@ -175,6 +179,8 @@ def main():
     with open(file_path_dic_drug_smiles, 'w', encoding='utf-8') as f:
         json.dump(dict_drugid_smiles, f, ensure_ascii=False, indent=4)
     
+    logging.info("Done!...")
+
 
 #####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

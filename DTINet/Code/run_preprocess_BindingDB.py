@@ -20,9 +20,9 @@ from rdkit import RDLogger
 def main():
     '''
     Seq run:
-    run get_coord for Davis
+    run get_coord for BindingDB
     run DTI_Davis
-    run get_all matrix Davis
+    run get_all matrix BindingDB
 
     '''
     parser = argparse.ArgumentParser() 
@@ -36,7 +36,7 @@ def main():
     if DB_PATH != 'BindingDB':
         raise NameError('This script is for BindingDB  Dabatase')
     # list of scripts to execute sequentially
-    list_of_pys = ['get_coord.py', 'DTI_Davis.py', 'get_all_matrix_Davis.py']
+    list_of_pys = ['get_coord.py', 'DTI_BindingDB.py', 'get_all_matrix_BindingDB.py']
     # check that exception works; check other options
     for script in list_of_pys:
         try:

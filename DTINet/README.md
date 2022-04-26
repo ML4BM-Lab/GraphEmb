@@ -102,4 +102,4 @@ nohup docker exec nombre_container python3 /..../..../.py > path2file.out &
 ```
 
 #### inside docker
-nohup  matlab -nodisplay -nosplash -nodesktop -r "run('src/run_DTINet.m');exit;" > log_DTINet_DrugBank.out &
+nohup  matlab -nodisplay -nosplash -nodesktop -r "run('src/run_DTINet.m');exit;" > log_DTINet.out &
