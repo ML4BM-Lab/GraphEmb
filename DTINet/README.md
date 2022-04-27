@@ -18,7 +18,7 @@ Script that calls:
       1. process_HPRD_DTINet.py
       2. process_SIDER_DTINet.py
       3. process_CTD_DTINet.py
-      4. process_DrugBank.py
+      4. process_DrugBank.py (for)
 -- DTI tsv ! 
 2. Get DTI (only for Yamanishi, BindingDB, Davis)
     - DTI_Yamanishi.py
@@ -73,13 +73,13 @@ Script that calls:
 ##### Create container from image (specifying name)
 
 ```
-$ docker run --name dtinet_original -it dtinet_matlab bash
+docker run --name dtinet_original -it dtinet_matlab bash
 ```
 .... WORKING HERE ....
 
 ##### Keep
 ```
-$ docker restart dtinet_original 
+docker restart dtinet_original 
 ```
 
 #### Copy files
@@ -88,16 +88,19 @@ docker cp  /home/uveleiro/data/jfuente/DTI/Input4Models/DTINet/Data/DrugBank dti
 ```
 
 #### entrar
+```
 docker exec -it dtinet_original bash
+```
 
-##### remove files in folders if necesary (data, feature, network)
+#### remove files in folders if necesary (data, feature, network)
 avoid any problem. safety check,
 
 #### copy files from folder to data
 mat*.txt, Sim*.txt
 
 #### Run DTINet Matlab Scripts
-First time it will ask for a Email & Pasword
+First time in docker, matlab will ask for a Email & Pasword
+
 ```
 matlab -nodisplay -nosplash -nodesktop -r "run('src/compute_similarity.m');exit;"
 
@@ -109,14 +112,21 @@ last one mayabe is better to execute as nohup
 
 
 #### Outside docker & nohup
+
 ```
 nohup docker exec nombre_container python3 /..../..../.py > path2file.out &
-#el file.out se guarda en margaret
 ```
+#el file.out se guarda en margaret
+
 
 #### inside docker
+
+```
 nohup  matlab -nodisplay -nosplash -nodesktop -r "run('src/run_DTINet.m');exit;" > log_DTINet.out &
+```
 
 ### stop docker
 
+```
 docker stop dtinet_drugbank
+```

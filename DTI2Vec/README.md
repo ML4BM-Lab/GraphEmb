@@ -6,5 +6,7 @@ Raw data needed:
 
 Processed data:
 	* Similarity matrix from targets (Smith-Waterman normalized score)
-	* Similarity matrix from drugs (SIMCOMP score)
+	* Similarity matrix from drugs (SIMCOMP score or similitud matrix between drugs)
+	* Drug Target Interaction matrix
+	* Drug and Protein embeddings from Node2Vec
 
