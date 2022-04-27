@@ -1,12 +1,14 @@
 # Preprocessing of Databases
 
 Run (file not available for all databases yet)
+'*' missing scripts
+
 ```
 python3 run_preprocess_Yamanisihi.py 
 python3 run_preprocess_DrugBank.py *
 python3 run_preprocess_BIOSNAP.py *
-python3 run_preprocess_Davis.py *
-python3 run_preprocess_BindingDB.py *
+python3 run_preprocess_Davis.py 
+python3 run_preprocess_BindingDB.py 
 ```
 
 Script that calls:
@@ -18,22 +20,33 @@ Script that calls:
       3. process_CTD_DTINet.py
       4. process_DrugBank.py
 -- DTI tsv ! 
-2. get_all_matrix_DrugBank.py
-    This script obtains the DTIs and uses the output from previous script to create the needed matrix. 
+2. Get DTI (only for Yamanishi, BindingDB, Davis)
+    - DTI_Yamanishi.py
+    - DTI_BindingDB.py
+    - DTI_Davis.py
 
+3. get_all_matrix_DrugBank.py
+    This script obtains the DTIs and uses the output from previous script to create the needed matrix. 
 
 
 ## List of scripts in 'DTINet/Code/':
 
-- ... FIRST 
+- helper_functions_dtinet.py
+- get_coord.py 
 - process_SIDER_DTINet.py
 - process_HPRD_DTINet.py
 - process_Drugbank_DTINet.py
 - process_CTD_DTINet.py
-- get_coord.py 
+
+- DTI_BindingDB.py
+- DTI_Davis.py
+- DTI_Yamanishi.py
+
 - get_all_matrix_DrugBank.py 
 - get_all_matrix_Yamanishi.py
-- ...
+- get_all_matrix_Davis.py
+- get_all_matrix_BindingDB.py
+- get_all_matrix_BIOSNAP.py
 
 ## What do we retrieve from each database? 
 * DrugBank database 
@@ -103,3 +116,7 @@ nohup docker exec nombre_container python3 /..../..../.py > path2file.out &
 
 #### inside docker
 nohup  matlab -nodisplay -nosplash -nodesktop -r "run('src/run_DTINet.m');exit;" > log_DTINet.out &
+
+### stop docker
+
+docker stop dtinet_drugbank
