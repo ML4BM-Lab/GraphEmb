@@ -10,7 +10,6 @@ from re import search
 import time
 import xml.etree.ElementTree as ET
 import pubchempy as pcp
-from pubchempy import Compound
 import subprocess as sp
 from pubchempy import Compound
 from rdkit import Chem

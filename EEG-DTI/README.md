@@ -1,20 +1,26 @@
 
 
 ## Data
-EEG-DTI uses the Luo Dataset (from DTINet). 
+EEG-DTI uses the Luo Dataset (from DTINet).
+ -> but including the compute_similarity.m script 
+ -> including the transpose matrix of mat_drug_protein.txt (mat_protein_drug.txt)
+
+
 => Any change??? check! 
 
 
 ## Folder structure for input
 
+They have 4 folders in data, from which they only use SevenNets & sim_network, oneToon
 
 ## Notes on original dataset & Github
 
 - Yamanishi: error ????  --> in Issues Github! --> ACTUALLY we dont need this one
-- Luo: stops at seed 10 --> checking again 
+- Luo: works!
 
 Run without GPU: stopped at seed 10
 Run with GPI
+
 ## Execute docker
 
 image name: eeg_dti
@@ -22,11 +28,15 @@ image name: eeg_dti
 ##### run
 
 ollo ó piollo: run with gpu
+pero no nos da la memoria a nosotros, asi que a funcionar sin gpu
 ```
 docker run  --gpus all --name eeg_dti_test_gpu  -it eeg_dti  bash
 ```
 
 inside, can be checked as nvidia-smi 
+
+
+docker run  --name eeg_dti_test_cleanfolder  -it eeg_dti  bash
 
 --
 this is 1.15.5 tensorflow
@@ -58,6 +68,9 @@ nohup docker exec eeg_dti_test python3 /EEG-DTI/main_luo_all_networks.py > log_E
 
 --> example from margaret to docker
 
+```
 docker cp  /home/uveleiro/data/jfuente/DTI/Input4Models/DTINet/Data/Yamanashi_et_al_GoldStandard/NR eeg_dti_test:/EEG-DTI
+```
+
 
 --> In EEG-DTI we need the similarity networks from DTINet, -------------------------------> **** 
