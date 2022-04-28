@@ -1,5 +1,34 @@
 
 
+# Instructions for preprocesing data
+
+This model needs the same preprocessing as for DTINet, indeed the XXX Luo Dataset. 
+
+Then we need to apply to the interacction/association/XXXXX matrix, the scripts compute_similarity.m
+as in DTINet.
+
+In order to do that, you should follow some steps, as matlab fails in execution form outside docker 
+in some machines. 
+
+1. With this first script we get the folder sevenNetworks, and send data to the dockerfile for executing matlab
+```
+sh processing_matlab_A.sh
+```
+
+2. run compute_similarity.m in matlab docker
+```
+matlab -nodisplay -nosplash -nodesktop -r "run('compute_similarity.m');exit;"
+```
+This script has been slightly modified for usage issues, only in paths 
+
+3. Now we have already in the folder the inputs of the model:sevenNets & sim_network with running the following:
+```
+sh processing_matlab_A.sh
+```
+
+---------------------------------------------------> oneTooneIndex !!!!!!!!!!!!?????
+
+
 ## Data
 EEG-DTI uses the Luo Dataset (from DTINet).
  -> but including the compute_similarity.m script 
