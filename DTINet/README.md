@@ -68,65 +68,55 @@ Script that calls:
     - drug-side-effect associations 
 
 
-## Execute docker
+## Launch DTINet with Docker
 
+Matlab problems with x11, for that reason we give the .sh to be executed inside the docker. 
+
+The first, you should create a docker:
 ##### Create container from image (specifying name)
-
 ```
-docker run --name dtinet_original -it dtinet_matlab bash
+docker run -dt --name dtinet_original -it dtinet_matlab bash
 ```
-.... WORKING HERE ....
 
-##### Keep
+with dt keeping the docker up, other option is to do:
+
 ```
 docker restart dtinet_original 
 ```
 
 #### Copy files
 ```
-docker cp  /home/uveleiro/data/jfuente/DTI/Input4Models/DTINet/Data/DrugBank dtinet_drugbank:/DTINet
+docker cp  ../Data/DrugBank dtinet_drugbank:/DTINet
+docker cp  Launch_DTINet_matlab.sh dtinet_drugbank:/DTINet
 ```
 
-#### entrar
+#### Enter docker
+Enter in the docker interactively and execute the bash script
+
 ```
 docker exec -it dtinet_original bash
 ```
 
-#### remove files in folders if necesary (data, feature, network)
-avoid any problem. safety check,
+##### Run DTINet Matlab Scripts
 
-#### copy files from folder to data
-mat*.txt, Sim*.txt
+First time in docker, Matlab will ask for a Email & Pasword
 
-#### Run DTINet Matlab Scripts
-First time in docker, matlab will ask for a Email & Pasword
-
+Run specifiying the folder copied as path to copy files
 ```
-matlab -nodisplay -nosplash -nodesktop -r "run('src/compute_similarity.m');exit;"
-
-matlab -nodisplay -nosplash -nodesktop -r "run('src/run_DCA.m');exit;"
-
-matlab -nodisplay -nosplash -nodesktop -r "run('src/run_DTINet.m');exit;"
+bash Launch_DTINet_matlab.sh <DB_folder_name>
 ```
-last one mayabe is better to execute as nohup
+for example, if we copy the data for DrugBank, we call it as bash Launch_DTINet_matlab.sh DrugBank
 
 
-#### Outside docker & nohup
-
+This will output a log file: log_DTINet.out
+that can be copied to our machine (from outside) as:
 ```
-nohup docker exec nombre_container python3 /..../..../.py > path2file.out &
+docker cp dtinet_drugbank:/DTINet/log_DTINet.out <desired_path/log_DTINet_DB.out>
 ```
-#el file.out se guarda en margaret
 
-
-#### inside docker
-
-```
-nohup  matlab -nodisplay -nosplash -nodesktop -r "run('src/run_DTINet.m');exit;" > log_DTINet.out &
-```
 
 ### stop docker
-
+If we want to stop our container:
 ```
 docker stop dtinet_drugbank
 ```
