@@ -37,6 +37,14 @@ EEG-DTI uses the Luo Dataset (from DTINet).
 
 => Any change??? check! 
 
+Folders/files that actually use:
+- sevenNets: mat_* from Luo (including transpose)
+- sim_network == network from compute similarity in DTINet
+- one to index?
+    In github appears 'ratio' folder for :
+    * train_index_(0, 1)'+str(seed)+'.txt' for each seed
+
+* 
 
 ## Folder structure for input
 
@@ -61,6 +69,9 @@ pero no nos da la memoria a nosotros, asi que a funcionar sin gpu
 ```
 docker run  --gpus all --name eeg_dti_test_gpu  -it eeg_dti  bash
 ```
+
+docker run  --name eeg_dti_test_index  -it eeg_dti  bash
+
 
 inside, can be checked as nvidia-smi 
 
@@ -103,3 +114,20 @@ docker cp  /home/uveleiro/data/jfuente/DTI/Input4Models/DTINet/Data/Yamanashi_et
 
 
 --> In EEG-DTI we need the similarity networks from DTINet, -------------------------------> **** 
+
+
+my new test in
+docker run  --name eeg_dti_test_one  -it eeg_dti  bash
+
+docker cp  /mnt/md0/data/jfuente/DTI/Input4Models/EEG-DTI/Data/Davis_et_al eeg_dti_test_one:/EEG-DTI
+
+error of sizes !! check code!! --> run in error, done for luo with special shape 708 drugs 1512 proteins 
+
+docker cp  eeg_dti_test:/EEG-DTI/main_luo_all_networks.py   .
+
+
+main_modified_eegdti.py 
+is a modification of main_luo_all_networks.py
+because we cant used directly their model
+modifications in lines
+L292 - L311 which are the input sizes from matrix ! 
