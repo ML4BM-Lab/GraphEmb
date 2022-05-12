@@ -1,16 +1,35 @@
 
+# Instructions for launching the model with docker
 
-# Instructions for preprocesing data
+This section assumes that the preprocessing of the data has been already made.
+If not, read below.
 
-This model needs the same preprocessing as for DTINet, indeed the XXX Luo Dataset. 
+execute 
+```
+.sh
+```
 
-Then we need to apply to the interacction/association/XXXXX matrix, the scripts compute_similarity.m
-as in DTINet.
 
-In order to do that, you should follow some steps, as matlab fails in execution form outside docker 
+# Instructions for running the preprocesing of the data
+
+This model needs the same preprocessing as for DTINet, indeed the  Luo Dataset. 
+
+If you want to replicate this step, you can run one of the following scripts
+```
+***
+```
+
+This model needs 3 folders with specific data:
+    - sevenNets
+    - sim_network
+    - oneTooneIndex 
+
+
+sim_network correspondons to the output of compute_similarity.m script from DTINet.
+In order to retrieve these 3 folders, you should follow some steps, as matlab fails in execution form outside docker 
 in some machines. 
 
-1. With this first script we get the folder sevenNetworks, and send data to the dockerfile for executing matlab
+1. With this first script we get the folder sevenNetworks, oneTooneIndex, and send data to the dockerfile for executing matlab
 ```
 sh processing_matlab_A.sh
 ```
@@ -26,25 +45,21 @@ This script has been slightly modified for usage issues, only in paths
 sh processing_matlab_A.sh
 ```
 
----------------------------------------------------> oneTooneIndex !!!!!!!!!!!!?????
 
 
-## Data
+
+## Data Information
 EEG-DTI uses the Luo Dataset (from DTINet).
  -> but including the compute_similarity.m script 
- -> including the transpose matrix of mat_drug_protein.txt (mat_protein_drug.txt)
+ -> including now the transpose matrix of mat_drug_protein.txt (mat_protein_drug.txt)
 
-
-=> Any change??? check! 
 
 Folders/files that actually use:
 - sevenNets: mat_* from Luo (including transpose)
-- sim_network == network from compute similarity in DTINet
-- one to index?
-    In github appears 'ratio' folder for :
+- sim_network == network from compute similarity in DTINet (compute_similarity.m)
+- oneTooneIndex:
     * train_index_(0, 1)'+str(seed)+'.txt' for each seed
 
-* 
 
 ## Folder structure for input
 
@@ -131,3 +146,6 @@ is a modification of main_luo_all_networks.py
 because we cant used directly their model
 modifications in lines
 L292 - L311 which are the input sizes from matrix ! 
+
+
+docker cp  main_modified_eegdti.py eeg_dti_test_one:/EEG-DTI

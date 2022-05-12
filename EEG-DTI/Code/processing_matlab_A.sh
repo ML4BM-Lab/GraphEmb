@@ -4,15 +4,18 @@
 # this XXX for XXX
 # change for your XXX
 # copy into your machine
-#  docker cp /home/uveleiro/data/jfuente/DTI/Input4Models/EEG-DTI/Code/process_eegdti_matlab.sh matlab_env_t2:/DTINet
+# docker cp /home/uveleiro/data/jfuente/DTI/Input4Models/EEG-DTI/Code/process_eegdti_matlab.sh matlab_env_t2:/DTINet
 
 
-wdir=Davis_et_al # define for each database 
+wdir=Davis_et_al # define for each database -> parse this information
 folder_path=../Data/$wdir
 
 ######### sevenNets  #########
 [ ! -d $folder_path/sevenNets ] && mkdir $folder_path/sevenNets
 cp $folder_path/mat_*.txt $folder_path/sevenNets
+
+### add here oneTooneIndex
+## ----------------------------------------->> ************
 
 ######### sim_network #########
 # data for similarity == Luo compute sim, retrieve only \network

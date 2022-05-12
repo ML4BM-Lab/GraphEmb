@@ -7,7 +7,6 @@ import os
 import tensorflow as tf
 import numpy as np
 import scipy.sparse as sp
-#import pandas as pd
 from sklearn import metrics
 from decagon.deep.optimizer import DecagonOptimizer
 from decagon.deep.model import DecagonModel
@@ -37,8 +36,17 @@ class Logger(object):
 
         pass
 
-data_set = 'luo'
-print('data_set',data_set)
+data_set = 'luo' # dataset type luo, not changing because other dependencies
+print('data_set type',data_set)
+
+path_data_folder = 'data_dti'  #os.path.join('DTI_data', data_set)
+
+if not os.path.exists(path_data_folder):
+    os.mkdir(path_data_folder)
+    print("Directory " , path_data_folder ,  " Created ")
+else:    
+    print("Directory " , path_data_folder ,  " already exists")
+
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -82,25 +90,25 @@ MAE_10_list   = []
 # RealNet
 # About Drug-Drug
 # 1 interaction+4 sim+ 1 for protein   6networks
-drug_drug_path = './DTI_data/luo/sevenNets/mat_drug_drug.txt'
-drug_drug_sim_chemical_path = './DTI_data/luo/sim_network/Sim_mat_Drugs.txt'
-drug_drug_sim_interaction_path = './DTI_data/luo/sim_network/Sim_mat_drug_drug.txt'
-drug_drug_sim_se_path = './DTI_data/luo/sim_network/Sim_mat_drug_se.txt'
-drug_drug_sim_disease_path = './DTI_data/luo/sim_network/Sim_mat_drug_disease.txt'
-drug_protein_path = './DTI_data/luo/sevenNets/mat_drug_protein.txt'
+drug_drug_path = os.path.join(path_data_folder,  'sevenNets/mat_drug_drug.txt')
+drug_drug_sim_chemical_path = os.path.join(path_data_folder, 'sim_network/Sim_mat_Drugs.txt')
+drug_drug_sim_interaction_path = os.path.join(path_data_folder, 'sim_network/Sim_mat_drug_drug.txt')
+drug_drug_sim_se_path = os.path.join(path_data_folder,'sim_network/Sim_mat_drug_se.txt')
+drug_drug_sim_disease_path = os.path.join(path_data_folder,'sim_network/Sim_mat_drug_disease.txt')
+drug_protein_path = os.path.join(path_data_folder, 'sevenNets/mat_drug_protein.txt')
 
 # 1interaction + 3sim +1 for drug 5 networks
 # About Protein
-protein_drug_path = './DTI_data/luo/sevenNets/mat_protein_drug.txt'
-protein_protein_path = './DTI_data/luo/sevenNets/mat_protein_protein.txt'
-protein_protein_sim_sequence_path = './DTI_data/luo/sim_network/Sim_mat_Proteins.txt'
-protein_protein_sim_disease_path = './DTI_data/luo/sim_network/Sim_mat_protein_disease.txt'
-protein_protein_sim_interaction_path = './DTI_data/luo/sim_network/Sim_mat_protein_protein.txt'
+protein_drug_path = os.path.join(path_data_folder, 'sevenNets/mat_protein_drug.txt')
+protein_protein_path = os.path.join(path_data_folder,'sevenNets/mat_protein_protein.txt')
+protein_protein_sim_sequence_path = os.path.join(path_data_folder,'sim_network/Sim_mat_Proteins.txt')
+protein_protein_sim_disease_path = os.path.join(path_data_folder, 'sim_network/Sim_mat_protein_disease.txt')
+protein_protein_sim_interaction_path = os.path.join(path_data_folder, 'sim_network/Sim_mat_protein_protein.txt')
 
 # About drug and protein (others)...
-protein_disease_path = './DTI_data/luo/sevenNets/mat_protein_disease.txt'
-drug_disease_path = './DTI_data/luo/sevenNets/mat_drug_disease.txt'
-drug_sideEffect_path = './DTI_data/luo/sevenNets/mat_drug_se.txt'
+protein_disease_path = os.path.join(path_data_folder, 'sevenNets/mat_protein_disease.txt')
+drug_disease_path = os.path.join(path_data_folder, 'sevenNets/mat_drug_disease.txt')
+drug_sideEffect_path = os.path.join(path_data_folder, 'sevenNets/mat_drug_se.txt')
 
 # Step1:Construct the graph(read the data...)
 

@@ -1,0 +1,32 @@
+[INFO] ============== HPRD ==============
+[INFO] 
+        This script needs:
+            - BINARY_PROTEIN_PROTEIN_INTERACTIONS.txt (HPRD_Release9)
+            - HUMAN_9606_idmapping.dat
+        This script generates the following files:
+            - all_protein.txt 
+            - protein_dict_map.txt (or json)
+            - edgelist_PPI.tsv
+        DTINet uses from HPRD:
+            - protein.txt 
+            - protein_dict_map.txt
+            - mat_protein_protein.txt
+        
+[INFO] Database: NR
+[INFO] Processing HPRD in ../Data/Yamanashi_et_al_GoldStandard/NR
+[INFO]     Getting PPI coordinates...
+[INFO]     Shape of coordinate file is: (37466, 2)
+[INFO] Done with HPRD!
+[INFO] ============== SIDER ==============
+[INFO] 
+        This script needs:
+            - From SIDER: meddra_all_se.tsv, 
+            - DrugBank xml file
+        This script generates the following files:
+            - edgelist_drug_se.tsv
+        DTINet uses from SIDER the processed files:
+            - mat_drug_disease.txt
+            - mat_protein_disease.txt
+        
+[INFO] Database: NR
+[INFO] Processing SIDER in ../Data/Yamanashi_et_al_GoldStandard/NR
