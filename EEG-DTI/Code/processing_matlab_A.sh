@@ -7,7 +7,23 @@
 # docker cp /home/uveleiro/data/jfuente/DTI/Input4Models/EEG-DTI/Code/process_eegdti_matlab.sh matlab_env_t2:/DTINet
 
 
-wdir=Davis_et_al # define for each database -> parse this information
+#wdir=$1 # define for each database -> parse this information
+db=$1
+yam='Yamanashi_et_al_GoldStandard'
+
+if  [[ "$db" == "NR" ]]; then
+    wdir=$yam/$db
+elif [[ "$db" == "E" ]]; then
+    wdir=$yam/$db
+elif [[ "$db" == "GPCR" ]]; then
+    wdir=$yam/$db
+elif [[ "$db" == "IC" ]]; then
+    wdir=$yam/$db
+else
+    wdir=$db
+fi
+
+echo $wdir
 folder_path=../Data/$wdir
 
 ######### sevenNets  #########
@@ -15,7 +31,7 @@ folder_path=../Data/$wdir
 cp $folder_path/mat_*.txt $folder_path/sevenNets
 
 ### add here oneTooneIndex
-## ----------------------------------------->> ************
+python3 generate_onetooneindex.py $db
 
 ######### sim_network #########
 # data for similarity == Luo compute sim, retrieve only \network
@@ -32,8 +48,17 @@ cp $folder_path/Similarity_Matrix_*.txt $folder_path/tmp_data
 container=matlab_env_t2 # change for your own container !
 rootmodel=DTINet # change for your own container !
 
+# remove previous files just in case
+docker exec $container rm -rf /$rootmodel/compute_similarity.m 
+docker exec $container rm -rf /$rootmodel/sevenNets
+docker exec $container rm -rf /$rootmodel/tmp_data
+docker exec $container rm -rf /$rootmodel/sim_network
+
 # copy files from machine to docker container
 docker cp $folder_path/tmp_data $container:/$rootmodel/
 docker cp compute_similarity.m  $container:/$rootmodel/
 
+docker restart $container
 # once done is, follow the second step as in the readme
+echo "Done..."
+echo "now you should execute compute similarity script inside matlab docker"

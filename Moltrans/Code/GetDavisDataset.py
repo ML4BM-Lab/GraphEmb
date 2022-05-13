@@ -4,21 +4,25 @@ import os
 from tdc.multi_pred import DTI
 
 data = DTI(name = 'DAVIS')
+data.binarize(threshold = 30, order = 'descending')
+data.label_distribution()
 
 #harmonize affinities not supported because duplicities already removed
 df = data.get_data()
 
 df = df.rename(columns ={'Drug':'SMILES', 'Target':'Target Sequence'})
 
+print(df.columns)
+
 drugs = df['SMILES'].unique()
 genes = df['Target Sequence'].unique()
 print("Num Drugs:", len(drugs))
 print("Num Genes:", len(genes))
 
-threshold = 30
-df['Label'] = [1 if x < threshold else 0 for x in df['Y']]
+#threshold = 30
+#df['Label'] = [1 if x < threshold else 0 for x in df['Y']]
 
-print(df['Label'].value_counts())
+print(df['Y'].value_counts())
 
 #Save it as a csv file
 output_path = os.getcwd() + '/../Data/Davis_et_al/Davis.csv'

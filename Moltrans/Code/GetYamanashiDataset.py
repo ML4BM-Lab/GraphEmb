@@ -9,6 +9,9 @@ random.seed(1)
 def getamino_KEGG(protein):
     r = requests.get(f'http://rest.kegg.jp/get/{protein}/aaseq')
     aminoseq = ''.join(r.text.split('\n')[1:])
+
+    if aminoseq =='':
+        return None
     return aminoseq
 
 def get_drug_KEGG(drug):
@@ -54,7 +57,12 @@ def get_dataset(name):
     #Create dictionaries
     drugs_smiles = {d:s for d, s in zip(drugs, smiles)}
     genes_targetsequences = {g:t for g,t in zip(genes, targetsequences)}
-
+    #Add columns for corresponding SMILES and Target Sequence of each pair
+    df['SMILES'] = df['Drug ID'].map(drugs_smiles)
+    df['Target Sequence'] = df['Gene'].map(genes_targetsequences)
+    print(len(df.index))
+    df = df.replace(to_replace='None', value=np.nan).dropna()
+    print(len(df.index))
     #Randomnly choose unseen pairs
     seenpairs = set(df['Drug ID'] + df['Gene'])
     unseenpairs = set()
@@ -63,17 +71,19 @@ def get_dataset(name):
         drug_sample = random.choice(drugs)
         gene_sample = random.choice(genes)
         
-        result = drug_sample + gene_sample
-        if (result not in seenpairs and result not in unseenpairs):
-            sample = pd.DataFrame(data = {'Drug ID':[drug_sample], 'Gene': [gene_sample], 'Label':[0]})
-            df = pd.concat([df, sample], ignore_index = True)
-            unseenpairs.add(result)
-            n-=1
+        if not genes_targetsequences[gene_sample]=='None':
+            result = drug_sample + gene_sample
+            if (result not in seenpairs and result not in unseenpairs):
+                sample = pd.DataFrame(data = {'Drug ID':[drug_sample], 'Gene': [gene_sample], 'Label':[0]})
+                df = pd.concat([df, sample], ignore_index = True)
+                unseenpairs.add(result)
+                n-=1
         
 
     #Add columns for corresponding SMILES and Target Sequence of each pair
     df['SMILES'] = df['Drug ID'].map(drugs_smiles)
     df['Target Sequence'] = df['Gene'].map(genes_targetsequences)
+   
 
 
     #Save it as a csv file

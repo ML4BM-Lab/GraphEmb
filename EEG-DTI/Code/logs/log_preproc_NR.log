@@ -30,3 +30,139 @@
         
 [INFO] Database: NR
 [INFO] Processing SIDER in ../Data/Yamanashi_et_al_GoldStandard/NR
+Retrieving Drugbank  & PubChem ID:   0%|          | 0/14594 [00:00<?, ?it/s]Retrieving Drugbank  & PubChem ID:   1%|▏         | 210/14594 [00:00<00:06, 2094.04it/s]Retrieving Drugbank  & PubChem ID:   3%|▎         | 420/14594 [00:00<00:10, 1413.24it/s]Retrieving Drugbank  & PubChem ID:   4%|▍         | 574/14594 [00:00<00:10, 1285.12it/s]Retrieving Drugbank  & PubChem ID:   5%|▍         | 709/14594 [00:00<00:11, 1225.40it/s]Retrieving Drugbank  & PubChem ID:   6%|▌         | 835/14594 [00:00<00:11, 1203.82it/s]Retrieving Drugbank  & PubChem ID:   7%|▋         | 958/14594 [00:00<00:11, 1148.36it/s]Retrieving Drugbank  & PubChem ID:   7%|▋         | 1074/14594 [00:00<00:12, 1122.49it/s]Retrieving Drugbank  & PubChem ID:   8%|▊         | 1192/14594 [00:00<00:11, 1137.79it/s]Retrieving Drugbank  & PubChem ID:   9%|▉         | 1337/14594 [00:01<00:10, 1224.40it/s]Retrieving Drugbank  & PubChem ID:  11%|█         | 1559/14594 [00:01<00:08, 1512.45it/s]Retrieving Drugbank  & PubChem ID:  17%|█▋        | 2550/14594 [00:01<00:03, 3941.04it/s]Retrieving Drugbank  & PubChem ID:  29%|██▉       | 4259/14594 [00:01<00:01, 7794.82it/s]Retrieving Drugbank  & PubChem ID:  36%|███▋      | 5324/14594 [00:01<00:01, 8637.61it/s]Retrieving Drugbank  & PubChem ID:  43%|████▎     | 6203/14594 [00:01<00:01, 7944.83it/s]Retrieving Drugbank  & PubChem ID:  54%|█████▍    | 7920/14594 [00:01<00:00, 10521.06it/s]Retrieving Drugbank  & PubChem ID:  62%|██████▏   | 9008/14594 [00:02<00:00, 6917.70it/s] Retrieving Drugbank  & PubChem ID:  68%|██████▊   | 9882/14594 [00:02<00:00, 6021.55it/s]Retrieving Drugbank  & PubChem ID:  73%|███████▎  | 10723/14594 [00:02<00:00, 6493.31it/s]Retrieving Drugbank  & PubChem ID:  80%|███████▉  | 11611/14594 [00:02<00:00, 7012.36it/s]Retrieving Drugbank  & PubChem ID:  86%|████████▌ | 12509/14594 [00:02<00:00, 7482.06it/s]Retrieving Drugbank  & PubChem ID: 100%|██████████| 14594/14594 [00:02<00:00, 5637.51it/s]
+[INFO]     Getting Drug-Se coordinates...
+[INFO]     Shape of coordinate file is: (117889, 2)
+[INFO] ============== CTD ==============
+[INFO] 
+        This script needs:
+            - CTD Database (CTD_diseases.csv, CTD_genes.csv, CTD_genes_diseases.csv, CTD_chemicals_diseases.csv)
+            - all_protein.txt
+        
+        This script generates the following files:
+            - disease_dict_map.txt (or json)
+            - edgelist_protein_disease.tsv
+            - edgelist_drug_disease.tsv
+        
+        DTINet uses from CTD the processed files:
+            - mat_protein_disease.txt
+            - mat_drug_disease.txt
+        
+[INFO] Database: NR
+[INFO] Processing CTD in ../Data/Yamanashi_et_al_GoldStandard/NR
+[DEBUG] Using: CTD_diseases.csv
+[DEBUG] Writting disease_dict_map.txt
+[DEBUG] Reading CTD_genes.csv to get a dict
+[DEBUG] Reading all_protein.txt for filtering human proteins...
+[INFO]     Getting protein-disease coordinates...
+[DEBUG] Reading CTD_genes_diseases.csv ...
+[INFO]     shape of coordinate file is: (12384997, 2)
+[DEBUG] Writing coordinates_protein_disease.tsv...
+[INFO]     Getting drug-disease coordinates...
+[DEBUG] Reading CTD_chemicals_diseases.csv ...
+[DEBUG] Reading DrugBank xml file...
+[DEBUG] Reading xml
+[DEBUG] creating dict
+  0%|          | 0/14594 [00:00<?, ?it/s]  3%|▎         | 459/14594 [00:00<00:03, 4579.09it/s]  6%|▋         | 917/14594 [00:00<00:03, 4034.44it/s]  9%|▉         | 1366/14594 [00:00<00:03, 4140.96it/s] 58%|█████▊    | 8394/14594 [00:00<00:00, 28778.62it/s] 78%|███████▊  | 11413/14594 [00:00<00:00, 21979.60it/s]100%|██████████| 14594/14594 [00:00<00:00, 22302.55it/s]
+[INFO]      shape of coordinate file is: (247326, 2)
+[DEBUG] Writing edge list file drug-disease...
+[INFO] ============== DrugBank ==============
+[INFO] 
+        This script needs:
+            - DrugBank xml file
+
+        This script generates the following files:
+            - all_drugs.txt
+            - all_drug_dic_map.txt (/ dic_drugnames_DBID.json)
+            - edgelist_drug_drug.tsv
+        
+        DTINet uses from DrugBank the processed files:
+            - mat_drug_drug.txt
+        
+[INFO] Database: NR
+[INFO] Processing DrugBank in ../Data/Yamanashi_et_al_GoldStandard/NR
+Retrieving Drug IDs from DrugBank:   0%|          | 0/14594 [00:00<?, ?it/s]Retrieving Drug IDs from DrugBank: 100%|██████████| 14594/14594 [00:00<00:00, 625604.76it/s]
+[INFO]     Getting Drug-Drug coordinates...
+Retrieving drug-drug interactions from DrugBank:   0%|          | 0/14594 [00:00<?, ?it/s]Retrieving drug-drug interactions from DrugBank:   1%|          | 166/14594 [00:00<00:08, 1616.08it/s]Retrieving drug-drug interactions from DrugBank:   2%|▏         | 328/14594 [00:00<00:17, 830.32it/s] Retrieving drug-drug interactions from DrugBank:   3%|▎         | 431/14594 [00:00<00:19, 744.91it/s]Retrieving drug-drug interactions from DrugBank:   4%|▎         | 516/14594 [00:00<00:20, 692.62it/s]Retrieving drug-drug interactions from DrugBank:   4%|▍         | 602/14594 [00:00<00:19, 734.28it/s]Retrieving drug-drug interactions from DrugBank:   5%|▍         | 681/14594 [00:00<00:18, 744.24it/s]Retrieving drug-drug interactions from DrugBank:   5%|▌         | 760/14594 [00:01<00:19, 705.59it/s]Retrieving drug-drug interactions from DrugBank:   6%|▌         | 848/14594 [00:01<00:18, 749.39it/s]Retrieving drug-drug interactions from DrugBank:   6%|▋         | 928/14594 [00:01<00:17, 760.87it/s]Retrieving drug-drug interactions from DrugBank:   7%|▋         | 1006/14594 [00:01<00:18, 738.10it/s]Retrieving drug-drug interactions from DrugBank:   7%|▋         | 1082/14594 [00:01<00:19, 710.79it/s]Retrieving drug-drug interactions from DrugBank:   8%|▊         | 1157/14594 [00:01<00:18, 719.36it/s]Retrieving drug-drug interactions from DrugBank:   8%|▊         | 1230/14594 [00:01<00:19, 699.98it/s]Retrieving drug-drug interactions from DrugBank:   9%|▉         | 1319/14594 [00:01<00:17, 752.76it/s]Retrieving drug-drug interactions from DrugBank:  10%|▉         | 1442/14594 [00:01<00:14, 889.31it/s]Retrieving drug-drug interactions from DrugBank:  11%|█         | 1551/14594 [00:01<00:13, 946.54it/s]Retrieving drug-drug interactions from DrugBank:  21%|██        | 3066/14594 [00:02<00:02, 5105.33it/s]Retrieving drug-drug interactions from DrugBank:  30%|███       | 4443/14594 [00:02<00:01, 7652.00it/s]Retrieving drug-drug interactions from DrugBank:  36%|███▌      | 5221/14594 [00:02<00:01, 6246.47it/s]Retrieving drug-drug interactions from DrugBank:  40%|████      | 5897/14594 [00:02<00:01, 4683.32it/s]Retrieving drug-drug interactions from DrugBank:  53%|█████▎    | 7780/14594 [00:02<00:00, 7676.12it/s]Retrieving drug-drug interactions from DrugBank:  60%|█████▉    | 8735/14594 [00:03<00:01, 4122.19it/s]Retrieving drug-drug interactions from DrugBank:  65%|██████▍   | 9459/14594 [00:03<00:01, 4413.57it/s]Retrieving drug-drug interactions from DrugBank:  69%|██████▉   | 10140/14594 [00:03<00:01, 4450.09it/s]Retrieving drug-drug interactions from DrugBank:  75%|███████▍  | 10884/14594 [00:03<00:00, 4985.17it/s]Retrieving drug-drug interactions from DrugBank:  79%|███████▉  | 11537/14594 [00:03<00:00, 4568.02it/s]Retrieving drug-drug interactions from DrugBank:  83%|████████▎ | 12104/14594 [00:03<00:00, 4273.50it/s]Retrieving drug-drug interactions from DrugBank:  86%|████████▋ | 12607/14594 [00:04<00:00, 4047.82it/s]Retrieving drug-drug interactions from DrugBank:  90%|████████▉ | 13063/14594 [00:04<00:00, 3984.64it/s]Retrieving drug-drug interactions from DrugBank:  94%|█████████▍| 13742/14594 [00:04<00:00, 4611.74it/s]Retrieving drug-drug interactions from DrugBank: 100%|██████████| 14594/14594 [00:04<00:00, 3352.75it/s]
+[INFO]     shape of coordinate file is: (2768191, 2)
+[INFO] ============== DTIs Yamanishi ==============
+[INFO] 
+        This script needs:
+            - Drug Target Interactions for each type (NR, IC, GPCR, E)
+        Returns:
+            - DTI tsv file
+        
+[INFO] Working in output folder for: NR
+[INFO] Database: NR
+[INFO] Loading hsa2uni dictionary...
+  0%|          | 0/14594 [00:00<?, ?it/s]  1%|▏         | 183/14594 [00:00<00:07, 1819.81it/s]  3%|▎         | 365/14594 [00:00<00:15, 936.01it/s]   3%|▎         | 481/14594 [00:00<00:15, 906.05it/s]  4%|▍         | 584/14594 [00:00<00:16, 849.54it/s]  5%|▍         | 676/14594 [00:00<00:17, 818.15it/s]  5%|▌         | 765/14594 [00:00<00:16, 836.80it/s]  6%|▌         | 857/14594 [00:00<00:16, 851.06it/s]  6%|▋         | 945/14594 [00:01<00:18, 736.31it/s]  7%|▋         | 1022/14594 [00:01<00:18, 735.73it/s]  8%|▊         | 1098/14594 [00:01<00:18, 741.63it/s]  8%|▊         | 1203/14594 [00:01<00:16, 824.91it/s]  9%|▉         | 1326/14594 [00:01<00:14, 938.48it/s] 10%|█         | 1521/14594 [00:01<00:10, 1228.07it/s] 18%|█▊        | 2674/14594 [00:01<00:02, 4218.03it/s] 27%|██▋       | 3929/14594 [00:01<00:01, 6659.17it/s] 34%|███▍      | 4995/14594 [00:01<00:01, 7837.74it/s] 40%|███▉      | 5813/14594 [00:02<00:01, 7924.90it/s] 48%|████▊     | 7019/14594 [00:02<00:00, 9152.44it/s] 54%|█████▍    | 7943/14594 [00:02<00:00, 8755.11it/s] 60%|██████    | 8828/14594 [00:02<00:00, 5881.29it/s] 65%|██████▌   | 9546/14594 [00:02<00:00, 5969.83it/s] 70%|███████   | 10236/14594 [00:02<00:00, 6160.41it/s] 78%|███████▊  | 11356/14594 [00:02<00:00, 7404.93it/s] 83%|████████▎ | 12173/14594 [00:02<00:00, 6836.40it/s] 94%|█████████▍| 13734/14594 [00:03<00:00, 9030.28it/s]100%|██████████| 14594/14594 [00:03<00:00, 4703.45it/s]
+[INFO] Processing & saving DTIs to file...
+[INFO]     Matrix Shape: (83, 2)
+[INFO]     Unique drugs: 50
+[INFO]     Unique targets: 25
+[INFO] ========= Creating matrices =========
+[INFO] 
+		This script needs:
+			- Common coordinate .tsv files (generated by get_coord.py)
+			- Yamanishi DTI edge list 
+		Returns:
+			- mat*.txt
+			- Similarity_Matrix_Drugs.txt
+			- Similarity_Matrix_Proteins.txt
+		Considering only those nodes that have DTIs
+		=> mat_drug_protein.txt not any row/column null
+		
+[INFO] Working in output folder for: NR
+[INFO] Database: NR
+[INFO] Loadding Data from tsv files....
+[INFO] DTI original shape (83, 2)
+[INFO] ------------------------------
+[INFO] Gettin Data from tsv files...
+[INFO] Getting Drug Nodes...
+[INFO] Reading DrugBank xml file
+[INFO] Retrieving a list of drugs with SMILES
+  0%|          | 0/14594 [00:00<?, ?it/s]  1%|          | 125/14594 [00:00<00:11, 1223.02it/s]  2%|▏         | 248/14594 [00:00<00:14, 1001.81it/s]  2%|▏         | 351/14594 [00:00<00:15, 939.30it/s]   3%|▎         | 447/14594 [00:01<00:50, 278.04it/s]  4%|▎         | 512/14594 [00:01<00:43, 325.29it/s]  4%|▍         | 576/14594 [00:01<00:43, 323.92it/s]  4%|▍         | 629/14594 [00:01<00:42, 327.70it/s]  5%|▍         | 676/14594 [00:01<00:40, 345.67it/s]  5%|▍         | 722/14594 [00:01<00:38, 358.67it/s]  5%|▌         | 766/14594 [00:01<00:38, 359.64it/s]  6%|▌         | 809/14594 [00:02<00:36, 375.29it/s]  6%|▌         | 851/14594 [00:02<00:37, 365.58it/s]  6%|▌         | 891/14594 [00:02<01:34, 145.50it/s]  7%|▋         | 1000/14594 [00:03<00:52, 259.64it/s]  7%|▋         | 1090/14594 [00:03<00:38, 353.71it/s]  8%|▊         | 1184/14594 [00:03<00:29, 455.33it/s]  9%|▉         | 1329/14594 [00:03<00:20, 652.73it/s] 10%|█         | 1521/14594 [00:03<00:14, 932.73it/s] 12%|█▏        | 1774/14594 [00:03<00:09, 1316.06it/s] 15%|█▍        | 2180/14594 [00:03<00:06, 2016.61it/s] 17%|█▋        | 2550/14594 [00:03<00:04, 2463.19it/s] 19%|█▉        | 2839/14594 [00:03<00:04, 2579.63it/s] 21%|██▏       | 3119/14594 [00:03<00:04, 2595.53it/s] 23%|██▎       | 3394/14594 [00:04<00:04, 2618.02it/s] 25%|██▌       | 3685/14594 [00:04<00:04, 2699.91it/s] 27%|██▋       | 3963/14594 [00:04<00:03, 2675.99it/s] 29%|██▉       | 4237/14594 [00:04<00:03, 2649.62it/s] 31%|███       | 4506/14594 [00:04<00:03, 2660.92it/s] 33%|███▎      | 4775/14594 [00:05<00:11, 859.07it/s]  34%|███▍      | 5033/14594 [00:05<00:15, 614.56it/s] 37%|███▋      | 5417/14594 [00:06<00:10, 897.99it/s] 39%|███▊      | 5632/14594 [00:06<00:15, 588.02it/s] 40%|███▉      | 5799/14594 [00:06<00:12, 678.12it/s] 41%|████      | 6008/14594 [00:07<00:10, 828.07it/s] 43%|████▎     | 6315/14594 [00:07<00:07, 1123.50it/s] 46%|████▌     | 6664/14594 [00:07<00:05, 1498.29it/s] 48%|████▊     | 6991/14594 [00:07<00:04, 1825.20it/s] 50%|████▉     | 7268/14594 [00:07<00:03, 2008.44it/s] 52%|█████▏    | 7576/14594 [00:07<00:03, 2252.68it/s] 54%|█████▍    | 7860/14594 [00:07<00:02, 2360.17it/s] 56%|█████▌    | 8139/14594 [00:08<00:06, 925.25it/s]  57%|█████▋    | 8346/14594 [00:08<00:06, 1000.42it/s] 58%|█████▊    | 8532/14594 [00:08<00:05, 1075.84it/s] 63%|██████▎   | 9215/14594 [00:08<00:02, 1998.89it/s] 65%|██████▌   | 9540/14594 [00:09<00:04, 1129.00it/s] 67%|██████▋   | 9783/14594 [00:10<00:08, 572.71it/s]  69%|██████▉   | 10052/14594 [00:10<00:06, 721.76it/s] 71%|███████   | 10310/14594 [00:10<00:04, 891.43it/s] 72%|███████▏  | 10531/14594 [00:12<00:09, 425.48it/s] 74%|███████▍  | 10764/14594 [00:12<00:07, 545.42it/s] 76%|███████▌  | 11081/14594 [00:12<00:04, 762.09it/s] 77%|███████▋  | 11303/14594 [00:12<00:03, 907.49it/s] 79%|███████▉  | 11520/14594 [00:13<00:04, 624.67it/s] 80%|████████  | 11711/14594 [00:13<00:05, 491.45it/s] 82%|████████▏ | 11915/14594 [00:13<00:04, 620.82it/s] 85%|████████▌ | 12461/14594 [00:13<00:01, 1137.30it/s] 87%|████████▋ | 12755/14594 [00:14<00:01, 1375.04it/s] 89%|████████▉ | 13029/14594 [00:14<00:00, 1586.81it/s] 91%|█████████ | 13302/14594 [00:14<00:00, 1748.74it/s] 94%|█████████▍| 13704/14594 [00:14<00:00, 2211.39it/s] 96%|█████████▋| 14069/14594 [00:14<00:00, 2532.73it/s]100%|██████████| 14594/14594 [00:14<00:00, 1003.61it/s]
+[INFO] There are 50 isolated drugs with available smiles from 50 total isolated nodes (diff: 0)
+[INFO] Saving files...
+[INFO] Getting Protein Nodes & Sequences ..
+[INFO] Checking if sequence is available in Uniprot & retrieving it...
+Retrieving sequences from Uniprot:   0%|          | 0/25 [00:00<?, ?it/s]Retrieving sequences from Uniprot:   4%|▍         | 1/25 [00:00<00:07,  3.06it/s]Retrieving sequences from Uniprot:   8%|▊         | 2/25 [00:00<00:06,  3.65it/s]Retrieving sequences from Uniprot:  12%|█▏        | 3/25 [00:00<00:05,  4.09it/s]Retrieving sequences from Uniprot:  16%|█▌        | 4/25 [00:00<00:04,  4.42it/s]Retrieving sequences from Uniprot:  20%|██        | 5/25 [00:01<00:04,  4.58it/s]Retrieving sequences from Uniprot:  24%|██▍       | 6/25 [00:01<00:04,  4.69it/s]Retrieving sequences from Uniprot:  28%|██▊       | 7/25 [00:01<00:03,  4.63it/s]Retrieving sequences from Uniprot:  32%|███▏      | 8/25 [00:01<00:03,  4.75it/s]Retrieving sequences from Uniprot:  36%|███▌      | 9/25 [00:01<00:03,  4.83it/s]Retrieving sequences from Uniprot:  40%|████      | 10/25 [00:02<00:03,  4.88it/s]Retrieving sequences from Uniprot:  44%|████▍     | 11/25 [00:02<00:02,  4.95it/s]Retrieving sequences from Uniprot:  48%|████▊     | 12/25 [00:02<00:02,  4.99it/s]Retrieving sequences from Uniprot:  52%|█████▏    | 13/25 [00:02<00:02,  4.96it/s]Retrieving sequences from Uniprot:  56%|█████▌    | 14/25 [00:03<00:02,  4.91it/s]Retrieving sequences from Uniprot:  60%|██████    | 15/25 [00:03<00:02,  4.87it/s]Retrieving sequences from Uniprot:  64%|██████▍   | 16/25 [00:03<00:01,  4.57it/s]Retrieving sequences from Uniprot:  68%|██████▊   | 17/25 [00:03<00:01,  4.74it/s]Retrieving sequences from Uniprot:  72%|███████▏  | 18/25 [00:03<00:01,  4.79it/s]Retrieving sequences from Uniprot:  76%|███████▌  | 19/25 [00:04<00:01,  4.83it/s]Retrieving sequences from Uniprot:  80%|████████  | 20/25 [00:04<00:01,  4.91it/s]Retrieving sequences from Uniprot:  84%|████████▍ | 21/25 [00:04<00:00,  4.82it/s]Retrieving sequences from Uniprot:  88%|████████▊ | 22/25 [00:04<00:00,  4.89it/s]Retrieving sequences from Uniprot:  92%|█████████▏| 23/25 [00:04<00:00,  4.97it/s]Retrieving sequences from Uniprot:  96%|█████████▌| 24/25 [00:05<00:00,  4.98it/s]Retrieving sequences from Uniprot: 100%|██████████| 25/25 [00:05<00:00,  4.99it/s]Retrieving sequences from Uniprot: 100%|██████████| 25/25 [00:05<00:00,  4.74it/s]
+[INFO] This network has 50 drug nodes
+[INFO] This network has 25 protein nodes
+[INFO] This network has 3024 disease nodes
+[INFO] This network has 1476 side-effect nodes
+[INFO] This network has 4575 nodes in total
+[INFO] ------------------------------
+[INFO] Getting matrix....
+[INFO]    - Drug Disease Matrix
+[INFO]         * matrix shape (50, 3024)
+[INFO]         * # drug-disease assoc edges 1825
+[INFO]    - Drug Side Effect Matrix
+[INFO]         * Matrix shape (50, 1476)
+[INFO]         * # drug-side effect assoc edges 4942
+[INFO]    - Drug Drug Matrix
+[INFO]         * matrix shape (50, 50)
+[INFO]         * # drug-drug interaction edges 445.0
+[INFO]    - Protein Protein Matrix
+[INFO]         * matrix shape (25, 25)
+[INFO]         * # protein-protein edges 4.0
+[INFO]    - Protein Disease Matrix
+[INFO]         * matrix shape (25, 3024)
+[INFO]         * # protein-disease edges 16834
+[INFO]    - Drug Protein Interaction Matrix (DTIs)
+[INFO]         * matrix shape (50, 25)
+[INFO]         * # drug-protein edges 83
+[INFO] ------------------------------
+[INFO] Drug Similarity matrix....
+[INFO] Calculating matrix...
+Retrieving Pairwise Tanimoto for drugs:   0%|          | 0/50 [00:00<?, ?it/s]Retrieving Pairwise Tanimoto for drugs:   2%|▏         | 1/50 [00:00<00:07,  6.16it/s]Retrieving Pairwise Tanimoto for drugs: 100%|██████████| 50/50 [00:00<00:00, 276.48it/s]
+[INFO]         * Drug Similarity Matrix Shape (50, 50)
+[INFO] ------------------------------
+[INFO] Protein Similarity Matrix....
+[INFO] Creating tmp folder: /tmp/SmithWaterman/Yamanashi_et_al_GoldStandard/NR
+[INFO] Creating temporary folder: /tmp/SmithWaterman/Yamanashi_et_al_GoldStandard/NR
+[INFO] All fastas written
+  0%|          | 0/25 [00:00<?, ?it/s]  4%|▍         | 1/25 [00:06<02:44,  6.87s/it]  8%|▊         | 2/25 [00:13<02:39,  6.93s/it] 12%|█▏        | 3/25 [00:21<02:35,  7.05s/it] 16%|█▌        | 4/25 [00:28<02:28,  7.05s/it] 20%|██        | 5/25 [00:35<02:20,  7.03s/it] 24%|██▍       | 6/25 [00:42<02:16,  7.19s/it] 28%|██▊       | 7/25 [00:49<02:08,  7.13s/it] 32%|███▏      | 8/25 [00:56<01:59,  7.02s/it] 36%|███▌      | 9/25 [01:03<01:52,  7.03s/it] 40%|████      | 10/25 [01:10<01:45,  7.00s/it] 44%|████▍     | 11/25 [01:17<01:38,  7.01s/it] 48%|████▊     | 12/25 [01:24<01:32,  7.15s/it] 52%|█████▏    | 13/25 [01:32<01:25,  7.16s/it] 56%|█████▌    | 14/25 [01:38<01:17,  7.08s/it] 60%|██████    | 15/25 [01:46<01:11,  7.13s/it] 64%|██████▍   | 16/25 [01:53<01:04,  7.12s/it] 68%|██████▊   | 17/25 [02:00<00:56,  7.12s/it] 72%|███████▏  | 18/25 [02:07<00:50,  7.17s/it] 76%|███████▌  | 19/25 [02:14<00:42,  7.09s/it] 80%|████████  | 20/25 [02:21<00:34,  7.00s/it] 84%|████████▍ | 21/25 [02:28<00:28,  7.03s/it] 88%|████████▊ | 22/25 [02:35<00:20,  6.98s/it] 92%|█████████▏| 23/25 [02:42<00:13,  6.96s/it] 96%|█████████▌| 24/25 [02:49<00:06,  6.95s/it]100%|██████████| 25/25 [02:56<00:00,  6.96s/it]100%|██████████| 25/25 [02:56<00:00,  7.05s/it]
+[INFO] Creating matrix & applying MinMaxScaler() in range (0,1)
+[INFO]         * Protein Similarity Matrix Shape (25, 25)
+[INFO] All preprocessing done for NR!!!

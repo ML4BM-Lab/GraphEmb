@@ -2,6 +2,7 @@ from __future__ import division
 from __future__ import print_function
 from operator import itemgetter
 
+import argparse # 
 import time
 import os
 import tensorflow as tf
@@ -36,7 +37,8 @@ class Logger(object):
 
         pass
 
-data_set = 'luo' # dataset type luo, not changing because other dependencies
+# dataset type luo, not changing because other dependencies in original code
+data_set = 'luo' 
 print('data_set type',data_set)
 
 path_data_folder = 'data_dti'  #os.path.join('DTI_data', data_set)
@@ -48,17 +50,37 @@ else:
     print("Directory " , path_data_folder ,  " already exists")
 
 
+# create a luo like & yamanishi like 
+# for running our comparations
+parser = argparse.ArgumentParser() 
+parser.add_argument("DB", help=" Name of database: ('BIOSNAP', 'BindingDB', 'Davis_et_al', 'DrugBank_FDA', 'E', 'GPCR', 'IC', 'NR')", type=str)
+args = parser.parse_args()
+
+DATABASE = args.DB
+
+luolike = ['DrugBank', 'BIOSNAP']
+yamanishilike = ['NR', 'E', 'GPCR', 'IC', 'Davis', 'BindingDB']
+if DATABASE in luolike:
+    n_epochs, batchsize = 10, 128
+elif DATABASE in yamanishilike:
+    n_epochs, batchsize = 100, 32
+else:
+    print('Dabase not available DBs')
+
+print(f'n_epochs: {n_epochs}, and batchsize: {batchsize}')
+
 flags = tf.app.flags
 FLAGS = flags.FLAGS
+# for
 flags.DEFINE_integer('neg_sample_size', 1, 'Negative sample size.')
 flags.DEFINE_float('learning_rate', 1e-3, 'Initial learning rate.')
-flags.DEFINE_integer('epochs', 10, 'Number of epochs to train.')
+flags.DEFINE_integer('epochs', n_epochs, 'Number of epochs to train.') # luo 10, yamanishi 100
 flags.DEFINE_integer('hidden1',64, 'Number of units in hidden layer 1.')
 flags.DEFINE_integer('hidden2', 64, 'Number of units in hidden layer 2.')
 flags.DEFINE_float('weight_decay', 0, 'Weight for L2 loss on embedding matrix.')
 flags.DEFINE_float('dropout', 0.1, 'Dropout rate (1 - keep probability).')
 flags.DEFINE_float('max_margin', 0.1, 'Max margin parameter in hinge loss')
-flags.DEFINE_integer('batch_size', 128, 'minibatch size.')
+flags.DEFINE_integer('batch_size', batchsize, 'minibatch size.') # luo 128, yamanishi 32
 flags.DEFINE_boolean('bias', True, 'Bias term.')
 
 # you can make a log dictionary in the ./EEG-DTI.
@@ -435,6 +457,7 @@ for seed in range(0,10):
         minibatch.shuffle()
         itr = 0
         while not minibatch.end():
+        #for itr in range(1000):
             # Construct feed dictionary
             feed_dict = minibatch.next_minibatch_feed_dict(placeholders=placeholders)
             feed_dict = minibatch.update_feed_dict(feed_dict=feed_dict,dropout=FLAGS.dropout,placeholders=placeholders)

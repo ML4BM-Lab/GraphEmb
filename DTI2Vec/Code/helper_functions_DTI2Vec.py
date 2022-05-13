@@ -9,6 +9,8 @@ from tqdm import tqdm
 from shutil import rmtree
 from sklearn.preprocessing import MinMaxScaler
 import logging
+import xml.etree.ElementTree as ET
+from pubchempy import Compound
 
 def get_DB_name(path):
 	"""
@@ -106,6 +108,63 @@ def read_dtis_Binding(path):
 	dictionary = {node : str(index)  for index, node  in enumerate(sorted(all_elements))}
 	return dtis, dictionary
 
+def get_primary_drugbank_ID(drugbank_ID, drug_entry):
+	drugbank_IDs = drug_entry.findall('{http://www.drugbank.ca}drugbank-id')
+	attribs = [elem.attrib for elem in drugbank_IDs]
+	primary = [attrib for attrib in attribs if attrib][0]
+	if primary['primary'] == 'true':
+		drugbank_ID = drugbank_IDs[attribs.index(primary)].text
+	return drugbank_ID
+
+def get_drugs_smiles_from_DrugBank(drugs):
+	logging.info('Loading DrugBank...')
+	tree = ET.parse('./../../DB/Data/cross_side_information_DB/DrugBank/Data/full_database.xml')
+	root = tree.getroot()
+	drugs_smiles = []
+	for drug_entry in tqdm(root):
+		drugbank_IDs = drug_entry.findall('{http://www.drugbank.ca}drugbank-id')
+		drugbank_IDs = [name.text for name in drugbank_IDs]
+		drugbank_ID = [real_name for real_name in drugbank_IDs if real_name in drugs]
+		if drugbank_ID:
+			if len(drugbank_ID) > 1:
+				drugbank_ID = get_primary_drugbank_ID(drugbank_ID, drug_entry)
+			else:
+				drugbank_ID = drugbank_ID[0]
+				props = drug_entry.findall('.//{http://www.drugbank.ca}property')
+				smile = [prop for prop in props if prop[0].text == 'SMILES']
+				if smile:
+					# if smile in drugbank data
+					smile = smile[0][1].text
+				else:
+					# if smile not in drugbank data retrieve it from chembl
+					external_ids = drug_entry.findall('.//{http://www.drugbank.ca}external-identifier')
+					pubchem_id = [external_id for external_id in external_ids if external_id[0].text == 'PubChem Compound']
+					if pubchem_id:
+						pubchem_id = pubchem_id[0][1].text
+						smile = Compound.from_cid(pubchem_id).canonical_smiles
+				drugs_smiles.append((drugbank_ID, smile))
+	return drugs_smiles
+
+def read_and_extract_BINDING_smiles(path):
+	"""
+	Read the BINDING file and return the smiles
+	"""
+	with open(path, 'r') as f:
+		_ = next(f)
+		smiles = f.readlines()
+	smiles = [entry.strip().split('\t') for entry in smiles]
+	smiles = [(entry[1], entry[2]) for entry in smiles]
+	smiles = list(set(smiles))
+	return smiles
+
+def get_BIOSNAP_drugs(path):
+	with open(path, 'r') as f:
+		_ = next(f)
+		drugs = f.readlines()
+	drugs = [entry.strip().split('\t') for entry in drugs]
+	drugs = [entry[0] for entry in drugs]
+	drugs = list(set(drugs))
+	return drugs	
 
 def write_dtis(dtis, path):
 	result_ID = str(uuid.uuid4())
@@ -141,7 +200,12 @@ def write_embedddings_with_name(embeddings, node_dict):
 			outfl.write(f'{inv_map[node]}{SEP}{emb}\n')
 	logging.debug(f'Embeddings written at {named_nodes}')
 
-
+def write_smile_per_file(drug_smiles, db_name):
+	tmp_path = create_remove_tmp_folder(os.path.join('/tmp/SIMCOMP_alternative' , db_name))
+	for id, smile in tqdm(drug_smiles, desc='Writing smiles'):
+		with open(os.path.join(tmp_path, f'{id}.smi'), 'w') as f:
+			_ = f.write(smile)
+	return tmp_path
 
 def create_remove_tmp_folder(path):
 	if not os.path.exists(path):
@@ -257,3 +321,35 @@ def write_all_fastas(fastas, path):
 	for header, seq in fastas:
 		write_fasta(path, header, seq)
 	logging.info('All fastas written')
+
+def get_dti(path):
+	with open(path, 'r') as f:
+		dtis = f.readlines()
+		dtis = [line.strip().split('\t') for line in dtis]
+	return dtis
+
+def get_admat_from_dti(edges):
+	# get the nodes:
+	horizontal_nodes = list(set([edge[0] for edge in edges]))
+	horizontal_nodes.sort()
+	horizontal_node_position = {node: i for i, node in enumerate(horizontal_nodes)}
+	vertical_nodes = list(set([edge[1] for edge in edges]))
+	vertical_nodes.sort()
+	vertical_node_position = {node: i for i, node in enumerate(vertical_nodes)}
+	# get the matrix dimensions
+	horizontal_length = len(horizontal_nodes)
+	vertical_length = len(vertical_nodes)
+	adjacency = [[0]*horizontal_length for _ in range(vertical_length)]
+	for orig, dest in edges:
+		adjacency[vertical_node_position.get(dest)][horizontal_node_position.get(orig)] = 1
+	adjacency  = pd.DataFrame(adjacency, columns=horizontal_nodes, index=vertical_nodes)
+	return adjacency
+
+def write_edges(edges, path):
+	# with open(path, 'w') as f:
+	# 	for edge in edges:
+	# 		f.write('\t'.join(edge)+'\n')
+	# we need the edges to be in the format: target -- drug
+	with open(path, 'w') as f:
+		for edge1, edge2 in edges:
+			f.write(edge2 +'\t'+ edge1+'\n')

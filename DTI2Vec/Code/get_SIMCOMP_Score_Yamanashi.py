@@ -87,7 +87,7 @@ def main():
 
 	logging.info('Saving the array')
 	check_and_create_folder(db_name)
-	file_path = os.path.join('/home/margaret/data/jfuente/DTI/InputData/DTI2Vec/', db_name, 'Drugs_SIMCOMP_scores.tsv')
+	file_path = os.path.join('./../Data/', db_name, 'Drugs_SIMCOMP_scores.tsv')
 	SIMCOMP_arr.to_csv(file_path, sep='\t')
 
 

@@ -232,12 +232,12 @@ def get_drugs_FDA(START_YEAR, END_YEAR):
     # logging.debug(f'Found {unique_drugs} unique drugs Vs the 291.997 claimed on the paper. ACCEPTABLE')
     logging.info(
         """
-		In this study, we used the drugs (compound names or product names) 
-		labeled as PS or SS and searched the equivalent drugs registered in the KEGG database.
-		CITE:
-		Takarabe, Masataka, et al. "Drug target prediction using adverse event report systems: 
-		a pharmacogenomic approach." Bioinformatics 28.18 (2012): i611-i618.
-	"""
+        In this study, we used the drugs (compound names or product names) 
+        labeled as PS or SS and searched the equivalent drugs registered in the KEGG database.
+        CITE:
+        Takarabe, Masataka, et al. "Drug target prediction using adverse event report systems: 
+        a pharmacogenomic approach." Bioinformatics 28.18 (2012): i611-i618.
+    """
     )
     # get the drugs classified as PrimarySuspect or SecondarySuspect
     all_drugs = [parse_drugs(drug) for drug in tqdm(all_drugs, desc="Parsing drugs")]
@@ -268,6 +268,7 @@ def get_freqs(drug, keywords, fda_dict, keyword_freq_percent, id_aers_dict):
         if event in keywords_set:
             drug_kw_vector[keywords_set.get(event)] = keyword_freq_percent.get(event)
     return drug_kw_vector
+
 
 def clean_name(blacklist, drug_name):
     drug_name_cleaned = re.sub(r"\([^)]*\)", "", drug_name)
@@ -310,7 +311,7 @@ def get_frequencies(
                 id_events_aers,
             )
         )
-
+    logging.info("Binarizing the frequencies")
     aers_bit = []
     for freq in aers_freq:
         aers_bit.append([1 if entry > 0 else 0 for entry in freq])

@@ -4,19 +4,24 @@
 This section assumes that the preprocessing of the data has been already made.
 If not, read below.
 
-execute 
+all needed data should already be in data_dti
+
 ```
-.sh
+execute main_modified_eegdti.py <DB name>
+```
+
+or with docker with the script
+```
+launch_eegdti.sh <DB name>
 ```
 
 
 # Instructions for running the preprocesing of the data
 
 This model needs the same preprocessing as for DTINet, indeed the  Luo Dataset. 
-
 If you want to replicate this step, you can run one of the following scripts
 ```
-***
+run_preprocess_***.py
 ```
 
 This model needs 3 folders with specific data:
@@ -31,18 +36,21 @@ in some machines.
 
 1. With this first script we get the folder sevenNetworks, oneTooneIndex, and send data to the dockerfile for executing matlab
 ```
-sh processing_matlab_A.sh
+sh processing_matlab_A.sh <database name>
 ```
 
 2. run compute_similarity.m in matlab docker
 ```
 matlab -nodisplay -nosplash -nodesktop -r "run('compute_similarity.m');exit;"
 ```
-This script has been slightly modified for usage issues, only in paths 
+This script has been slightly modified for usage issues, only in paths. 
+Once run, you can leave the docker and from code folder again you can execute the second
+part of the bash file. 
+
 
 3. Now we have already in the folder the inputs of the model:sevenNets & sim_network with running the following:
 ```
-sh processing_matlab_A.sh
+sh processing_matlab_B.sh <database name>
 ```
 
 
@@ -53,42 +61,35 @@ EEG-DTI uses the Luo Dataset (from DTINet).
  -> but including the compute_similarity.m script 
  -> including now the transpose matrix of mat_drug_protein.txt (mat_protein_drug.txt)
 
-
 Folders/files that actually use:
 - sevenNets: mat_* from Luo (including transpose)
 - sim_network == network from compute similarity in DTINet (compute_similarity.m)
-- oneTooneIndex:
-    * train_index_(0, 1)'+str(seed)+'.txt' for each seed
+- oneTooneIndex: index of positive and negative edges for train/test
 
 
 ## Folder structure for input
 
 They have 4 folders in data, from which they only use SevenNets & sim_network, oneToon
 
-## Notes on original dataset & Github
 
-- Yamanishi: error ????  --> in Issues Github! --> ACTUALLY we dont need this one
-- Luo: works!
-
-Run without GPU: stopped at seed 10
-Run with GPI
-
-## Execute docker
+## About docker
 
 image name: eeg_dti
 
-##### run
-
-ollo ó piollo: run with gpu
-pero no nos da la memoria a nosotros, asi que a funcionar sin gpu
+if available gpu 
+(pero no nos da la memoria a nosotros, asi que a funcionar sin gpu)
 ```
 docker run  --gpus all --name eeg_dti_test_gpu  -it eeg_dti  bash
 ```
 
+inside, can be checked if the gpu is activated typing nvidia-smi.
+
+```
 docker run  --name eeg_dti_test_index  -it eeg_dti  bash
+```
 
+-----------------------------------------------------------------------> from here only notes from tests 
 
-inside, can be checked as nvidia-smi 
 
 
 docker run  --name eeg_dti_test_cleanfolder  -it eeg_dti  bash
@@ -101,15 +102,20 @@ or for tensorflow 1.15.0
 
 docker run --name eeg_dti_test_latest -it eeg_dti:latest bash
 
-##### Keep up
-```
-$ docker restart eeg_dti_test_gpu 
-```
 
-#### entrar
-```
-docker exec -it dtinet_original bash
-```
+
+notes, test original ----
+docker run  --name eeg_dti_original  -it eeg_dti  bash
+docker restart eeg_dti_original
+nohup time docker exec eeg_dti_original python3 /EEG-DTI/main_luo_all_networks.py > log_eegdit_original.out &
+
+notes yamanishi nr----
+docker run  --name eeg_dti_nr_test  -it eeg_dti  bash
+docker restart eeg_dti_nr_test
+docker cp  /mnt/md0/data/jfuente/DTI/Input4Models/EEG-DTI/Data/Yamanashi_et_al_GoldStandard/NR eeg_dti_nr_test:/EEG-DTI
+docker cp  main_modified_eegdti.py eeg_dti_nr_test:/EEG-DTI
+
+
 
 
 
