@@ -53,13 +53,13 @@ else:
 # create a luo like & yamanishi like 
 # for running our comparations
 parser = argparse.ArgumentParser() 
-parser.add_argument("DB", help=" Name of database: ('BIOSNAP', 'BindingDB', 'Davis_et_al', 'DrugBank_FDA', 'E', 'GPCR', 'IC', 'NR')", type=str)
+parser.add_argument("DB", help=" Name of database: ('BIOSNAP', 'BindingDB', 'Davis_et_al', 'DrugBank', 'E', 'GPCR', 'IC', 'NR')", type=str)
 args = parser.parse_args()
 
 DATABASE = args.DB
 
 luolike = ['DrugBank', 'BIOSNAP']
-yamanishilike = ['NR', 'E', 'GPCR', 'IC', 'Davis', 'BindingDB']
+yamanishilike = ['NR', 'E', 'GPCR', 'IC', 'Davis_et_al', 'BindingDB']
 if DATABASE in luolike:
     n_epochs, batchsize = 10, 128
 elif DATABASE in yamanishilike:

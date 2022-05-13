@@ -20,6 +20,11 @@ launch_eegdti.sh <DB name>
 ```
 
 nohup bash ./launch_eegdti.sh -b E -d eeg_dti > launch_eegdti_E.out &
+nohup bash ./launch_eegdti.sh -b IC -d eeg_dti > launch_eegdti_IC.out &
+
+
+nohup bash ./launch_eegdti.sh -b Davis_et_al -d eeg_dti > launch_eegdti_Davis.out &
+
 
 # Notes
 
