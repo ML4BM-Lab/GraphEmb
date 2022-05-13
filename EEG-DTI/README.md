@@ -12,9 +12,18 @@ execute main_modified_eegdti.py <DB name>
 
 or with docker with the script
 ```
+nohup bash ./launch_eegdti.sh -b NR -d eeg_dti > launch_eegdti_nr.out &
+nohup bash ./launch_eegdti.sh -b <database name> -d eeg_dti > launch_eegdti_nr.out &
 launch_eegdti.sh <DB name>
 ```
+# Notes
 
+we needed to modify the following .py
+    - main **
+        because: 
+            - batch size & number of epochs
+    - minibatch.py
+        because: folder changed for input new data
 
 # Instructions for running the preprocesing of the data
 
@@ -92,31 +101,6 @@ docker run  --name eeg_dti_test_index  -it eeg_dti  bash
 
 
 
-docker run  --name eeg_dti_test_cleanfolder  -it eeg_dti  bash
-
---
-this is 1.15.5 tensorflow
-docker run --name eeg_dti_test -it eeg_dti:1.0 bash
-
-or for tensorflow 1.15.0
-
-docker run --name eeg_dti_test_latest -it eeg_dti:latest bash
-
-
-
-notes, test original ----
-docker run  --name eeg_dti_original  -it eeg_dti  bash
-docker restart eeg_dti_original
-nohup time docker exec eeg_dti_original python3 /EEG-DTI/main_luo_all_networks.py > log_eegdit_original.out &
-
-notes yamanishi nr----
-docker run  --name eeg_dti_nr_test  -it eeg_dti  bash
-docker restart eeg_dti_nr_test
-docker cp  /mnt/md0/data/jfuente/DTI/Input4Models/EEG-DTI/Data/Yamanashi_et_al_GoldStandard/NR eeg_dti_nr_test:/EEG-DTI
-docker cp  main_modified_eegdti.py eeg_dti_nr_test:/EEG-DTI
-
-
-
 
 
 #### execute outside docker
@@ -133,18 +117,6 @@ nohup docker exec eeg_dti_test python3 /EEG-DTI/main_luo_all_networks.py > log_E
 docker cp  /home/uveleiro/data/jfuente/DTI/Input4Models/DTINet/Data/Yamanashi_et_al_GoldStandard/NR eeg_dti_test:/EEG-DTI
 ```
 
-
---> In EEG-DTI we need the similarity networks from DTINet, -------------------------------> **** 
-
-
-my new test in
-docker run  --name eeg_dti_test_one  -it eeg_dti  bash
-
-docker cp  /mnt/md0/data/jfuente/DTI/Input4Models/EEG-DTI/Data/Davis_et_al eeg_dti_test_one:/EEG-DTI
-
-error of sizes !! check code!! --> run in error, done for luo with special shape 708 drugs 1512 proteins 
-
-docker cp  eeg_dti_test:/EEG-DTI/main_luo_all_networks.py   .
 
 
 main_modified_eegdti.py 
