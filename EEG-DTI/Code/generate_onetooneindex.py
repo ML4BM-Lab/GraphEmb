@@ -11,7 +11,7 @@ import argparse
 
 def main():
 	'''
-	DrugBank
+	
 	'''
 	parser = argparse.ArgumentParser() 
 	parser.add_argument("-v", "--verbose", dest="verbosity", action="count", default=4,

@@ -387,7 +387,9 @@ def main():
 	logging.info(f'        * matrix shape {matrix_drug_protein.shape}')
 	logging.info(f'        * # drug-protein edges {matrix_drug_protein.sum().sum()}')
 	matrix_drug_protein.to_csv(os.path.join(wdir, 'mat_drug_protein.txt'), index=False, header=False, sep=" ") 
-	
+	matrix_protein_drug = matrix_drug_protein.T
+	matrix_protein_drug.to_csv(os.path.join(wdir, 'mat_protein_drug.txt'), index=False, header=False, sep=" ") 
+
 	# Drug Similarity Matrix
 	logging.info('-'*30)
 	logging.info('Drug Similarity matrix....')

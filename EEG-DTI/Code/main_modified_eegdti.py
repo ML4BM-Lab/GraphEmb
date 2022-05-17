@@ -58,12 +58,14 @@ args = parser.parse_args()
 
 DATABASE = args.DB
 
-luolike = ['DrugBank', 'BIOSNAP']
-yamanishilike = ['NR', 'E', 'GPCR', 'IC', 'Davis_et_al', 'BindingDB']
+luolike = ['DrugBank', 'BIOSNAP', 'BindingDB', 'E']
+yamanishilike = ['NR', 'Davis_et_al' , 'GPCR'] 
 if DATABASE in luolike:
     n_epochs, batchsize = 10, 128
 elif DATABASE in yamanishilike:
     n_epochs, batchsize = 100, 32
+elif DATABASE == 'IC': # IC faisl for two other options
+    n_epochs, batchsize = 10, 127 # 10
 else:
     print('Dabase not available DBs')
 
@@ -457,6 +459,7 @@ for seed in range(0,10):
         minibatch.shuffle()
         itr = 0
         while not minibatch.end():
+        #while itr < 2000:
         #for itr in range(1000):
             # Construct feed dictionary
             feed_dict = minibatch.next_minibatch_feed_dict(placeholders=placeholders)
@@ -478,8 +481,13 @@ for seed in range(0,10):
                       "train_loss=", "{:.5f}".format(train_cost),
                       "val_roc=", "{:.5f}".format(val_auc), "val_auprc=", "{:.5f}".format(val_auprc),
                       "val_apk=", "{:.5f}".format(val_apk), "time=", "{:.5f}".format(time.time() - t))
-
+            # force a maximun number of iterations
+            if itr > 2000: 
+                print('reached maximum number of iterations')
+                break
+            #
             itr += 1
+            
 
     print("Optimization finished!")
 

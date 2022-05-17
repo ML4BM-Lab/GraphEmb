@@ -20,11 +20,15 @@ launch_eegdti.sh <DB name>
 ```
 
 nohup bash ./launch_eegdti.sh -b E -d eeg_dti > launch_eegdti_E.out &
+nohup bash ./launch_eegdti.sh -b BindingDB -d eeg_dti > launch_eegdti_bindingdb.out &
+
+testing again IC and error again
 nohup bash ./launch_eegdti.sh -b IC -d eeg_dti > launch_eegdti_IC.out &
 
+testing again GPCR, works for yama size, testing for luo...
+nohup bash ./launch_eegdti.sh -b GPCR -d eeg_dti > launch_eegdti_GPCR.out &
 
 nohup bash ./launch_eegdti.sh -b Davis_et_al -d eeg_dti > launch_eegdti_Davis.out &
-
 
 # Notes
 
