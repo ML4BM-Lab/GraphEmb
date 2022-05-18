@@ -31,7 +31,7 @@ def DAVIS_AERS_FDA(DB_PATH = './DB/Data/Davis_et_al/Davis_30.tsv',model_name='DD
 	
 	####################### DAVIS -- DB annotation specific ###########################
 	# create the dicctionary with the drugs up to date for BINDINGDB-DrugBank
-	annotation_file = f'./DB/Data/croxss_side_information_DB/FDA/Davis_Drug_FDA_dict{START_YEAR}_{END_YEAR}.txt'
+	annotation_file = f'./DB/Data/cross_side_information_DB/FDA/Davis_Drug_FDA_dict{START_YEAR}_{END_YEAR}.txt'
 	if os.path.isfile(annotation_file):
 		logging.info(f'Found {annotation_file}')
 		fda_DB_dict = hf.read_annotation(annotation_file)
@@ -98,9 +98,9 @@ def DAVIS_AERS_FDA(DB_PATH = './DB/Data/Davis_et_al/Davis_30.tsv',model_name='DD
 
 	path = hf.check_and_create_folder(db_name,model_name)
 	aers_freq_pd = pd.DataFrame(aers_freq, columns=unique_keywords_vector, index=drugs)
-	aers_freq_pd.to_csv(os.path.join(path, 'Davis_Drug_FDA_aers_freq.tsv'), sep='\t')
+	aers_freq_pd.to_csv(os.path.join(path, 'Davis_et_al_drug_FDA_aers_freq.tsv'), sep='\t')
 	aers_bit_pd =  pd.DataFrame(aers_bit,  columns=unique_keywords_vector, index=drugs)
-	aers_bit_pd.to_csv(os.path.join(path, 'Davis_Drug_FDA_aers_bit.tsv'), sep='\t')
+	aers_bit_pd.to_csv(os.path.join(path, 'Davis_et_al_drug_FDA_aers_bit.tsv'), sep='\t')
 
 def BINDINGDB_AERS_FDA(DB_PATH = './DB/Data/BindingDB/tdc_package_preprocessing/BindingDB_max_affinity.tsv',model_name='DDR'):
 
@@ -220,11 +220,11 @@ def BINDINGDB_AERS_FDA(DB_PATH = './DB/Data/BindingDB/tdc_package_preprocessing/
     path = hf.check_and_create_folder(db_name,model_name)
     logging.info(f'Saving the results in {path}')
     aers_freq_pd = pd.DataFrame(aers_freq, columns=unique_keywords_vector, index=drugs)
-    aers_freq_pd.to_csv(os.path.join(path, 'BindingDB_Drug_FDA_aers_freq.tsv'), sep='\t')
-    aers_freq_pd.to_pickle(os.path.join(path, 'BindingDB_Drug_FDA_aers_freq.pickle'))
+    aers_freq_pd.to_csv(os.path.join(path, 'BindingDB_drug_FDA_aers_freq.tsv'), sep='\t')
+    #aers_freq_pd.to_pickle(os.path.join(path, 'BindingDB_Drug_FDA_aers_freq.pickle'))
     aers_bit_pd =  pd.DataFrame(aers_bit,  columns=unique_keywords_vector, index=drugs)
-    aers_bit_pd.to_csv(os.path.join(path, 'BindingDB_Drug_FDA_aers_bit.tsv'), sep='\t')
-    aers_bit_pd.to_pickle(os.path.join(path, 'BindingDB_Drug_FDA_aers_bit.pickle'))
+    aers_bit_pd.to_csv(os.path.join(path, 'BindingDB_drug_FDA_aers_bit.tsv'), sep='\t')
+    #aers_bit_pd.to_pickle(os.path.join(path, 'BindingDB_Drug_FDA_aers_bit.pickle'))
 
 def DRUGBANK_AERS_FDA(DB_PATH =  './DB/Data/DrugBank/DrugBank_DTIs.tsv',model_name='DDR'):
 	
@@ -320,14 +320,15 @@ def DRUGBANK_AERS_FDA(DB_PATH =  './DB/Data/DrugBank/DrugBank_DTIs.tsv',model_na
 
 	path = hf.check_and_create_folder(db_name,model_name)
 	aers_freq_pd = pd.DataFrame(aers_freq, columns=unique_keywords_vector, index=drugs)
-	aers_freq_pd.to_csv(os.path.join(path, 'DrugBank_Drug_FDA_aers_freq.tsv'), sep='\t')
+	aers_freq_pd.to_csv(os.path.join(path, 'DrugBank_drug_FDA_aers_freq.tsv'), sep='\t')
 	aers_bit_pd =  pd.DataFrame(aers_bit,  columns=unique_keywords_vector, index=drugs)
-	aers_bit_pd.to_csv(os.path.join(path, 'DrugBank_Drug_FDA_aers_bit.tsv'), sep='\t')
+	aers_bit_pd.to_csv(os.path.join(path, 'DrugBank_drug_FDA_aers_bit.tsv'), sep='\t')
 
-def YAMANASHI_AERS_FDA(DB_PATH = './DB/Data/Yamanashi_et_al_GoldStandard/E/interactions/e_admat_dgc_mat_2_line.txt',model_name='DDR'):
+def YAMANASHI_AERS_FDA(subdataset='E',model_name='DDR'):
     
 	fmt = '[%(levelname)s] %(message)s'
 	logging.basicConfig(format=fmt, level=logging.DEBUG)
+	DB_PATH = './DB/Data/Yamanashi_et_al_GoldStandard/'+subdataset+'/interactions/'+subdataset.lower()+'_admat_dgc_mat_2_line.txt'
 
 	# sanity check for the DB
 	paper_cite = 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3436840/'
@@ -446,8 +447,8 @@ def YAMANASHI_AERS_FDA(DB_PATH = './DB/Data/Yamanashi_et_al_GoldStandard/E/inter
 	aers_freq = pd.DataFrame(aers_freq, columns=unique_keywords_vector,index=drugs)
 	path = hf.check_and_create_folder(db_name,model_name)
 	subname = hf.get_yamanashi_subDB(db_name)
-	aers_freq.to_csv(os.path.join(path, f'{subname}_Drug_FDA_aers_freq.tsv'), sep='\t')
-	aers_bit.to_csv(os.path.join(path,  f'{subname}_Drug_FDA_aers_bit.tsv'), sep='\t')
+	aers_freq.to_csv(os.path.join(path, f'{subname}_drug_FDA_aers_freq.tsv'), sep='\t')
+	aers_bit.to_csv(os.path.join(path,  f'{subname}_drug_FDA_aers_bit.tsv'), sep='\t')
 
 def BIOSNAP_AERS_FDA(DB_PATH = '/home/margaret/data/jfuente/DTI/Input4Models/DB/Data/BIOSNAP/ChG-Miner_miner-chem-gene/ChG-Miner_miner-chem-gene.tsv',model_name='DDR'):
 
@@ -465,19 +466,19 @@ def BIOSNAP_AERS_FDA(DB_PATH = '/home/margaret/data/jfuente/DTI/Input4Models/DB/
     END_YEAR = 2021
 
     hf.dowload_FAERS(START_YEAR, END_YEAR)
-    hf.uncompress_FAERS("./../../DB/Data/cross_side_information_DB/FDA")
+    hf.uncompress_FAERS("./DB/Data/cross_side_information_DB/FDA")
     all_drugs = hf.get_drugs_FDA(START_YEAR, END_YEAR)
 
     ####################### BIOSNAP -- DB annotation specific ###########################
     # create the dicctionary with the drugs up to date for BIOSNAP-DrugBank
-    annotation_file = f"./../../DB/Data/cross_side_information_DB/FDA/fda_biosnap_db_dict{START_YEAR}_{END_YEAR}.txt"
+    annotation_file = f"./DB/Data/cross_side_information_DB/FDA/fda_biosnap_db_dict{START_YEAR}_{END_YEAR}.txt"
     if os.path.isfile(annotation_file):
         logging.info(f"Found {annotation_file}")
         fda_DB_dict = hf.read_annotation(annotation_file)
     else:
         logging.info(f"Parsing the DB")
         tree = ET.parse(
-            "./../../DB/Data/cross_side_information_DB/DrugBank/Data/full_database.xml"
+            "./DB/Data/cross_side_information_DB/DrugBank/Data/full_database.xml"
         )
         root = tree.getroot()
         # db_drugProd_drugId
@@ -578,7 +579,7 @@ def BIOSNAP_AERS_FDA(DB_PATH = '/home/margaret/data/jfuente/DTI/Input4Models/DB/
 
     path = hf.check_and_create_folder(db_name,model_name)
     aers_freq_pd = pd.DataFrame(aers_freq, columns=unique_keywords_vector, index=drugs)
-    aers_freq_pd.to_csv(os.path.join(path, "BIOSNAP_Drug_FDA_aers_freq.tsv"), sep="\t")
+    aers_freq_pd.to_csv(os.path.join(path, "BIOSNAP_drug_FDA_aers_freq.tsv"), sep="\t")
     aers_bit_pd = pd.DataFrame(aers_bit, columns=unique_keywords_vector, index=drugs)
-    aers_bit_pd.to_csv(os.path.join(path, "BIOSNAP__Drug_FDA_aers_bit.tsv"), sep="\t")
+    aers_bit_pd.to_csv(os.path.join(path, "BIOSNAP__drug_FDA_aers_bit.tsv"), sep="\t")
 

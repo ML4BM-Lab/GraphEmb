@@ -42,11 +42,11 @@ def check_properties():
                 print(f'\nDataframe: {DF}')
                 for mat in matrices:
                         print(f'\nMat: {mat}')
-                        check_mat(path=os.getcwd()+f'/Methods/DDR/Data/{DB}/{DF}/{DF}_{mat}.tsv')
+                        check_mat(path=os.getcwd()+f'/DDR/Data/{DB}/{DF}/{DF}_{mat}.tsv')
         else:
             for mat in matrices:
                     print(f'\nMat: {mat}')
-                    check_mat(path=os.getcwd()+f'/Methods/DDR/Data/{DB}/{DB}_{mat}.tsv')
+                    check_mat(path=os.getcwd()+f'/DDR/Data/{DB}/{DB}_{mat}.tsv')
 
 print('Checking properties!')
 check_properties()

@@ -4,10 +4,10 @@ import os
 import shutil
 import subprocess  as sp
 import re
-import helper_functions_DTI2Vec as hf
+import Drugs_kernels_helpers as hf
 
 
-def BINDINGDB_SIMCOMP(DB_PATH =  './../../DB/Data/BindingDB/tdc_package_preprocessing/BindingDB_max_affinity.tsv'):
+def BINDINGDB_SIMCOMP(DB_PATH =  './DB/Data/BindingDB/tdc_package_preprocessing/BindingDB_max_affinity.tsv'):
 
 	fmt = '[%(levelname)s] %(message)s'
 	logging.basicConfig(format=fmt, level=logging.DEBUG)

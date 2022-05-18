@@ -3,7 +3,8 @@
 ## RNA- or AA-sequences can be used as well with the mismatch kernel
 
 #Load Kebab
-library(kebabs, lib.loc = '/home/sevastopol/R/x86_64-pc-linux-gnu-library/3.6')
+#library(kebabs, lib.loc = '/home/sevastopol/R/x86_64-pc-linux-gnu-library/3.6')
+library(kebabs)
 args = commandArgs(trailingOnly = TRUE)
 
 generate_protein_kernels_using_KeBABs <- function(path_to_fasta,savepath){
@@ -21,20 +22,21 @@ generate_protein_kernels_using_KeBABs <- function(path_to_fasta,savepath){
         return(AAseq_c)
     }
 
-    retrieve_AAsequences <- function(AAseq){
+    retrieve_AAsequences <- function(AAseq,namesSeq){
         dnaseqs <- AAStringSet(AAseq)
-        names(dnaseqs) <- paste("S", 1:length(dnaseqs), sep="")
+        #names(dnaseqs) <- paste("S", 1:length(dnaseqs), sep="")
+        names(dnaseqs) <- namesSeq
         return(dnaseqs)
     }
 
-    mismatch_kernel <- function(k,m,AAseq){
+    mismatch_kernel <- function(k,m,AAseq,namesSeq){
         mK <- mismatchKernel(k=k, m=m)
-        return (mK(retrieve_AAsequences(AAseq)))
+        return (mK(retrieve_AAsequences(AAseq,namesSeq)))
     }
 
-    spectrum_kernel <- function(k,AAseq){
+    spectrum_kernel <- function(k,AAseq,namesSeq){
         mK <- spectrumKernel(k=k)
-        return (mK(retrieve_AAsequences(AAseq)))
+        return (mK(retrieve_AAsequences(AAseq,namesSeq)))
     }
 
     get_mismatch_kernels <- function(AAseq_fasta){
@@ -42,7 +44,7 @@ generate_protein_kernels_using_KeBABs <- function(path_to_fasta,savepath){
         if (!file.exists(paste0(savepath,'mismatch_kernel_k3m1.tsv'))){
             message('Computing mismatch kernel with k=3 and m=1')
             #k=3,m=1
-            k3m1_Kernel <- mismatch_kernel(3,1,format_AAseq_fasta(AAseq_fasta))
+            k3m1_Kernel <- mismatch_kernel(3,1,format_AAseq_fasta(AAseq_fasta),names(AAseq_fasta))
             message('Saving it!')
             write.table(k3m1_Kernel,paste0(savepath,'mismatch_kernel_k3m1.tsv'),sep='\t')
         }
@@ -50,7 +52,7 @@ generate_protein_kernels_using_KeBABs <- function(path_to_fasta,savepath){
         if (!file.exists(paste0(savepath,'mismatch_kernel_k4m1.tsv'))){
             message('Computing mismatch kernel with k=4 and m=1')
             #k=4,m=1
-            k4m1_Kernel <- mismatch_kernel(4,1,format_AAseq_fasta(AAseq_fasta))
+            k4m1_Kernel <- mismatch_kernel(4,1,format_AAseq_fasta(AAseq_fasta),names(AAseq_fasta))
             message('Saving it!')
             write.table(k4m1_Kernel,paste0(savepath,'mismatch_kernel_k4m1.tsv'),sep='\t')
         }
@@ -58,7 +60,7 @@ generate_protein_kernels_using_KeBABs <- function(path_to_fasta,savepath){
         if (!file.exists(paste0(savepath,'mismatch_kernel_k3m2.tsv'))){
             message('Computing mismatch kernel with k=3 and m=2')
             #k=3,m=2
-            k3m2_Kernel <- mismatch_kernel(3,2,format_AAseq_fasta(AAseq_fasta))
+            k3m2_Kernel <- mismatch_kernel(3,2,format_AAseq_fasta(AAseq_fasta),names(AAseq_fasta))
             message('Saving it!')
             write.table(k3m2_Kernel,paste0(savepath,'mismatch_kernel_k3m2.tsv'),sep='\t')
         }
@@ -66,7 +68,7 @@ generate_protein_kernels_using_KeBABs <- function(path_to_fasta,savepath){
         if (!file.exists(paste0(savepath,'mismatch_kernel_k4m2.tsv'))){
             message('Computing mismatch kernel with k=4 and m=2')
             #k=4,m=2
-            k4m2_Kernel <- mismatch_kernel(4,2,format_AAseq_fasta(AAseq_fasta))
+            k4m2_Kernel <- mismatch_kernel(4,2,format_AAseq_fasta(AAseq_fasta),names(AAseq_fasta))
             message('Saving it!')
             write.table(k4m2_Kernel,paste0(savepath,'mismatch_kernel_k4m2.tsv'),sep='\t')
         }
@@ -78,7 +80,7 @@ generate_protein_kernels_using_KeBABs <- function(path_to_fasta,savepath){
         if (!file.exists(paste0(savepath,'spectrum_kernel_k3.tsv'))){
             message('Computing spectrum kernel with k=3')
             #k=3
-            k3_Kernel <- spectrum_kernel(3,format_AAseq_fasta(AAseq_fasta))
+            k3_Kernel <- spectrum_kernel(3,format_AAseq_fasta(AAseq_fasta),names(AAseq_fasta))
             message('Saving it!')
             write.table(k3_Kernel,paste0(savepath,'spectrum_kernel_k3.tsv'),sep='\t')
         }
@@ -86,7 +88,7 @@ generate_protein_kernels_using_KeBABs <- function(path_to_fasta,savepath){
         if (!file.exists(paste0(savepath,'spectrum_kernel_k4.tsv'))){
             message('Computing spectrum kernel with k=4')
             #k=4
-            k4_Kernel <- spectrum_kernel(4,format_AAseq_fasta(AAseq_fasta))
+            k4_Kernel <- spectrum_kernel(4,format_AAseq_fasta(AAseq_fasta),names(AAseq_fasta))
             message('Saving it!')
             write.table(k4_Kernel,paste0(savepath,'spectrum_kernel_k4.tsv'),sep='\t')
         }
@@ -103,4 +105,4 @@ generate_protein_kernels_using_KeBABs <- function(path_to_fasta,savepath){
 
 #Generate Protein Kernels using KeBABS
 message('Generating protein kernels using KeBABS')
-generate_protein_kernels_using_KeBABs(args[1],arg[2])
+generate_protein_kernels_using_KeBABs(args[1],args[2])

@@ -46,17 +46,17 @@ except:
 def get_paths(arg1,arg2):
 
     if arg1 == 'Yamanashi_et_al_GoldStandard':
-        drug_savepath = os.path.join(os.getcwd(),f'Methods/DDR/Data/{arg1}/{arg2}/{arg2}_drug_')
-        protein_savepath = os.path.join(os.getcwd(),f'Methods/DDR/Data/{arg1}/{arg2}/{arg2}_prot_')
+        drug_savepath = os.path.join(os.getcwd(),f'DDR/Data/{arg1}/{arg2}/{arg2}_drug_')
+        protein_savepath = os.path.join(os.getcwd(),f'DDR/Data/{arg1}/{arg2}/{arg2}_prot_')
         molpath = os.path.join(f'/tmp/{arg2}_drug_mol')
         protpath = os.path.join(f'/tmp/{arg2}_gene_symbol')
-        fastapath = os.path.join(f'/tmp/{arg2}_gene_fasta')
+        fastapath = os.path.join(os.getcwd(),f'DDR/Data/{arg1}/{arg2}/{arg2}_Targets_AA_sequences.tsv')
     else:
-        drug_savepath = os.path.join(os.getcwd(),f'Methods/DDR/Data/{arg1}/{arg1}_drug_')
-        protein_savepath = os.path.join(os.getcwd(),f'Methods/DDR/Data/{arg1}/{arg1}_prot_')
+        drug_savepath = os.path.join(os.getcwd(),f'DDR/Data/{arg1}/{arg1}_drug_')
+        protein_savepath = os.path.join(os.getcwd(),f'DDR/Data/{arg1}/{arg1}_prot_')
         molpath = os.path.join(f'/tmp/{arg1}_drug_mol')
         protpath = os.path.join(f'/tmp/{arg1}_gene_symbol')
-        fastapath = os.path.join(f'/tmp/{arg1}_gene_fasta')
+        fastapath = os.path.join(os.getcwd(),f'DDR/{arg1}/{arg1}_Targets_AA_sequences.tsv')
 
     dataset = arg1
     subdataset = arg2
@@ -84,22 +84,22 @@ def RchemCPP(path_to_mol,drug_savepath):
     subprocess.run(["Rscript",path_to_script, path_to_mol, drug_savepath],stdout=sys.stdout)
 
 #FDA DB
-def AERS_FDA(name,model_name):
+def AERS_FDA(name,subdataset):
 
     print(f'Generating AERS FDA for {name}')
     if name == 'Davis_et_al':
-        DAVIS_AERS_FDA(model_name)
+        DAVIS_AERS_FDA()
     elif name == 'BIOSNAP':
-        BIOSNAP_AERS_FDA(model_name)
+        BIOSNAP_AERS_FDA()
     elif name == 'DrugBank':
-        DRUGBANK_AERS_FDA(model_name)
+        DRUGBANK_AERS_FDA()
     elif name == 'BindingDB':
-        BINDINGDB_AERS_FDA(model_name)
+        BINDINGDB_AERS_FDA()
     elif name == 'Yamanashi_et_al_GoldStandard':
-        YAMANASHI_AERS_FDA(model_name)
+        YAMANASHI_AERS_FDA(subdataset)
 
 #SIDER 
-def SIDER(name):
+def SIDER(name,subdataset):
 
     print(f'Generating SIDER for {name}')
 
@@ -112,10 +112,10 @@ def SIDER(name):
     elif name == 'BindingDB':
         BINDINGDB_SIDER()
     elif name == 'Yamanashi_et_al_GoldStandard':
-        YAMANASHI_SIDER()
+        YAMANASHI_SIDER(subdataset)
 
 #SIMCOMP
-def SIMCOMP(name):
+def SIMCOMP(name,subdataset):
 
     print(f'Generating SIMCOMP for {name}')
 
@@ -128,7 +128,7 @@ def SIMCOMP(name):
     elif name == 'BindingDB':
         BINDINGDB_SIMCOMP()
     elif name == 'Yamanashi_et_al_GoldStandard':
-        YAMANASHI_SIMCOMP()
+        YAMANASHI_SIMCOMP(subdataset)
 
 #----------------------------------------------------------------------------------------------------------#
 ##PROTEINS
@@ -141,12 +141,11 @@ def GenProtSymbols(dataset,subdataset):
     #generate molfiles
     subprocess.run(["/home/sevastopol/anaconda3/bin/python",path_to_script, dataset, subdataset, protpath],stdout=sys.stdout)
 
-
 #KeBABS
 def KeBABS(fastapath,protein_savepath):
     #(NEED TARGET SEQUENCES)
     print(f'Generating KeBABS matrix')
-    path_to_script = os.getcwd()+'/Methods/DDR/Code/Protein_kernels_kebabs.R'
+    path_to_script = os.getcwd()+'/DDR/Code/Protein_kernels_kebabs.R'
     subprocess.run(["Rscript",path_to_script, fastapath,protein_savepath],stdout=sys.stdout)
 
 #BioGRID
@@ -163,7 +162,7 @@ def BioMART(protpath,dataset,protein_savepath):
     subprocess.run(["Rscript",path_to_script, protpath, dataset, protein_savepath],stdout=sys.stdout)
 
 #SW
-def SW(name):
+def SW(name,subdataset):
 
     print(f'Generating Smith Waterman for {name}')
 
@@ -176,7 +175,7 @@ def SW(name):
     elif name == 'BindingDB':
         BINDINGDB_SW()
     elif name == 'Yamanashi_et_al_GoldStandard':
-        YAMANASHI_SW()
+        YAMANASHI_SW(subdataset)
 
 #---------------------------------------------------------------- MAIN ------------------------------------------#
 ##PREPARE
@@ -185,12 +184,13 @@ def SW(name):
 
 ##Drugs
 #RchemCPP(molpath,drug_savepath)
-AERS_FDA(dataset)
-#SIDER(dataset)
-#SIMCOMP(dataset)
+#AERS_FDA(dataset,subdataset)
+#SIDER(dataset,subdataset)
+#SIMCOMP(dataset,subdataset)
 
 ##Proteins
 #BioMART(protpath,dataset,protein_savepath)
 #BioGRID(protein_savepath,protpath)
-#SW(dataset)
+#SW(dataset,subdataset)
+KeBABS(fastapath,protein_savepath)
 

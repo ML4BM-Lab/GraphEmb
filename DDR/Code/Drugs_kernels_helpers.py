@@ -105,7 +105,7 @@ def dowload_FAERS(start_year=2004, end_year=2021):
     # it was a change on 2012Q4 from aers to faers
     for year in range(start_year, end_year + 1):
         for quarter in range(1, 5):
-            dets_file = f"./../../DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}.zip"
+            dets_file = f"./DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}.zip"
             if not os.path.exists(dets_file):
                 logging.info(f"Downloading FAERS data from {year}-Q{quarter}")
                 url = f"https://fis.fda.gov/content/Exports/faers_ascii_{year}Q{quarter}.zip"
@@ -145,12 +145,12 @@ def get_events(start_year=2004, end_year=2021):
             logging.debug(f"Processing FAERS data from {year}-Q{quarter}")
             # someone screwed up the naming of the files on the FDA side....
             possible_files = [
-                f"./../../DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ASCII/REAC{str(year)[-2:]}Q{quarter}.txt",
-                f"./../../DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ASCII/REAC{str(year)[-2:]}Q{quarter}.TXT",
-                f"./../../DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/REAC{str(year)[-2:]}Q{quarter}.txt",
-                f"./../../DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/REAC{str(year)[-2:]}Q{quarter}.TXT",
-                f"./../../DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/reac{str(year)[-2:]}q{quarter}.TXT",
-                f"./../../DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/reac{str(year)[-2:]}q{quarter}.txt",
+                f"./DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ASCII/REAC{str(year)[-2:]}Q{quarter}.txt",
+                f"./DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ASCII/REAC{str(year)[-2:]}Q{quarter}.TXT",
+                f"./DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/REAC{str(year)[-2:]}Q{quarter}.txt",
+                f"./DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/REAC{str(year)[-2:]}Q{quarter}.TXT",
+                f"./DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/reac{str(year)[-2:]}q{quarter}.TXT",
+                f"./DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/reac{str(year)[-2:]}q{quarter}.txt",
             ]
             fl = [
                 real_file for real_file in possible_files if os.path.isfile(real_file)
@@ -184,12 +184,12 @@ def get_drugs(start_year=2004, end_year=2021):
             logging.debug(f"Processing FAERS data from {year}-Q{quarter}")
             # someone screwed up the naming of the files on the FDA side....
             possible_files = [
-                f"./../../DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ASCII/DRUG{str(year)[-2:]}Q{quarter}.txt",
-                f"./../../DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ASCII/DRUG{str(year)[-2:]}Q{quarter}.TXT",
-                f"./../../DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/DRUG{str(year)[-2:]}Q{quarter}.txt",
-                f"./../../DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/DRUG{str(year)[-2:]}Q{quarter}.TXT",
-                f"./../../DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/drug{str(year)[-2:]}q{quarter}.TXT",
-                f"./../../DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/drug{str(year)[-2:]}q{quarter}.txt",
+                f"./DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ASCII/DRUG{str(year)[-2:]}Q{quarter}.txt",
+                f"./DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ASCII/DRUG{str(year)[-2:]}Q{quarter}.TXT",
+                f"./DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/DRUG{str(year)[-2:]}Q{quarter}.txt",
+                f"./DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/DRUG{str(year)[-2:]}Q{quarter}.TXT",
+                f"./DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/drug{str(year)[-2:]}q{quarter}.TXT",
+                f"./DB/Data/cross_side_information_DB/FDA/faers_ascii_{year}Q{quarter}/ascii/drug{str(year)[-2:]}q{quarter}.txt",
             ]
             fl = [
                 real_file for real_file in possible_files if os.path.isfile(real_file)
@@ -399,7 +399,7 @@ def get_PubChem_SIDER_dict(path):
 
 def get_Binding_to_Pubchem(drugs):
     tree = ET.parse(
-        "./../../DB/Data/cross_side_information_DB/DrugBank/Data/full_database.xml"
+        "./DB/Data/cross_side_information_DB/DrugBank/Data/full_database.xml"
     )
     root = tree.getroot()
     binding_to_pbC = {}
@@ -431,7 +431,7 @@ def get_Binding_to_Pubchem(drugs):
 def get_STITCH_from_Pubchem(compounds, substances):
     pubchem_to_stitch = {}
     with open(
-        "./../../DB/Data/cross_side_information_DB/STITCH/dict_STITCH_PC.tsv", "r"
+        "./DB/Data/cross_side_information_DB/STITCH/dict_STITCH_PC.tsv", "r"
     ) as fl:
         _ = next(fl)
         for line in tqdm(
@@ -442,7 +442,7 @@ def get_STITCH_from_Pubchem(compounds, substances):
                 pubchem_to_stitch[ln[-1]] = ln[0]
 
     with open(
-        "./../../DB/Data/cross_side_information_DB/STITCH/dict_STITCH_PS.tsv", "r"
+        "./DB/Data/cross_side_information_DB/STITCH/dict_STITCH_PS.tsv", "r"
     ) as fl:
         _ = next(fl)
         for line in tqdm(
@@ -507,7 +507,7 @@ def getDB_from_binding(drugs, root=None):
     binding_to_DB = {}
     if not root:
         tree = ET.parse(
-            "./../../DB/Data/cross_side_information_DB/DrugBank/Data/full_database.xml"
+            "./DB/Data/cross_side_information_DB/DrugBank/Data/full_database.xml"
         )
         root = tree.getroot()
     for drug_entry in tqdm(root, desc="Retrieving DB IDs"):
@@ -530,7 +530,6 @@ def getDB_from_binding(drugs, root=None):
                 binding_to_DB[pubchem_substance] = drugbank_ID
                 continue
     return binding_to_DB
-
 
 def get_drugNames_from_Pubchem_web(drugs):
     puchchem_id_name = {}
@@ -562,7 +561,6 @@ def get_drugNames_from_Pubchem_web(drugs):
                 else:
                     puchchem_id_name[cid] = names
     return puchchem_id_name
-
 
 def get_drugNames_from_Pubchem_web_inv(drugs):
     puchchem_id_name = {}

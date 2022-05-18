@@ -6,9 +6,9 @@
 
 ## DRUGS <---#
 
-#    #AERSBIT ^^ FDA, for those not found -> 0 (Weighted cosine correlation coefficient) ✓ (IN MARGARET)
+#    #AERSBIT ^^ FDA, for those not found -> 0 (Weighted cosine correlation coefficient) ✓✓ (IN MARGARET)
 
-#    #AERSFREQ ^^ FDA, for those not found -> 0 (Weighted cosine correlation coefficient) ✓ (IN MARGARET)
+#    #AERSFREQ ^^ FDA, for those not found -> 0 (Weighted cosine correlation coefficient) ✓✓ (IN MARGARET)
 
 #    #LAMBDA ^^ RchemCPP --> WORKING ON IT (sd2gramSpectrum) ✓✓
 
@@ -20,7 +20,7 @@
 
 #    #TANIMOTO ^^ RchemCPP --> WORKING ON IT (sd2gramSpectrum) ✓✓
  
-#    #SIDER ^^ Presence or abscence 1 or 0, not found -> 0 (Weighted cosine correlation coefficient) ✓ (IN MARGARET)
+#    #SIDER ^^ Presence or abscence 1 or 0, not found -> 0 (Weighted cosine correlation coefficient) ✓✓/2 (IN MARGARET)
 
 #    #SIMCOMP ^^ (Yamanishi et al) --> ✓ (IN MARGARET)
 
@@ -34,7 +34,7 @@
 
 #    #PPI ** BioGRID DB, using paper formula (is in his matlab scripts, 'shortest hop distance') ✓✓
 
-#    #SW ** ALREADY HAVE INFO FOR THAT --> ✓ (IN MARGARET)
+#    #SW ** ALREADY HAVE INFO FOR THAT --> ✓✓ (IN MARGARET)
 
 
 # ---------------------------------------------------------------------#

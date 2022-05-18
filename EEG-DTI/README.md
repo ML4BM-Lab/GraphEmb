@@ -19,16 +19,28 @@ nohup bash ./launch_eegdti.sh -b <database name> -d eeg_dti > launch_eegdti_nr.o
 launch_eegdti.sh <DB name>
 ```
 
-nohup bash ./launch_eegdti.sh -b E -d eeg_dti > launch_eegdti_E.out &
-nohup bash ./launch_eegdti.sh -b BindingDB -d eeg_dti > launch_eegdti_bindingdb.out &
+how all executed:
+```
+nohup bash ./launch_eegdti.sh -b E -d eeg_dti > log_launch/launch_eegdti_E.out &
+nohup bash ./launch_eegdti.sh -b IC -d eeg_dti > log_launch/launch_eegdti_IC.out &
+nohup bash ./launch_eegdti.sh -b GPCR -d eeg_dti > log_launch/launch_eegdti_GPCR.out &
+nohup bash ./launch_eegdti.sh -b NR -d eeg_dti > log_launch/launch_eegdti_NR.out &
 
-testing again IC and error again
-nohup bash ./launch_eegdti.sh -b IC -d eeg_dti > launch_eegdti_IC.out &
+nohup bash ./launch_eegdti.sh -b BindingDB -d eeg_dti > log_launch/launch_eegdti_BindingDB.out &
+nohup bash ./launch_eegdti.sh -b Davis_et_al -d eeg_dti > log_launch/launch_eegdti_Davis_et_al.out &
 
-testing again GPCR, works for yama size, testing for luo...
-nohup bash ./launch_eegdti.sh -b GPCR -d eeg_dti > launch_eegdti_GPCR.out &
+nohup bash ./launch_eegdti.sh -b BIOSNAP -d eeg_dti > log_launch/launch_eegdti_BIOSNAP.out &
 
-nohup bash ./launch_eegdti.sh -b Davis_et_al -d eeg_dti > launch_eegdti_Davis.out &
+```
+
+
+Missing:
+BIOSNAP -- > launched at: 0:35 18th May
+
+DrugBank
+#nohup bash ./launch_eegdti.sh -b DrugBank -d eeg_dti > log_launch/launch_eegdti_DrugBank.out &
+
+
 
 # Notes
 

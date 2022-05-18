@@ -3,29 +3,10 @@ import argparse
 import logging
 import os, sys
 import shutil
-import requests as r
 from tqdm import tqdm
-from re import search
 import pubchempy as pcp
 import subprocess  as sp
 import xml.etree.ElementTree as ET
-
-
-def get_DB_name(path):
-	"""
-	This function returns the name of the DB.
-	"""
-	DB_NAMES = ['BIOSNAP', 'BindingDB', 'Davis_et_al', 'DrugBank', 'DrugBank_FDA', 'E', 'GPCR', 'IC', 'NR']
-	for db in DB_NAMES:
-		if search(db, path):
-			logging.info(f'Database: {db}')
-			if db in ['E', 'GPCR', 'IC', 'NR']:
-				db = os.path.join('Yamanashi_et_al_GoldStandard', db)
-				return db
-			else:
-				return db
-	logging.error(f'Database: {db} not found')
-	sys.exit('Please provide a valid database')
 
 def read_and_extract_DrugBank(path):
 	dti_file = os.path.join(path, 'DrugBank_DTIs.tsv')

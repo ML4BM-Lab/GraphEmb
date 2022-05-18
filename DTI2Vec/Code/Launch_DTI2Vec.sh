@@ -55,7 +55,7 @@ done
 
 
 #  docker exec -it $DOCKER_ID bash
-time docker exec -it $DOCKER_ID python3 -u ./DTi2vec_main.py --data Custom --classifier xgbc --func Hadmard > results_custom.txt
+time docker exec  $DOCKER_ID python3 -u ./DTi2vec_main.py --data Custom --classifier xgbc --func Hadmard > results_custom.txt
 # docker cp  $DOCKER_ID:/DTi2Vec/results_custom.txt .
 
 

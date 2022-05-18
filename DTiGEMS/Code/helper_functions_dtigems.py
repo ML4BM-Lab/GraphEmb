@@ -532,7 +532,7 @@ def getDB_from_binding(drugs, root=None):
                 binding_to_DB[pubchem_substance] = drugbank_ID
                 continue
     return binding_to_DB
-
+ 
 
 def get_drugNames_from_Pubchem_web(drugs):
     puchchem_id_name = {}
