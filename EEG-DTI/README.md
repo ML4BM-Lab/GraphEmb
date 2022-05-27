@@ -28,17 +28,14 @@ nohup bash ./launch_eegdti.sh -b NR -d eeg_dti > log_launch/launch_eegdti_NR.out
 
 nohup bash ./launch_eegdti.sh -b BindingDB -d eeg_dti > log_launch/launch_eegdti_BindingDB.out &
 nohup bash ./launch_eegdti.sh -b Davis_et_al -d eeg_dti > log_launch/launch_eegdti_Davis_et_al.out &
-
 nohup bash ./launch_eegdti.sh -b BIOSNAP -d eeg_dti > log_launch/launch_eegdti_BIOSNAP.out &
-
+nohup bash ./launch_eegdti.sh -b DrugBank -d eeg_dti > log_launch/launch_eegdti_DrugBank.out &
 ```
 
 
 Missing:
-BIOSNAP -- > launched at: 0:35 18th May
+DrugBank -> launched at  9:44
 
-DrugBank
-#nohup bash ./launch_eegdti.sh -b DrugBank -d eeg_dti > log_launch/launch_eegdti_DrugBank.out &
 
 
 
