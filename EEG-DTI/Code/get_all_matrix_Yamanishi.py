@@ -377,6 +377,8 @@ def main():
 	matrix_drug_protein = matrix_drug_protein.astype(int)
 	logging.info(f'        * matrix shape {matrix_drug_protein.shape}')
 	logging.info(f'        * # drug-protein edges {matrix_drug_protein.sum().sum()}')
+	# dti file
+	dti.to_csv(os.path.join(wdir, f'final_dtis_{DB_PATH}.tsv'), index=False, header=False, sep="\t")
 	matrix_drug_protein.to_csv(os.path.join(wdir, 'mat_drug_protein.txt'), index=False, header=False, sep=" ") 
 	matrix_protein_drug = matrix_drug_protein.T
 	matrix_protein_drug.to_csv(os.path.join(wdir, 'mat_protein_drug.txt'), index=False, header=False, sep=" ") 
