@@ -40,7 +40,7 @@ def main():
 	### log output detals
 	logging.info(
 		'''
-		This script generates ....
+		This script generates splits
 		'''
 		)
 	# OUTPUT DIRECTORY
@@ -60,31 +60,27 @@ def main():
 	##########################################
 	# create oneTooneIndex folder if it does not exists
 	# type Sp first
-	if SPLIT_TYPE == 'Sp':
-		path_folder = os.path.join(wdir, f'oneTooneIndex_{SPLIT_TYPE}')
-		if not os.path.exists(path_folder):
-			os.makedirs(path_folder)
+	#if SPLIT_TYPE == 'Sp':
+	path_folder = os.path.join(wdir, f'oneTooneIndex_{SPLIT_TYPE}')
+	if not os.path.exists(path_folder):
+		os.makedirs(path_folder)
 
-		fpath = os.path.join(os.getcwd(), wdir, f'final_dtis_{DB_PATH}.tsv')
-		DTIs = pd.read_csv(fpath,sep='\t',header=None)
-		DTIs.columns = ['Drug','Protein']
-		logging.debug(DTIs.head())
-		sp_splits = splits.generate_splits(DTIs, mode= 'Sp', subsampling=False, foldnum=10)
-		logging.debug(sp_splits[0][0][0][0])
-		# this also changes (drug, protein) to (protein, drug)
-		sp_splits = splits.get_id2idx_protdrug(wdir, sp_splits)
-		logging.debug(sp_splits[0][0][0][0])
-		nseed, nfold = 0, 0 
-		for nseed, nfold in product(range(len(sp_splits)), range(len(sp_splits[nseed]))):
-			#print('xx')
-			np.savetxt(os.path.join(path_folder, f'train_index_pos(0,1){nseed}_{nfold}'), sp_splits[nseed][nfold][0], fmt='%i', delimiter=" ")
-			np.savetxt(os.path.join(path_folder, f'train_index_neg(0,1){nseed}_{nfold}'), sp_splits[nseed][nfold][1], fmt='%i', delimiter=" ")
-			np.savetxt(os.path.join(path_folder, f'test_index_pos(0,1){nseed}_{nfold}'), sp_splits[nseed][nfold][2], fmt='%i', delimiter=" ")
-			np.savetxt(os.path.join(path_folder, f'test_index_neg(0,1){nseed}_{nfold}'), sp_splits[nseed][nfold][3], fmt='%i', delimiter=" ")
-	#
-	else:
-		logging.info("not ready 4 that")
-		
+	fpath = os.path.join(os.getcwd(), wdir, f'final_dtis_{DB_PATH}.tsv')
+	DTIs = pd.read_csv(fpath,sep='\t',header=None)
+	DTIs.columns = ['Drug','Protein']
+	logging.debug(DTIs.head())
+	sp_splits = splits.generate_splits(DTIs, mode= SPLIT_TYPE, subsampling=False, foldnum=10)
+	logging.debug(sp_splits[0][0][0][0])
+	# this also changes (drug, protein) to (protein, drug)
+	sp_splits = splits.get_id2idx_protdrug(wdir, sp_splits)
+	logging.debug(sp_splits[0][0][0][0])
+	nseed, nfold = 0, 0 
+	for nseed, nfold in product(range(len(sp_splits)), range(len(sp_splits[nseed]))):
+		np.savetxt(os.path.join(path_folder, f'train_index_pos(0,1){nseed}_{nfold}'), sp_splits[nseed][nfold][0], fmt='%i', delimiter=" ")
+		np.savetxt(os.path.join(path_folder, f'train_index_neg(0,1){nseed}_{nfold}'), sp_splits[nseed][nfold][1], fmt='%i', delimiter=" ")
+		np.savetxt(os.path.join(path_folder, f'test_index_pos(0,1){nseed}_{nfold}'), sp_splits[nseed][nfold][2], fmt='%i', delimiter=" ")
+		np.savetxt(os.path.join(path_folder, f'test_index_neg(0,1){nseed}_{nfold}'), sp_splits[nseed][nfold][3], fmt='%i', delimiter=" ")
+	
 
 #####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
