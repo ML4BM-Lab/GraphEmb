@@ -303,7 +303,7 @@ def main():
 	# once we have the list, we have the index and columns for all matrix!!
 	logging.info('-'*30)
 	logging.info('Getting matrix....')
-
+	
 	######### Drug-Disease Matrix
 	logging.info('   - Drug Disease Matrix')
 	matrix_drug_dis_ = pd.get_dummies(drug_dis.set_index('DrugBankID')['DiseaseID']).max(level=0) 
@@ -370,6 +370,8 @@ def main():
 	# DTI  (DRUG - PROTEIN) ----> Changes for each Database
 	logging.info('   - Drug Protein Interaction Matrix (DTIs)')
 	dti = dti.drop_duplicates()
+	# dti file
+	dti.to_csv(os.path.join(wdir, f'final_dtis_{DB_PATH}.tsv'), index=False, header=False, sep="\t")
 	matrix_drug_protein_ = pd.get_dummies(dti.set_index('Drug')['Protein']).max(level=0)
 	#logging.info(f'        * # unique drugs in DTI info {len(set(matrix_drug_protein_.index))}; # unique drugs in DTI info {len(set(matrix_drug_protein_.columns))}')
 	matrix_drug_protein = pd.DataFrame(matrix_drug_protein_, columns= list_of_protein_nodes, index= list_of_drug_nodes)

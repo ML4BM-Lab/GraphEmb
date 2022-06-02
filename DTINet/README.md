@@ -1,3 +1,99 @@
+# Launching DTINet
+
+## Author's Model
+
+## Launch DTINet with Docker
+
+Matlab problems with x11, for that reason we give the .sh to be executed inside the docker. 
+
+The first, you should create a docker:
+##### Create container from image (specifying name)
+```
+docker run -dt --name dtinet_original -it dtinet_matlab bash
+```
+
+with dt keeping the docker up, other option is to do:
+
+```
+docker restart dtinet_original 
+```
+
+#### Copy files
+```
+docker cp  ../Data/DrugBank dtinet_drugbank:/DTINet
+docker cp  Launch_DTINet_matlab.sh dtinet_drugbank:/DTINet
+```
+
+#### Enter docker
+Enter in the docker interactively and execute the bash script
+
+```
+docker exec -it dtinet_original bash
+```
+
+##### Run DTINet Matlab Scripts
+
+First time in docker, Matlab will ask for a Email & Pasword
+
+Run specifiying the folder copied as path to copy files
+```
+bash Launch_DTINet_matlab.sh <DB_folder_name>
+```
+for example, if we copy the data for DrugBank, we call it as bash Launch_DTINet_matlab.sh DrugBank
+
+
+This will output a log file: log_DTINet.out
+that can be copied to our machine (from outside) as:
+```
+docker cp dtinet_drugbank:/DTINet/log_DTINet.out <desired_path/log_DTINet_DB.out>
+```
+
+
+### stop docker
+If we want to stop our container:
+```
+docker stop dtinet_drugbank
+```
+
+
+
+
+## Evaluation with new splits
+
+Splits can be generated with the script generate generate_splits_dtinet.py
+
+```
+python3 generate_splits_dtinet.py --dbPath <database name> --split_type <Sp/Sd/St>
+```
+
+after this, we need to create the docker as before and copy all
+necesary files
+
+```
+docker cp  ../Data/<database name> dtinet_drugbank:/DTINet
+docker cp  Launch_DTINet_matlab.sh dtinet_drugbank:/DTINet
+docker cp DTINet.m dtinet_testing_splits:/DTINet/src
+```
+
+working in :
+    dtinet_testing_splits
+
+
+python3 generate_splits_dtinet.py --dbPath IC --split_type Sp -subsampling
+
+# now Sd w subsampling
+python3 generate_splits_dtinet.py --dbPath NR --split_type Sd -subsampling
+# now St w subsampling
+python3 generate_splits_dtinet.py --dbPath NR --split_type St -subsampling
+
+
+
+GPCR
+docker cp  ../Data/Yamanashi_et_al_GoldStandard/NR dtinet_testing_splits:/DTINet
+docker cp  Launch_DTINet_splits_matlab.sh dtinet_testing_splits:/DTINet
+docker cp DTINet.m dtinet_testing_splits:/DTINet/src/DTINet.m
+
+
 # Preprocessing of Databases
 
 Run (file not available for all databases yet)
@@ -67,56 +163,3 @@ Script that calls:
     - Side-effect nodes
     - drug-side-effect associations 
 
-
-## Launch DTINet with Docker
-
-Matlab problems with x11, for that reason we give the .sh to be executed inside the docker. 
-
-The first, you should create a docker:
-##### Create container from image (specifying name)
-```
-docker run -dt --name dtinet_original -it dtinet_matlab bash
-```
-
-with dt keeping the docker up, other option is to do:
-
-```
-docker restart dtinet_original 
-```
-
-#### Copy files
-```
-docker cp  ../Data/DrugBank dtinet_drugbank:/DTINet
-docker cp  Launch_DTINet_matlab.sh dtinet_drugbank:/DTINet
-```
-
-#### Enter docker
-Enter in the docker interactively and execute the bash script
-
-```
-docker exec -it dtinet_original bash
-```
-
-##### Run DTINet Matlab Scripts
-
-First time in docker, Matlab will ask for a Email & Pasword
-
-Run specifiying the folder copied as path to copy files
-```
-bash Launch_DTINet_matlab.sh <DB_folder_name>
-```
-for example, if we copy the data for DrugBank, we call it as bash Launch_DTINet_matlab.sh DrugBank
-
-
-This will output a log file: log_DTINet.out
-that can be copied to our machine (from outside) as:
-```
-docker cp dtinet_drugbank:/DTINet/log_DTINet.out <desired_path/log_DTINet_DB.out>
-```
-
-
-### stop docker
-If we want to stop our container:
-```
-docker stop dtinet_drugbank
-```
