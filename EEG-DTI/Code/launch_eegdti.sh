@@ -50,7 +50,7 @@ docker cp  main_modified_eegdti.py $DOCKER_ID:/EEG-DTI
 docker cp  minibatch.py $DOCKER_ID:/EEG-DTI/decagon/deep
 #docker cp ../Data/Yamanashi_et_al_GoldStandard/NR eeg_dti_nr_last_test:/EEG-DTI
 # data
-docker cp $folder_path $DOCKER_ID:/EEG-DTI # fails here 
+docker cp $folder_path $DOCKER_ID:/EEG-DTI 
 echo 'Preparing files in docker...'
 docker exec $DOCKER_ID mkdir -p /EEG-DTI/data_dti
 docker exec $DOCKER_ID cp -r /EEG-DTI/$db/oneTooneIndex /EEG-DTI/data_dti

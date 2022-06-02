@@ -1,6 +1,7 @@
 from __future__ import division
 from __future__ import print_function
 ################################## Modified
+# this works but not force negative samples
 import numpy as np
 import scipy.sparse as sp
 from sklearn.model_selection import KFold
@@ -40,7 +41,6 @@ class EdgeMinibatchIterator(object):
                 r += 1
 
         self.train_edges = {edge_type: [None]*n for edge_type, n in self.edge_types.items()}
-        self.train_edges_false = {edge_type: [None]*n for edge_type, n in self.edge_types.items()} ## new
         self.val_edges = {edge_type: [None]*n for edge_type, n in self.edge_types.items()}
         self.test_edges = {edge_type: [None]*n for edge_type, n in self.edge_types.items()}
         self.test_edges_false = {edge_type: [None]*n for edge_type, n in self.edge_types.items()}
@@ -80,27 +80,19 @@ class EdgeMinibatchIterator(object):
 
 
 
-    def mask_test_edges(self, edge_type, type_idx, fold, seed):
+    def mask_test_edges(self, edge_type, type_idx, fold):
         if edge_type==(0,1) or edge_type==(1,0):
             data_set = self.data_set
             ratio='oneTooneIndex'
             data_folder = 'data_dti'
-            #seed = 0 # cambiar luego
+            seed = 0 # cambiar luego
             train_edges = np.loadtxt('./'+data_folder+'/'+ratio+'/train_index_pos(0,1)'+str(seed)+'_'+str(fold)+'.txt',dtype=int)
             if edge_type == (1, 0):
                 for ii in range(len(train_edges)):
                     temp = train_edges[ii][0]
                     train_edges[ii][0] = train_edges[ii][1]
                     train_edges[ii][1] = temp
-            #
-            ####### Adding false train
-            train_edges_false = np.loadtxt('./'+data_folder+'/'+ratio+'/train_index_neg(0,1)'+str(seed)+'_'+str(fold)+'.txt',dtype=int)
-            if edge_type == (1,0):
-                for ii in range(len(train_edges_false)):
-                    temp = train_edges_false[ii][0]
-                    train_edges_false[ii][0] = train_edges_false[ii][1]
-                    train_edges_false[ii][1] = temp
-            ####################
+
             test_edges_false = np.loadtxt('./'+data_folder+'/'+ratio+'/test_index_neg(0,1)'+str(seed)+'_'+str(fold)+'.txt',dtype=int)
             if edge_type == (1,0):
                 for ii in range(len(test_edges_false)):
@@ -116,7 +108,6 @@ class EdgeMinibatchIterator(object):
                     test_edges[ii][0] = test_edges[ii][1]
                     test_edges[ii][1] = temp
             val_edges = test_edges
-            ########
             # Re-build adj matrices
             data = np.ones(train_edges.shape[0])
             adj_train = sp.csr_matrix(
@@ -125,14 +116,10 @@ class EdgeMinibatchIterator(object):
             self.adj_train[edge_type][type_idx] = self.preprocess_graph(adj_train)
 
             self.train_edges[edge_type][type_idx] = train_edges
-            # si hago aqui train_false ? 
-            self.train_edges_false[edge_type][type_idx] =  np.array(test_edges_false)
             self.val_edges[edge_type][type_idx] = val_edges
             self.val_edges_false[edge_type][type_idx] = np.array(val_edges_false)
             self.test_edges[edge_type][type_idx] = test_edges
             self.test_edges_false[edge_type][type_idx] = np.array(test_edges_false)
-
-        # not drug target / target drug
         else:
             edges_all, _, _ = preprocessing.sparse_to_tuple(self.adj_mats[edge_type][type_idx])
             train_edges = edges_all
@@ -140,12 +127,16 @@ class EdgeMinibatchIterator(object):
             num_val = 1
             all_edge_idx = list(range(edges_all.shape[0]))
             np.random.shuffle(all_edge_idx)
+
             val_edge_idx = all_edge_idx[:num_val]
             val_edges = edges_all[val_edge_idx]
+
             #
             test_edge_idx = all_edge_idx[num_val:(num_val + num_test)]
             test_edges = edges_all[test_edge_idx]
+
             test_edges_false = []
+
             while len(test_edges_false) < len(test_edges):
                 if len(test_edges_false) % 1000 == 0:
                     print("Constructing test edges=", "%04d/%04d" % (len(test_edges_false), len(test_edges)))
@@ -158,7 +149,7 @@ class EdgeMinibatchIterator(object):
                     if self._ismember([idx_i, idx_j], test_edges_false):
                         continue
                 test_edges_false.append([idx_i, idx_j])
-            #
+
             val_edges_false = []
             while len(val_edges_false) < len(val_edges):
                 if len(val_edges_false) % 1000 == 0:
@@ -171,7 +162,7 @@ class EdgeMinibatchIterator(object):
                     if self._ismember([idx_i, idx_j], val_edges_false):
                         continue
                 val_edges_false.append([idx_i, idx_j])
-            #
+
             # Re-build adj matrices
             data = np.ones(train_edges.shape[0])
             adj_train = sp.csr_matrix(

@@ -54,11 +54,11 @@ else:
 # for running our comparations
 parser = argparse.ArgumentParser() 
 parser.add_argument("DB", help=" Name of database: ('BIOSNAP', 'BindingDB', 'Davis_et_al', 'DrugBank', 'E', 'GPCR', 'IC', 'NR')", type=str)
-parser.add_argument("split_type", help="Select the type of split ['Sp', 'Sd', 'St'] to generate oneTooneIndex folder", type=str)
+#parser.add_argument("split_type", help="Select the type of split ['Sp', 'Sd', 'St'] to generate oneTooneIndex folder", type=str)
 args = parser.parse_args()
 
 DATABASE = args.DB
-SPLIT_TYPE = args.split_type
+#SPLIT_TYPE = args.split_type
 
 luolike = ['DrugBank', 'BIOSNAP', 'BindingDB', 'E']
 yamanishilike = ['NR', 'Davis_et_al' , 'GPCR'] 
@@ -164,7 +164,7 @@ side_effect_drug_adj = loadData.load_Adj_adj_transpose(threshold=0, toone=0, dra
 mean_AUROC_averages = []
 mean_AUPR_averages = []
 for seed in range(5):
-    print('Current seed is:, ', seed)
+    print('Current seed: ', seed)
     # 10 fold cross-validation, 
     # I am changing their seed for fold to be more easily followed
     for fold in range(0,10): # each seed 1 fold, our seed is each repetition
@@ -295,7 +295,7 @@ for seed in range(5):
                 for i, j in edge_types for k in range(edge_types[i,j])})
             placeholders.update({
                 'feat_%d' % i: tf.sparse_placeholder(tf.float32) for i, _ in edge_types})
-
+            #
             return placeholders
 
 
@@ -364,7 +364,7 @@ for seed in range(5):
         side_effect_feat = preprocessing.sparse_to_tuple(side_effect_feat.tocoo())
         extra_side_effect_feat = side_effect_feat
         # NOTICE
-        
+
         num_feat = {
             0: protein_num_feat,
             1: drug_num_feat,
@@ -382,7 +382,6 @@ for seed in range(5):
             1: drug_feat,
             2: diease_feat,
             3: side_effect_feat
-
         }
 
         edge_type2dim = {k: [adj.shape for adj in adjs] for k, adjs in adj_mats_orig.items()}
@@ -426,7 +425,7 @@ for seed in range(5):
             seed = seed, # changed ghere to seeed
             data_set = data_set,
             edge_types=edge_types,
-            batch_size=FLAGS.batch_size,
+            batch_size= FLAGS.batch_size,
             val_test_size=val_test_size
         )
 
@@ -491,7 +490,7 @@ for seed in range(5):
                         "val_roc=", "{:.5f}".format(val_auc), "val_auprc=", "{:.5f}".format(val_auprc),
                         "val_apk=", "{:.5f}".format(val_apk), "time=", "{:.5f}".format(time.time() - t))
                 # force a maximun number of iterations
-                if itr > 2000: 
+                if itr > 1000: 
                     print('reached maximum number of iterations')
                     break
                 #
@@ -540,7 +539,7 @@ for seed in range(5):
                 print("Edge type:", "%04d" % et, "Test r2 score", "{:.5f}".format(r2))
                 print()
 
-    print('10-Flod-cross-val-result')
+    print('10-Fold-cross-val-result')
 
 
     print('-----01------')
@@ -578,5 +577,6 @@ for seed in range(5):
     mean_AUROC_averages.append(np.mean(AUROC_10_list).round(4))
     mean_AUPR_averages.append(np.mean(AUPR_10_list).round(4))
 
+print('='*20)
 print('Mean AUROC ', np.mean(mean_AUROC_averages))
-print('', np.mean(mean_AUPR_averages))
+print('Mean_AUPR', np.mean(mean_AUPR_averages))
