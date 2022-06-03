@@ -293,6 +293,7 @@ def main():
 	# DTI  (DRUG - PROTEIN) ----> Changes for each Database
 	logging.info('   - Drug Protein Interaction Matrix (DTIs)')
 	dti = dti.drop_duplicates()
+	dti.to_csv(os.path.join(wdir, f'final_dtis_{DB_PATH}.tsv'), index=False, header=False, sep="\t")
 	matrix_drug_protein_ = pd.get_dummies(dti.set_index('Drug')['Protein']).max(level=0)
 	#logging.info(f'        * # unique drugs in DTI info {len(set(matrix_drug_protein_.index))}; # unique drugs in DTI info {len(set(matrix_drug_protein_.columns))}')
 	matrix_drug_protein = pd.DataFrame(matrix_drug_protein_, columns= list_of_protein_nodes, index= list_of_drug_nodes)
@@ -301,7 +302,7 @@ def main():
 	logging.info(f'        * matrix shape {matrix_drug_protein.shape}')
 	logging.info(f'        * # drug-protein edges {matrix_drug_protein.sum().sum()}')
 	matrix_drug_protein.to_csv(os.path.join(wdir, 'mat_drug_protein.txt'), index=False, header=False, sep=" ") 
-	
+
 	# Drug Similarity Matrix
 	logging.info('-'*30)
 	logging.info('Drug Similarity matrix....')

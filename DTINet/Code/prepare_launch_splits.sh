@@ -9,9 +9,11 @@ while getopts "b:d:" opt; do
 done
 
 # decide later what I prefer, all path or just DB name
+if [ $# -eq 0 ]; then
+    echo "No DB argument supplied"; exit
+fi
+
 echo "db: $db";
-
-
 # 1.Create the container with
 
 eval "DOCKER_ID=$(docker run -dt dtinet_matlab )";
