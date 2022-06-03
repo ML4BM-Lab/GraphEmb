@@ -78,14 +78,9 @@ Once all splits in folder, you can prepare your docking by runing the following 
 bash prepare_launch_splits.sh -b <db name> 
 ```
 this will generate a dockerID were you should execute the folowing in script.
-This id is also saved in a logfile. 
+This id is also saved in a logfile. This is because matlab cannot be execute from outside the docker for us.
 
-This is because matlab cannot be execute from outside the docker for us...
-```
-Launch ...
-```
-
-then you can enter in the docker with
+Then you can enter in the docker with
 
 ```
 docker exec -it <generated DockerID> bash
