@@ -85,28 +85,22 @@ This is because matlab cannot be execute from outside the docker for us...
 Launch ...
 ```
 
+then you can enter in the docker with
+
+```
+docker exec -it <generated DockerID> bash
+```
+
+once in the docker you only have to run the following shell script
+specifying the model you want.
+Remember that first time will ask for your matlab credentials!
+
+```
+bash Launch_DTINet_splits_matlab.sh -b <dbname> -s <Sp/Sd/St> -u <true/false>
+```
 
 
 
-working in :
-    dtinet_testing_splits
-
-python3 generate_splits_dtinet.py --dbPath IC --split_type Sp -subsampling
-
-# now Sd w subsampling
-python3 generate_splits_dtinet.py --dbPath NR --split_type Sd -subsampling
-# now St w subsampling
-python3 generate_splits_dtinet.py --dbPath NR --split_type St -subsampling
-
-
-
-GPCR
-docker cp  ../Data/Yamanashi_et_al_GoldStandard/E dtinet_testing_splits:/DTINet
-docker cp  Launch_DTINet_splits_matlab.sh dtinet_testing_splits:/DTINet
-docker cp DTINet.m dtinet_testing_splits:/DTINet/src/DTINet.m
-
-
-docker cp tmp.sh dtinet_testing_splits:/DTINet/
 
 
 # Preprocessing of Databases
