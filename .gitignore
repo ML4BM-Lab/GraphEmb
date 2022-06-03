@@ -1,6 +1,7 @@
 ./DB/Data
 ._*
 *.out
+*.log
 *.txt
 *.TXT
 *.tsv
