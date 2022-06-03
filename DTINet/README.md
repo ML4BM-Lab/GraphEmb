@@ -2,7 +2,7 @@
 
 ## Author's Model
 
-## Launch DTINet with Docker
+#### Launch DTINet with Docker
 
 Matlab problems with x11, for that reason we give the .sh to be executed inside the docker. 
 
@@ -60,24 +60,36 @@ docker stop dtinet_drugbank
 
 ## Evaluation with new splits
 
-Splits can be generated with the script generate generate_splits_dtinet.py
+Genereating all splits for a folder can be done with:
+```
+pyhton3 generate_all_splits_dtine.py <db name>
+```
+
+Splits can be generated individually with the script generate generate_splits_dtinet.py.
 
 ```
-python3 generate_splits_dtinet.py --dbPath <database name> --split_type <Sp/Sd/St>
+python3 generate_splits_dtinet.py --dbPath <database name> --split_type <Sp/Sd/St>  -subsampling
 ```
 
-after this, we need to create the docker as before and copy all
-necesary files
+
+Once all splits in folder, you can prepare your docking by runing the following script:
 
 ```
-docker cp  ../Data/<database name> dtinet_drugbank:/DTINet
-docker cp  Launch_DTINet_matlab.sh dtinet_drugbank:/DTINet
-docker cp DTINet.m dtinet_testing_splits:/DTINet/src
+bash prepare_launch_splits.sh -b <db name> 
 ```
+this will generate a dockerID were you should execute the folowing in script.
+This id is also saved in a logfile. 
+
+This is because matlab cannot be execute from outside the docker for us...
+```
+Launch ...
+```
+
+
+
 
 working in :
     dtinet_testing_splits
-
 
 python3 generate_splits_dtinet.py --dbPath IC --split_type Sp -subsampling
 
@@ -89,9 +101,12 @@ python3 generate_splits_dtinet.py --dbPath NR --split_type St -subsampling
 
 
 GPCR
-docker cp  ../Data/Yamanashi_et_al_GoldStandard/NR dtinet_testing_splits:/DTINet
+docker cp  ../Data/Yamanashi_et_al_GoldStandard/E dtinet_testing_splits:/DTINet
 docker cp  Launch_DTINet_splits_matlab.sh dtinet_testing_splits:/DTINet
 docker cp DTINet.m dtinet_testing_splits:/DTINet/src/DTINet.m
+
+
+docker cp tmp.sh dtinet_testing_splits:/DTINet/
 
 
 # Preprocessing of Databases
