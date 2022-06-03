@@ -60,6 +60,7 @@ docker stop dtinet_drugbank
 
 ## Evaluation with new splits
 
+### Generating splits
 Genereating all splits for a folder can be done with:
 ```
 pyhton3 generate_all_splits_dtine.py <db name>
@@ -71,6 +72,7 @@ Splits can be generated individually with the script generate generate_splits_dt
 python3 generate_splits_dtinet.py --dbPath <database name> --split_type <Sp/Sd/St>  -subsampling
 ```
 
+### Launch Model in Docker
 
 Once all splits in folder, you can prepare your docking by runing the following script:
 
