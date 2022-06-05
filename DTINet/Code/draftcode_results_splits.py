@@ -73,6 +73,7 @@ nr = order_df(nr)
 gpcr = pd.read_csv('GPCR/GPCR_sub.results', sep="\t")
 e = pd.read_csv('E/E_sub.results', sep="\t")
 bindingdb = pd.read_csv('BindingDB/BindingDB_sub.results', sep="\t")
+biosnap = pd.read_csv('BIOSNAP/BIOSNAP_sub.results', sep="\t")
 
 plt.clf()
 
@@ -81,8 +82,8 @@ fig, axs = plt.subplots(1, 2, figsize=(14, 6), sharey=True)
 axs[0].title.set_text('AUROC ; with sumsampling')
 axs[1].title.set_text('AUPR ; with sumsampling')
 
-dblist = [nr, gpcr, e, bindingdb]
-dblist_name = ['nr', 'gpcr', 'e', 'bindingdb']
+dblist = [nr, gpcr, e, bindingdb, biosnap]
+dblist_name = ['nr', 'gpcr', 'e', 'bindingdb', 'biosnap']
 for i in range(len(dblist)):
     axs[0].scatter(dblist[i].split_type, dblist[i].AUROC, label=dblist_name[i])
     axs[0].plot(dblist[i].split_type, dblist[i].AUROC)
