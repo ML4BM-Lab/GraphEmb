@@ -23,3 +23,6 @@
 *.json
 ./*/Data/
 Docking/tmp_data
+*.pdb.gz
+*.pdb
+

@@ -13,11 +13,7 @@ from Bio.PDB.MMCIFParser import MMCIFParser
 import gzip
 
 
-logging.basicConfig()
-logging.getLogger('').setLevel(logging.INFO)
-
-# all with absolute paths now
-### YAMANISHI
+### functions
 def get_unis_yamanishi(all_prot):
     GEN_PATH = '/mnt/md0/data/jfuente/DTI/Input4Models/DB/Data/'
     PATH_E = os.path.join(GEN_PATH, 'Yamanashi_et_al_GoldStandard/E/interactions/e_admat_dgc_mat_2_line.txt')
@@ -44,7 +40,7 @@ def get_unis_yamanishi(all_prot):
         logging.debug(len(all_prot))
     return all_prot
 
-# DrugBank 
+#  
 def get_unis_drugbank(all_prot):
     GEN_PATH = '/mnt/md0/data/jfuente/DTI/Input4Models/DB/Data/'
     PATH_DRUGBANK = os.path.join(GEN_PATH, 'DrugBank/DrugBank_DTIs.tsv')
@@ -57,7 +53,7 @@ def get_unis_drugbank(all_prot):
     logging.debug(len(all_prot))
     return all_prot
 
-# BIOSNAP
+# 
 def get_unis_biosnap(all_prot):
     GEN_PATH = '/mnt/md0/data/jfuente/DTI/Input4Models/DB/Data/'
     PATH_BIOSNAP = os.path.join(GEN_PATH, 'BIOSNAP/ChG-Miner_miner-chem-gene/ChG-Miner_miner-chem-gene.tsv')
@@ -71,7 +67,7 @@ def get_unis_biosnap(all_prot):
     logging.debug(len(all_prot))
     return all_prot
 
-# PATH_BINDING
+# 
 def get_unis_binding(all_prot):
     GEN_PATH = '/mnt/md0/data/jfuente/DTI/Input4Models/DB/Data/'
     PATH_BINDING =  os.path.join(GEN_PATH,'BindingDB/tdc_package_preprocessing/BindingDB_max_affinity.tsv')
@@ -94,7 +90,7 @@ def get_unis_binding(all_prot):
     logging.debug(len(all_prot))
     return all_prot
 
-# PATH_DAVIS
+# 
 def get_unis_davis(all_prot):
     GEN_PATH = '/mnt/md0/data/jfuente/DTI/Input4Models/DB/Data/'
     PATH_DAVIS = os.path.join(GEN_PATH, 'Davis_et_al/tdc_package_preprocessing/DAVIS_et_al_w_labels.tsv')
@@ -118,7 +114,7 @@ def get_unis_davis(all_prot):
     logging.debug(len(all_prot))
     return all_prot
 #
-
+## all unis join
 def get_all_unis():
     # get list of all uniprots
     all_prot = []
@@ -129,9 +125,6 @@ def get_all_unis():
     all_prot = get_unis_davis(all_prot)
     all_prot = list(set(all_prot)) # safety check
     return all_prot
-
-all_prot = get_all_unis()
-logging.info(f'Number of all proteins: {len(all_prot)}') # 6167
 
 def get_df_info_uni2pdb(all_prot):
     df_uni2pdb = pd.DataFrame(columns=['UniprotID', 'PDB', 'Method', 'Resolution', 'chain-resid'])
@@ -147,10 +140,89 @@ def get_df_info_uni2pdb(all_prot):
                 df_uni2pdb.loc[len(df_uni2pdb.index)] = [uniprotid, info[1], info[2], info[3], info[4]]
     return df_uni2pdb
 
-df_uni2pdb = get_df_info_uni2pdb(all_prot[:100])
+def get_meanLDDT_for_pdb(file):
+    parser = PDBParser()
+    structure = parser.get_structure('afold_model', gzip.open(file, "rt"))
+    avg_bfactor_ = []
+    # SMCRA (Structure/Model/Chain/Residue/Atom) format
+    #for model in structure:
+    model = structure[0] # # X-Ray generally only have 1 model, while more in NMR
+    for chain in model:
+        for residue in chain:
+            for atom in residue:
+                avg_bfactor_.append(atom.get_bfactor()) # 58.60314146341464
+    avg_bfactor = np.mean(avg_bfactor_)
+    return avg_bfactor
+
+
+def get_meanLDDT_for_cif(file):
+    parser = MMCIFParser()
+    structure = parser.get_structure('afold_model', gzip.open(file, "rt"))
+    avg_bfactor_ = []
+    # SMCRA (Structure/Model/Chain/Residue/Atom) format
+    #for model in structure:
+    model = structure[0] # # X-Ray generally only have 1 model, while more in NMR
+    for chain in model:
+        for residue in chain:
+            for atom in residue:
+                avg_bfactor_.append(atom.get_bfactor()) # 58.60314146341464
+    avg_bfactor = np.mean(avg_bfactor_)
+    return avg_bfactor
+
+
+
+######################
+logging.basicConfig()
+logging.getLogger('').setLevel(logging.INFO)
+######################
+
+all_prot = get_all_unis()
+logging.info(f'Number of all proteins: {len(all_prot)}') # 6167
+
+df_uni2pdb = get_df_info_uni2pdb(all_prot)
 # df_uni2pdb.to_pickle(os.path.join('tmp_data', 'df_uni2pdb_all_info.pkl')
 
-uniprot_data = df_uni2pdb.drop(df_uni2pdb[df_uni2pdb.Method != 'X-ray'].index).drop(columns='Method')
-uniprot_data = uniprot_data.drop(uniprot_data[uniprot_data.Resolution == '-'].index)
-uniprot_data.Resolution = uniprot_data.Resolution.str.strip(' A').astype(float)
-uniprot_data.head(5)
+df_uni2pdb = df_uni2pdb.drop(df_uni2pdb[df_uni2pdb.Method != 'X-ray'].index)
+df_uni2pdb = df_uni2pdb.drop(df_uni2pdb[df_uni2pdb.Resolution == '-'].index)
+df_uni2pdb.Resolution = df_uni2pdb.Resolution.str.strip(' A').astype(float)
+df_uni2pdb = df_uni2pdb.drop(columns='Method') # only X-Ray
+
+logging.info(df_uni2pdb.head(6))
+
+df_uni2pdb.sort_values(by='Resolution', inplace=True, ignore_index=True) # sorting values by resolution, better will be on top of the dataframe
+df_uni2pdb.drop_duplicates(subset='UniprotID', inplace=True, ignore_index=True) # remove uniprots duplicated, will keep only the first appearing (sorted before)
+df_uni2pdb.sort_values(by=['UniprotID'], inplace=True, ignore_index=True) # Now sorting again by uniprotID alphabet
+res_uni2pdb =  df_uni2pdb.drop(df_uni2pdb[df_uni2pdb.Resolution > 2].index)
+
+res_uni2pdb.to_pickle('pdb_data/res_uni2pdb.pkl')
+res_uni2pdb.shape
+logging.info(f'Number of proteins (uniprot ID) with available PDB with res<2 A: {len(res_uni2pdb.UniprotID.unique())}')
+
+unique_pdbs =  df_uni2pdb.PDB.unique().tolist() #batch download
+file_list = 'list_download_pdbs.txt'
+np.savetxt(file_list, unique_pdbs , newline='', fmt='%s,')
+
+
+######### ALPHA FOLD
+# alpha fold => no option to download or check from the bulk downloaded data
+
+listdir_aphold = glob.glob('afold/*.pdb.gz')
+uniprot_aphold_list = list(set([line.split('-')[1] for line in listdir_aphold]))
+logging.info(f'Number of available uniprots with alphafold {len(uniprot_aphold_list)}')
+
+# biopython
+afold_pdb_data = pd.DataFrame(columns=['UniprotID', 'avgpLDDT'])
+for file in tqdm(listdir_aphold):
+    uniid = file.split('-')[1]    
+    avg_bfactor = get_meanLDDT_for_pdb(file) # with cif takes hours and we are just calculating average score
+    afold_pdb_data.loc[len(afold_pdb_data.index)] = [uniid, avg_bfactor]
+
+afold_pdb_data.to_pickle('afold_all_data.pkl')
+
+# confident > 70
+afold_pdb_data.avgpLDDT = afold_pdb_data.avgpLDDT.round(2)
+afold_pdb_data_70 = afold_pdb_data[afold_pdb_data.avgpLDDT>70]
+afold_pdb_data_70.to_pickle('afold_data_70.pkl')
+# move here those to other folder? or better the ofer stuff
+# afold_pdb_data = pd.read_pickle('afold_data.pkl')
+# afold_pdb_data_70 = pd.read_pickle('afold_data_70.pkl')
