@@ -263,9 +263,9 @@ def DRUGBANK_SIDER(DB_PATH =  './DB/Data/DrugBank/DrugBank_DTIs.tsv', model_name
     np.fill_diagonal(sider_bit.values, 1)
 
     path = hf.check_and_create_folder(db_name,model_name)
+	#sider_bit.to_pickle(os.path.join(path, "DrugBank_drug_SIDER_SideEffect.pickle"))
     sider_bit.to_csv(os.path.join(path, "DrugBank_drug_SIDER_SideEffect.tsv"), sep="\t")
-    sider_bit.to_pickle(os.path.join(path, "DrugBank_drug_SIDER_SideEffect.pickle"))
-	
+    
 def YAMANASHI_SIDER(subdataset='E', model_name = 'DDR'):
 	fmt = '[%(levelname)s] %(message)s'
 	logging.basicConfig(format=fmt, level=logging.DEBUG)

@@ -88,6 +88,18 @@ def read_dtis_BIOSNAP(path):
     dictionary = {node : str(index)  for index, node  in enumerate(sorted(all_elements))}
     return dtis, dictionary 
 
+def get_seqs_DAVIS(path):
+    """
+    This function reads the database and returns the targets 
+    """
+    targets = []
+    with open(path, 'r') as f:
+        for line in f:
+            if not line.startswith('\t'):
+                line = line.split('\t')
+                targets.append((line[3], line[4]))
+        return targets
+
 def read_dtis_DAVIS(path):
     """"
     Read the dti file and return the dti along with 
@@ -155,6 +167,18 @@ def get_drugs_smiles_from_DrugBank(drugs):
                 drugs_smiles.append((drugbank_ID, smile))
     return drugs_smiles
 
+def get_seqs_BindingDB(path):
+    """
+    This function reads the database and returns the targets 
+    """
+    targets = []
+    with open(path, 'r') as f:
+        _ = next(f)
+        for line in f:
+            line = line.split('\t')
+            targets.append((line[3], line[4]))
+        return targets
+
 def read_and_extract_BINDING_smiles(path):
     """
     Read the BINDING file and return the smiles
@@ -175,6 +199,8 @@ def get_BIOSNAP_drugs(path):
     drugs = [entry[0] for entry in drugs]
     drugs = list(set(drugs))
     return drugs	
+
+
 
 def write_dtis(dtis, path):
     result_ID = str(uuid.uuid4())
@@ -253,13 +279,31 @@ def replace_and_get_AA(ID):
     ID = ID.replace('hsa', 'hsa:')
     return (ID, getamino_KEGG(ID))
 
-
 def get_drug_pubchem(drug):
     return Compound.from_cid(drug).isomeric_smiles
 
-
 def get_yamanashi_subDB(path):
     return re.search(r'(?<=\/)[\w]+', path).group()
+
+def retrieve_sequences_from_UniProt(ID):
+    """
+    This function retrieves the AA sequence from uniprot.
+    """
+    r = requests.get(f'https://www.uniprot.org/uniprot/{ID}.fasta')
+    if r.status_code == 200:
+        aminoseq = ''.join(r.text.split('\n')[1:])
+    else:
+        logging.error(f'{ID} not found')
+        return (ID, None)
+    return (ID, aminoseq)
+
+def extract_score(results_file):
+    with open(results_file, 'r') as f:
+        for line in f:
+            if not line.startswith('# Score:'):
+                continue
+            else:
+                return float(line.split()[-1])
 
 def write_fasta(path, target, seq):
     fl_name = os.path.join(path, target.replace(':', '_')+'.fasta')

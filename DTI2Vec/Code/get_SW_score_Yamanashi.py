@@ -2,13 +2,13 @@
 import os 
 import argparse
 import logging
-import helper_functions_DTI2Vec as hf
 from tqdm import tqdm
 import multiprocessing as mp
 from itertools import repeat
 from sklearn.preprocessing import MinMaxScaler
 from shutil import rmtree
 import pandas as pd
+import helper_functions_DTI2Vec as hf
 
 ######################################## START MAIN #########################################
 #############################################################################################
@@ -18,7 +18,7 @@ def main():
 	logging.basicConfig(format=fmt, level=level)
 	parser = argparse.ArgumentParser()
 	parser.add_argument("dbPath", help="Path to the database interaction lits",
-						default='/home/margaret/data/jfuente/DTI/Data/Yamanashi_et_al_GoldStandard/NR/interactions/nr_admat_dgc_mat_2_line.txt',
+						default='./../../DB/Data/Yamanashi_et_al_GoldStandard/NR/interactions/nr_admat_dgc_mat_2_line.txt',
 						type=str)
 	parser.add_argument("-v", "--verbose", dest="verbosity", default=3,
 						help="Verbosity (between 1-4 occurrences with more leading to more "
@@ -38,7 +38,7 @@ def main():
 	logging.basicConfig(format=fmt, level=level)
 
 	# sanity check for the DB
-	# DB_PATH = './../../DB//Data/Yamanashi_et_al_GoldStandard/E/interactions/e_admat_dgc_mat_2_line.txt'
+	# DB_PATH = './../../DB/Data/Yamanashi_et_al_GoldStandard/E/interactions/e_admat_dgc_mat_2_line.txt'
 	DB_PATH = args.dbPath
 	logging.info(f'Reading database from: {DB_PATH}')
 	db_name = hf.get_DB_name(DB_PATH)
@@ -47,7 +47,7 @@ def main():
 	targets = hf.read_and_extract_targets(DB_PATH)
 	targets = list(set(targets))
 
-	file_path = os.path.join('/home/margaret/data/jfuente/DTI/Input4Models/DTI2Vec/Data/', db_name, 'Targets_AA_sequences.tsv')
+	file_path = os.path.join('./../Data/', db_name, 'Targets_AA_sequences.tsv')
 	if os.path.isfile(file_path):
 		logging.info(f'Reading AA sequences from: {file_path}')
 		targets_seqs = hf.read_AA_sequences(file_path)
@@ -65,7 +65,7 @@ def main():
 					_ = f.write('>'+target+'\n'+seq+'\n')
 
 	# get the SW scores
-	tmp_path  = hf.create_remove_tmp_folder(os.path.join('/tmp/SmithWaterman' , db_name))
+	tmp_path  = hf.create_remove_tmp_folder(os.path.join('/media/scratch_ssd/tmp/' , db_name))
 	logging.info(f'Creating temporary folder: {tmp_path}')
 	hf.write_all_fastas(targets_seqs, tmp_path)
 	all_SmithWaterman = []
@@ -85,11 +85,11 @@ def main():
 	SmithWaterman_arr = pd.DataFrame(all_SmithWaterman,columns=targets,index=targets)
 	logging.info('Saving the array')
 	hf.check_and_create_folder(db_name)
-	file_path = os.path.join('/home/margaret/data/jfuente/DTI/Input4Models/DTI2Vec/', db_name, 'Drugs_SmithWaterman_scores.tsv')
+	file_path = os.path.join('./../Data', db_name, 'Proteins_SmithWaterman_scores.tsv')
 	SmithWaterman_arr.to_csv(file_path, sep='\t')
 	rmtree(tmp_path)
 	zscore_SmithWaterman_arr = pd.DataFrame(MinMaxScaler().fit_transform(SmithWaterman_arr),columns=targets,index=targets)
-	file_path = os.path.join('/home/margaret/data/jfuente/DTI/Input4Models/DTI2Vec/', db_name, 'Drugs_SmithWaterman_scores_MinMax.tsv')
+	file_path = os.path.join('./../Data', db_name, 'Proteins_SmithWaterman_scores_MinMax.tsv')
 	zscore_SmithWaterman_arr.to_csv(file_path, sep='\t')
 
 

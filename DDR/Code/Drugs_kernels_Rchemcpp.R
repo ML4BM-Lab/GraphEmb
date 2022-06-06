@@ -19,7 +19,6 @@ args = commandArgs(trailingOnly = TRUE)
 
 generate_drug_kernels_using_Rchemcpp <- function(path_to_molfiles, path_to_output, recompute=FALSE){
     
-
     #Load files
     sdf <- sort(list.files(path_to_molfiles,full.names=TRUE))
 

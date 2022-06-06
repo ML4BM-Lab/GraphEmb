@@ -185,12 +185,12 @@ def SW(name,subdataset):
 ##Drugs
 #RchemCPP(molpath,drug_savepath)
 #AERS_FDA(dataset,subdataset)
-#SIDER(dataset,subdataset)
+SIDER(dataset,subdataset)
 #SIMCOMP(dataset,subdataset)
 
 ##Proteins
 #BioMART(protpath,dataset,protein_savepath)
 #BioGRID(protein_savepath,protpath)
 #SW(dataset,subdataset)
-KeBABS(fastapath,protein_savepath)
+#KeBABS(fastapath,protein_savepath)
 

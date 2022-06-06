@@ -22,3 +22,4 @@
 *.emb
 *.json
 ./*/Data/
+Docking/tmp_data
