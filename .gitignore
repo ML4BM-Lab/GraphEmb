@@ -25,4 +25,4 @@
 Docking/tmp_data
 *.pdb.gz
 *.pdb
-
+*.cif.gz

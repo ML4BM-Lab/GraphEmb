@@ -18,12 +18,10 @@ nohup bash batch_download.sh -f list_download_pdbs.txt -o PDB_FILES -p > get_pdb
 ```
 
 
--->
 
 ### AlphaFold
 All data from AlphaFold downloaded from:
---->
-[download page](https://alphafold.ebi.ac.uk/download)
+--->  [download page](https://alphafold.ebi.ac.uk/download)
 and selected the human prot for later filter.
 
 

@@ -126,6 +126,7 @@ def get_all_unis():
     all_prot = list(set(all_prot)) # safety check
     return all_prot
 
+
 def get_df_info_uni2pdb(all_prot):
     df_uni2pdb = pd.DataFrame(columns=['UniprotID', 'PDB', 'Method', 'Resolution', 'chain-resid'])
     for uniprotid in tqdm(all_prot):
@@ -170,7 +171,6 @@ def get_meanLDDT_for_cif(file):
     return avg_bfactor
 
 
-
 ######################
 logging.basicConfig()
 logging.getLogger('').setLevel(logging.INFO)
@@ -195,18 +195,20 @@ df_uni2pdb.sort_values(by=['UniprotID'], inplace=True, ignore_index=True) # Now 
 res_uni2pdb =  df_uni2pdb.drop(df_uni2pdb[df_uni2pdb.Resolution > 2].index)
 
 res_uni2pdb.to_pickle('pdb_data/res_uni2pdb.pkl')
+# res_uni2pdb = pd.read_pickle('../Data/res_uni2pdb.pkl')
+
 res_uni2pdb.shape
 logging.info(f'Number of proteins (uniprot ID) with available PDB with res<2 A: {len(res_uni2pdb.UniprotID.unique())}')
 
-unique_pdbs =  df_uni2pdb.PDB.unique().tolist() #batch download
+# save and download again!!!
+unique_pdbs =  res_uni2pdb.PDB.unique().tolist() #batch download
 file_list = 'list_download_pdbs.txt'
 np.savetxt(file_list, unique_pdbs , newline='', fmt='%s,')
 
-
 ######### ALPHA FOLD
 # alpha fold => no option to download or check from the bulk downloaded data
-
-listdir_aphold = glob.glob('afold/*.pdb.gz')
+print('getting afold data')
+listdir_aphold = glob.glob('../ALPHA_FILES/*.pdb.gz')
 uniprot_aphold_list = list(set([line.split('-')[1] for line in listdir_aphold]))
 logging.info(f'Number of available uniprots with alphafold {len(uniprot_aphold_list)}')
 
@@ -217,12 +219,12 @@ for file in tqdm(listdir_aphold):
     avg_bfactor = get_meanLDDT_for_pdb(file) # with cif takes hours and we are just calculating average score
     afold_pdb_data.loc[len(afold_pdb_data.index)] = [uniid, avg_bfactor]
 
-afold_pdb_data.to_pickle('afold_all_data.pkl')
+afold_pdb_data.to_pickle('../Data/afold_all_data.pkl')
 
 # confident > 70
 afold_pdb_data.avgpLDDT = afold_pdb_data.avgpLDDT.round(2)
 afold_pdb_data_70 = afold_pdb_data[afold_pdb_data.avgpLDDT>70]
-afold_pdb_data_70.to_pickle('afold_data_70.pkl')
+afold_pdb_data_70.to_pickle('../Data/afold_data_70.pkl')
 # move here those to other folder? or better the ofer stuff
 # afold_pdb_data = pd.read_pickle('afold_data.pkl')
-# afold_pdb_data_70 = pd.read_pickle('afold_data_70.pkl')
+# afold_pdb_data_70 = pd.read_pickle('../Data/afold_data_70.pkl')
