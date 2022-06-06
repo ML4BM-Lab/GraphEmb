@@ -68,22 +68,25 @@ plt.savefig(f'{db_name}_splits.pdf')
 ######
 
 #
-nr = pd.read_csv('NR/nr_sub.results', sep="\t")
-nr = order_df(nr)
+
+
+nr = pd.read_csv('NR/NR_sub.results', sep="\t")
 gpcr = pd.read_csv('GPCR/GPCR_sub.results', sep="\t")
 e = pd.read_csv('E/E_sub.results', sep="\t")
 bindingdb = pd.read_csv('BindingDB/BindingDB_sub.results', sep="\t")
 biosnap = pd.read_csv('BIOSNAP/BIOSNAP_sub.results', sep="\t")
+drugbank = pd.read_csv('DrugBank/DrugBank_sub.results', sep="\t")
 
 plt.clf()
 
 fig, axs = plt.subplots(1, 2, figsize=(14, 6), sharey=True)
 
-axs[0].title.set_text('AUROC ; with sumsampling')
-axs[1].title.set_text('AUPR ; with sumsampling')
+axs[0].title.set_text('AUROC ; with subsampling')
+axs[1].title.set_text('AUPR ; with subsampling')
 
-dblist = [nr, gpcr, e, bindingdb, biosnap]
-dblist_name = ['nr', 'gpcr', 'e', 'bindingdb', 'biosnap']
+dblist = [nr, gpcr, e, bindingdb, biosnap, drugbank]
+dblist_name = ['NR', 'GPCR', 'E', 'BindingDB', 'BIOSNAP', 'DrugBank']
+
 for i in range(len(dblist)):
     axs[0].scatter(dblist[i].split_type, dblist[i].AUROC, label=dblist_name[i])
     axs[0].plot(dblist[i].split_type, dblist[i].AUROC)
@@ -92,5 +95,33 @@ for i in range(len(dblist)):
     axs[1].plot(dblist[i].split_type, dblist[i].AUPR)
     axs[1].legend()
 
+
+
 fig.savefig('test_com.pdf')
+
+import seaborn as sns
+sns.color_palette("hls", 8)
+
+plt.clf()
+
+dblist_name = ['NR', 'GPCR', 'E', 'BindingDB', 'BIOSNAP', 'DrugBank']
+
+sub = ['sub', 'nosub']
+
+fig, axs = plt.subplots(1, 2, figsize=(14, 6), sharey=True)
+axs[0].title.set_text('AUROC (without subsampling)')
+axs[1].title.set_text('AUPR  (without subsampling)')
+
+for db_name in dblist_name:
+    print(db_name)
+    db = pd.read_csv(f'{db_name}/{db_name}_{sub[1]}.results', sep="\t", index_col=0)
+    db.head()
+    axs[0].scatter(db.split_type, db.AUROC, label=db_name)
+    axs[0].plot(db.split_type, db.AUROC)
+    axs[0].legend()
+    axs[1].scatter(db.split_type, db.AUPR, label=db_name)
+    axs[1].plot(db.split_type, db.AUPR)
+    axs[1].legend()
+
+fig.savefig(f'comparison_w_{sub[1]}.pdf')
 
