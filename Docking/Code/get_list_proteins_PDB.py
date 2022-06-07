@@ -2,20 +2,20 @@ import os
 import pandas as pd
 import logging
 from tqdm import tqdm
-import helper_functions_dtinet as hf
+import helper_functions as hf
 import requests
 from tqdm import tqdm
-import glob 
-from collections import Counter
+#import glob 
+#from collections import Counter
 import numpy as np
-from Bio.PDB import PDBParser
-from Bio.PDB.MMCIFParser import MMCIFParser
-import gzip
+#from Bio.PDB import PDBParser
+#from Bio.PDB.MMCIFParser import MMCIFParser
+#import gzip
 
 
 ### functions
 def get_unis_yamanishi(all_prot):
-    GEN_PATH = '/mnt/md0/data/jfuente/DTI/Input4Models/DB/Data/'
+    GEN_PATH = '../../DB/Data/'
     PATH_E = os.path.join(GEN_PATH, 'Yamanashi_et_al_GoldStandard/E/interactions/e_admat_dgc_mat_2_line.txt')
     PATH_NR = os.path.join(GEN_PATH, 'Yamanashi_et_al_GoldStandard/NR/interactions/nr_admat_dgc_mat_2_line.txt')
     PATH_GPCR = os.path.join(GEN_PATH, 'Yamanashi_et_al_GoldStandard/GPCR/interactions/gpcr_admat_dgc_mat_2_line.txt')
@@ -42,7 +42,7 @@ def get_unis_yamanishi(all_prot):
 
 #  
 def get_unis_drugbank(all_prot):
-    GEN_PATH = '/mnt/md0/data/jfuente/DTI/Input4Models/DB/Data/'
+    GEN_PATH = '../../DB/Data/'
     PATH_DRUGBANK = os.path.join(GEN_PATH, 'DrugBank/DrugBank_DTIs.tsv')
     df = pd.read_csv(PATH_DRUGBANK, sep='\t') 
     df.columns = ['Drug', 'Protein']
@@ -55,7 +55,7 @@ def get_unis_drugbank(all_prot):
 
 # 
 def get_unis_biosnap(all_prot):
-    GEN_PATH = '/mnt/md0/data/jfuente/DTI/Input4Models/DB/Data/'
+    GEN_PATH = '../../DB/Data/'
     PATH_BIOSNAP = os.path.join(GEN_PATH, 'BIOSNAP/ChG-Miner_miner-chem-gene/ChG-Miner_miner-chem-gene.tsv')
     df = pd.read_csv(PATH_BIOSNAP, sep='\t', comment='#', header=None) 
     df.columns = ['Drug', 'Protein']
@@ -69,7 +69,7 @@ def get_unis_biosnap(all_prot):
 
 # 
 def get_unis_binding(all_prot):
-    GEN_PATH = '/mnt/md0/data/jfuente/DTI/Input4Models/DB/Data/'
+    GEN_PATH = '../../DB/Data/'
     PATH_BINDING =  os.path.join(GEN_PATH,'BindingDB/tdc_package_preprocessing/BindingDB_max_affinity.tsv')
     #
     bindingdb = pd.read_csv(PATH_BINDING, sep="\t", header=0, usecols=['Drug_ID', 'SMILES', 'Target_ID', 'Target Sequence', 'Y'])
@@ -92,7 +92,7 @@ def get_unis_binding(all_prot):
 
 # 
 def get_unis_davis(all_prot):
-    GEN_PATH = '/mnt/md0/data/jfuente/DTI/Input4Models/DB/Data/'
+    GEN_PATH = '../../DB/Data/'
     PATH_DAVIS = os.path.join(GEN_PATH, 'Davis_et_al/tdc_package_preprocessing/DAVIS_et_al_w_labels.tsv')
     davis = pd.read_csv(PATH_DAVIS, sep="\t", header=0, usecols=['Drug_ID', 'SMILES', 'Target_ID', 'Target Sequence', 'Label'])
     davis = davis.rename({'Drug_ID': 'PubChemID', 'Target_ID': 'GeneName', 'Target Sequence': 'Sequence'}, axis=1)
@@ -152,14 +152,12 @@ all_prot = get_all_unis()
 logging.info(f'Number of all proteins: {len(all_prot)}') # 6167
 
 df_uni2pdb = get_df_info_uni2pdb(all_prot)
-# df_uni2pdb.to_pickle(os.path.join('tmp_data', 'df_uni2pdb_all_info.pkl')
-
 df_uni2pdb = df_uni2pdb.drop(df_uni2pdb[df_uni2pdb.Method != 'X-ray'].index)
 df_uni2pdb = df_uni2pdb.drop(df_uni2pdb[df_uni2pdb.Resolution == '-'].index)
 df_uni2pdb.Resolution = df_uni2pdb.Resolution.str.strip(' A').astype(float)
 df_uni2pdb = df_uni2pdb.drop(columns='Method') # only X-Ray
 
-logging.info(df_uni2pdb.head(6))
+logging.debug(df_uni2pdb.head(6))
 
 df_uni2pdb.sort_values(by='Resolution', inplace=True, ignore_index=True) # sorting values by resolution, better will be on top of the dataframe
 df_uni2pdb.drop_duplicates(subset='UniprotID', inplace=True, ignore_index=True) # remove uniprots duplicated, will keep only the first appearing (sorted before)

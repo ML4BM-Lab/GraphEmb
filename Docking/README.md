@@ -1,10 +1,15 @@
+Molecular Docking for subsampling. 
+======
+# General notes
 
+Joining all proteins by UniprotID, we count **6168** proteins.
 
-Molecular Docking 
-for subsampling approaches. 
+From these, we were able to retrieve from the PDB Database and clean **2556** proteins (X-Ray, <2 A ...).
+From AlphaFold we take **1777** proteins (restricting to a average of 70 ppXXXX)
+
+This makes that we have structure for a 70.25% of the total number of proteins.
 
 ## Codes
-
 
 
 ## Downloading Data
@@ -13,7 +18,7 @@ Download structures from PDB using the download script.
 Before, run get_list of proteins to know which proteins should be download
 [batch download](https://www.rcsb.org/docs/programmatic-access/batch-downloads-with-shell-script)
 
-and download them as
+and download with:
 
 ```
 nohup bash batch_download.sh -f list_download_pdbs.txt -o PDB_FILES -p > get_pdbs.out &
@@ -26,12 +31,15 @@ All data from AlphaFold downloaded from:
 --->  [download page](https://alphafold.ebi.ac.uk/download)
 and selected the human prot for later filter.
 
+This wll download everythin, delete *.cif.gz
+
 
 
 ## Preprocessing data
 Select those that we need as in script XXXX
 
 Using Bio3D R package to calculate RMSDs
+
 
 Docking part? using autodock vina
 
@@ -44,9 +52,7 @@ Presented in folders Clean_from_AFold, Clean_from_PDB
 
 
 ## Calculating RMSD
-
-Using R package bio3d
-from them the following funcions (information taken from bio3d
+Using R package bio3d, from it the following funcions (information taken from bio3d
 grom the grantlab)
 
 - pdbsplit: 
@@ -54,7 +60,7 @@ This function will produce single chain PDB files from multi-chain input files. 
 
 - pdbaln:  
 Create multiple sequences alignments from a list of PDB files returning aligned sequence and structure records. 
-    * This function uses muscle. relative path can be given
+    * This function uses muscle. relative path can be specified.
     * ncore permits to parallel with 'parallel' installed. 
 
 - rmsd:  Calculate the RMSD between coordinate sets.

@@ -3,30 +3,33 @@ library(parallel)
 
 start_time <- Sys.time()
 
+folder_pdb <- "../Data/Clean_from_PDB"
+ids <- sub("\\.pdb$", "", list.files(folder_pdb))
+pdb_files <- paste(folder_pdb, list.files(folder_pdb), sep = "/")
 
-## doing it now for only pdb files as test
-# update this code for pdb + alpha fold
-# also give statistics from all data etc and what come from where
+folder_afold <- "../Data/Clean_from_AFold"
+ids_a <- sub("\\.pdb$", "", list.files(folder_afold))
+pdbs_a <- paste(folder_afold, list.files(folder_afold), sep = "/")
 
-folder <- "../Data/Clean_from_PDB"
-ids <- sub("\\.pdb$", "", list.files(folder))
-pdb_files <- paste(folder, list.files(folder), sep = "/")
+# append afold data; now we have the full list
+ids <- append(ids, ids_a)
+pdb_files <- append(pdb_files, pdbs_a)
 
-n_cores <- 1 # change here for both
+# Number of cores to use
+n_cores <- 5
 # check this
-print("splitting...")
-files <- pdbsplit(pdb_files, ids)
-print("aligment...")
-pdbs <- pdbaln(files, exefile = "./muscle3")
+print("Splitting...")
+# overwrite FALSE: PDBs not be read and written if split files already exist
+files <- pdbsplit(pdb_files, ids, overwrite = FALSE)
+print("Aligment...")
+pdbs <- pdbaln(files, ncore = n_cores, exefile = "./muscle3")
 # alt records selected automatically to A
-# can pass ncore = 2 to paralellice
-print("rmsd...")
-res <- rmsd(pdbs, fit = TRUE)
-res[1:10]
+print("RMSD calculation...")
+res <- rmsd(pdbs, fit = TRUE, ncore = n_cores)
 
 end_time <- Sys.time()
 
-write.table(res, file = "all_PDB_prot_rmsd.tsv", quote = FALSE, sep = "\t")
-
+print("Saving results...")
+write.table(res, file = "test.tsv", quote = FALSE, sep = "\t")
 
 print(end_time - start_time)

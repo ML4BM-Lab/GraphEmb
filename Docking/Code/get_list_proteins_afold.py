@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import logging
 from tqdm import tqdm
-import helper_functions_dtinet as hf
+import helper_functions as hf
 import requests
 from tqdm import tqdm
 import glob 
@@ -11,6 +11,7 @@ import numpy as np
 from Bio.PDB import PDBParser
 from Bio.PDB.MMCIFParser import MMCIFParser
 import gzip
+import shutil
 
 
 def get_meanLDDT_for_pdb(file):
@@ -41,8 +42,10 @@ def get_meanLDDT_for_cif(file):
     avg_bfactor = np.mean(avg_bfactor_)
     return avg_bfactor
 
+##
 logging.basicConfig()
 logging.getLogger('').setLevel(logging.DEBUG)
+##
 
 ######### ALPHA FOLD
 # alpha fold => no option to download or check from the bulk downloaded data
@@ -65,35 +68,23 @@ logging.info(f'From {len(missing_prot)} we can rescue {len(afold_aval)} from alp
 
 ##
 # biopython
-
 afold_aval_files = ['../Data/AFOLD_FILES/' + 'AF-' + file + '-F1-model_v2.pdb.gz' for file in afold_aval]
-# listdir_aphold[0]
-# afold_aval_files[0]
 
 afold_pdb_data = pd.DataFrame(columns=['UniprotID', 'avgpLDDT'])
 for file in tqdm(afold_aval_files):
-    #print(file)
     uniid = file.split('-')[1]    
     avg_bfactor = get_meanLDDT_for_pdb(file) # with cif takes hours and we are just calculating average score
     afold_pdb_data.loc[len(afold_pdb_data.index)] = [uniid, avg_bfactor]
 
-afold_pdb_data.to_pickle('../Data/afold_all_data.pkl')
+#afold_pdb_data.to_pickle('../Data/afold_all_data.pkl')
 
 # confident > 70
 afold_pdb_data.avgpLDDT = afold_pdb_data.avgpLDDT.round(2)
 afold_pdb_data_70 = afold_pdb_data[afold_pdb_data.avgpLDDT>70]
 afold_pdb_data_70.to_pickle('../Data/afold_data_70.pkl')
-
-# move here those to other folder? or better the ofer stuff
-# afold_pdb_data = pd.read_pickle('afold_data.pkl')
-# afold_pdb_data_70 = pd.read_pickle('../Data/afold_data_70.pkl')
-
 selected_afold_id = afold_pdb_data_70.UniprotID.unique().tolist()
 
-
 selected_afold_file = ['../Data/AFOLD_FILES/' + 'AF-' + file + '-F1-model_v2.pdb.gz' for file in selected_afold_id]
-
-import shutil
 
 for id, file in zip(selected_afold_id, selected_afold_file):
     #print(id, file)
@@ -103,4 +94,4 @@ for id, file in zip(selected_afold_id, selected_afold_file):
     shutil.copyfile(original, target)
 
 # and unzip them
-
+# gunzip * 
