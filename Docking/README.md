@@ -3,6 +3,8 @@
 Molecular Docking 
 for subsampling approaches. 
 
+## Codes
+
 
 
 ## Downloading Data
@@ -37,9 +39,29 @@ Docking part? using autodock vina
 First we selected and cleaned al available pdbs from PDB database.
 Later, we searched the remaining ones in AlphaFold.
 
+Once this is done (all files decompresed in format .pdb)
+Presented in folders Clean_from_AFold, Clean_from_PDB
+
 
 ## Calculating RMSD
 
-### Download musclev3
+Using R package bio3d
+from them the following funcions (information taken from bio3d
+grom the grantlab)
 
+- pdbsplit: 
+This function will produce single chain PDB files from multi-chain input files. By default all separate filenames are returned. To return only a subset of select chains the optional input ‘ids’ can be provided to filter the output (e.g. to fetch only chain C, of a PDB object with additional chains A+B ignored). See examples section for further details.
+
+- pdbaln:  
+Create multiple sequences alignments from a list of PDB files returning aligned sequence and structure records. 
+    * This function uses muscle. relative path can be given
+    * ncore permits to parallel with 'parallel' installed. 
+
+- rmsd:  Calculate the RMSD between coordinate sets.
+    * a numeric vector containing the reference coordinate set for comparison with the coordinates in b. Alternatively, if b=NULL then a can be a matrix or list object containing multiple coordinates for pairwise comparison.
+    * fit (logical), if TRUE coordinate superposition is performed on the input structures.
+    * ncore: number of CPU cores used to do the calculation. ncore>1 requires package ‘parallel’ installed.
+
+
+### Download musclev3
 [download muscle v3](https://drive5.com/muscle/downloads_v3.htm)
