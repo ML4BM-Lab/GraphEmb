@@ -384,20 +384,15 @@ def get_dti(path):
     return dtis
 
 def get_admat_from_dti(edges):
-    # get the nodes:
-    horizontal_nodes = list(set([edge[0] for edge in edges]))
-    horizontal_nodes.sort()
-    horizontal_node_position = {node: i for i, node in enumerate(horizontal_nodes)}
-    vertical_nodes = list(set([edge[1] for edge in edges]))
-    vertical_nodes.sort()
-    vertical_node_position = {node: i for i, node in enumerate(vertical_nodes)}
-    # get the matrix dimensions
-    horizontal_length = len(horizontal_nodes)
-    vertical_length = len(vertical_nodes)
-    adjacency = [[0]*horizontal_length for _ in range(vertical_length)]
+    orig = [edge[0] for edge in edges]
+    dest = [edge[1] for edge in edges]
+    all_nodes = list(set(orig).union(set(dest)))
+    all_nodes.sort()
+    node_position = {node: i for i, node in enumerate(all_nodes)}
+    adjacency = [[0]*len(all_nodes) for _ in range(len(all_nodes))]
     for orig, dest in edges:
-        adjacency[vertical_node_position.get(dest)][horizontal_node_position.get(orig)] = 1
-    adjacency  = pd.DataFrame(adjacency, columns=horizontal_nodes, index=vertical_nodes)
+        adjacency[node_position.get(dest)][node_position.get(orig)] = 1
+    adjacency  = pd.DataFrame(adjacency, columns=all_nodes, index=all_nodes)
     return adjacency
 
 def write_edges(edges, path):
@@ -440,3 +435,40 @@ def write_smiles(db_name, drugs_smiles):
         for drug_id, smiles in drugs_smiles:
             if smiles:
                 _ = f.write(f'{drug_id}\t{smiles}\n')
+
+def get_k_neighbors(path, top_k=5):
+    # './../Data/Yamanashi_et_al_GoldStandard/NR/Drugs_SIMCOMP_scores.tsv'
+    with open(path, 'r') as f:
+        drug_drug_sim = f.readlines()
+    #
+    new_edges=[]
+    drug_drug_sim = [distance_vec.strip().split('\t') for distance_vec in drug_drug_sim]
+    drug_drug_sim_index = drug_drug_sim.pop(0)
+    drug_drug_sim_metric = [drug_sim[1:] for drug_sim in drug_drug_sim]
+    drug_drug_sim_metric = [list(map(float, line)) for line in drug_drug_sim_metric]
+    #
+    for drug in range(len(drug_drug_sim_index)):
+        neighbours = sorted(drug_drug_sim_metric[drug], reverse=True)
+        # +1 to keep trully the top_k, not himself
+        neighbours = neighbours[:(top_k +1)]
+        neighbour_names = []
+        for neigh in neighbours[1:]:
+            neigh_idx = drug_drug_sim_metric[drug].index(neigh)
+            neigh_name = drug_drug_sim_index[neigh_idx]
+            if neigh_name not in neighbour_names:
+                neighbour_names.append(neigh_name)
+            else:
+                neigh_name = drug_drug_sim_index[drug_drug_sim_metric[drug].index(neigh, neigh_idx+1)]
+                neighbour_names.append(neigh_name)
+        new_edges.append((drug_drug_sim_index[drug], neighbour_names))
+    return new_edges
+
+def create_edges(edge_list, replace_dots=False):
+    new_edges = []
+    for orig, dest_list in edge_list:
+        if replace_dots:
+            orig = orig.replace(':', '')
+            new_edges.extend([[orig, dest.replace(':', '')] for dest in dest_list])
+        else:
+            new_edges.extend([[orig, dest] for dest in dest_list])
+    return new_edges

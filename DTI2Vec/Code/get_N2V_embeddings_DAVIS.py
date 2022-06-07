@@ -14,7 +14,7 @@ def main():
     parser.add_argument(
         "dbPath",
         help="Path to the database interaction lits",
-        default="/home/margaret/data/jfuente/DTI/Data/Yamanashi_et_al_GoldStandard/NR/interactions/nr_admat_dgc_mat_2_line.txt",
+        default='./../../DB/Data/Davis_et_al/tdc_package_preprocessing/DAVIS_et_al.tsv',
         type=str,
     )
     parser.add_argument(
@@ -45,6 +45,10 @@ def main():
     logging.info(f"Reading database from: {DB_PATH}")
     db_name = hf.get_DB_name(DB_PATH)
     dtis, node_index_dict = hf.read_dtis_DAVIS(DB_PATH)
+    new_drug_edges = hf.get_k_neighbors(f'./../Data/{db_name}/Drugs_SIMCOMP_scores.tsv', top_k=K_neigh)
+    dtis.extend(hf.create_edges(new_drug_edges))
+    new_prot_edges = hf.get_k_neighbors(f'./../Data/{db_name}/Proteins_SmithWaterman_scores_MinMax.tsv', top_k=K_neigh)
+    dtis.extend(hf.create_edges(new_prot_edges, replace_dots=True))
 
     # encode the DTIs
     logging.info("Encoding the DTIs")

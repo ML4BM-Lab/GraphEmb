@@ -30,6 +30,7 @@ res <- rmsd(pdbs, fit = TRUE, ncore = n_cores)
 end_time <- Sys.time()
 
 print("Saving results...")
-write.table(res, file = "test.tsv", quote = FALSE, sep = "\t")
+write.table(res, file = "../Data/matrix_rmsd.tsv", quote = FALSE, sep = "\t")
 
+cat("# cores:", n_cores, "\n")
 print(end_time - start_time)
