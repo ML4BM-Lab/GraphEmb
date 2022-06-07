@@ -34,6 +34,10 @@ Using Bio3D R package to calculate RMSDs
 Docking part? using autodock vina
 
 
+First we selected and cleaned al available pdbs from PDB database.
+Later, we searched the remaining ones in AlphaFold.
+
+
 ## Calculating RMSD
 
 ### Download musclev3
