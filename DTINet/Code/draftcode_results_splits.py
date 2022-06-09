@@ -28,8 +28,12 @@ for file in list_files:
     name = name.replace('.out', '')
     file_info = name.split('_')
     db_name = file_info[0]
-    split_type = file_info[1]
-    subsamp = file_info[2]
+    if db_name == 'Davis':
+        split_type = file_info[3]
+        subsamp = file_info[4]
+    else:
+        split_type = file_info[1]
+        subsamp = file_info[2]
     print(db_name, split_type, subsamp, auroc, aupr, time)
     if subsamp == 'subsampl':
         add_row = [split_type, auroc, aupr, time]
@@ -73,9 +77,11 @@ plt.savefig(f'{db_name}_splits.pdf')
 nr = pd.read_csv('NR/NR_sub.results', sep="\t")
 gpcr = pd.read_csv('GPCR/GPCR_sub.results', sep="\t")
 e = pd.read_csv('E/E_sub.results', sep="\t")
+ic = pd.read_csv('IC/IC_sub.results', sep="\t")
 bindingdb = pd.read_csv('BindingDB/BindingDB_sub.results', sep="\t")
 biosnap = pd.read_csv('BIOSNAP/BIOSNAP_sub.results', sep="\t")
 drugbank = pd.read_csv('DrugBank/DrugBank_sub.results', sep="\t")
+davis = pd.read_csv('Davis_et_al/Davis_sub.results', sep="\t")
 
 plt.clf()
 
@@ -104,24 +110,33 @@ sns.color_palette("hls", 8)
 
 plt.clf()
 
-dblist_name = ['NR', 'GPCR', 'E', 'BindingDB', 'BIOSNAP', 'DrugBank']
+dblist_name = ['NR', 'GPCR', 'E', 'IC','BindingDB', 'BIOSNAP', 'DrugBank', 'Davis']
 
 sub = ['sub', 'nosub']
 
+sam_type = 1
+
 fig, axs = plt.subplots(1, 2, figsize=(14, 6), sharey=True)
-axs[0].title.set_text('AUROC (without subsampling)')
-axs[1].title.set_text('AUPR  (without subsampling)')
+if sam_type == 0:
+    axs[0].title.set_text('AUROC (with subsampling)')
+    axs[1].title.set_text('AUPR  (with subsampling)')
+elif sam_type == 1:
+    axs[0].title.set_text('AUROC (without subsampling)')
+    axs[1].title.set_text('AUPR  (without subsampling)')
 
 for db_name in dblist_name:
     print(db_name)
-    db = pd.read_csv(f'{db_name}/{db_name}_{sub[1]}.results', sep="\t", index_col=0)
+    if db_name == 'Davis':
+        db = pd.read_csv(f'{db_name}_et_al/{db_name}_{sub[sam_type]}.results', sep="\t", index_col=0)
+    else:
+        db = pd.read_csv(f'{db_name}/{db_name}_{sub[sam_type]}.results', sep="\t", index_col=0)
     db.head()
     axs[0].scatter(db.split_type, db.AUROC, label=db_name)
     axs[0].plot(db.split_type, db.AUROC)
-    axs[0].legend()
+    axs[0].legend(loc=3, prop={'size':8})
     axs[1].scatter(db.split_type, db.AUPR, label=db_name)
     axs[1].plot(db.split_type, db.AUPR)
-    axs[1].legend()
+    axs[1].legend(loc=3, prop={'size':8})
 
-fig.savefig(f'comparison_w_{sub[1]}.pdf')
+fig.savefig(f'comparison_w_{sub[sam_type]}.png', dpi=400)
 

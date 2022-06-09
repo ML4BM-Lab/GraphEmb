@@ -12,7 +12,7 @@ This makes that we have structure for a 70.25% of the total number of proteins.
 ## Codes
 
 
-nohup Rscript calculate_rmsd.R > calc_rmsd.out &
+nohup Rscript calculate_rmsd.R > calc_rmsd_test2.out &
 
 ## Downloading Data
 ### PDB Database

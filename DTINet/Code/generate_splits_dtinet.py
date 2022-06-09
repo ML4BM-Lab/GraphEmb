@@ -18,11 +18,12 @@ import os
 import helper_functions_dtinet as hf
 import argparse
 from tqdm.contrib.itertools import product
+from sklearn.model_selection import train_test_split
 
 
 # change to generate splits dtinet 
 
-def generate_splits(DTIs,mode='Sp',subsampling=True,foldnum=10):
+def generate_splits(DTIs,mode='Sp',subsampling=True,foldnum=10,cvopt=True):
 
     #For this split, we will use a regular Kfold split
     #Create Drug and Protein sets
@@ -40,7 +41,7 @@ def generate_splits(DTIs,mode='Sp',subsampling=True,foldnum=10):
     Prot_dd = dict(zip(sorted(Prot_set),Prot_index))
     Prot_inv_dd = {v: k for k, v in Prot_dd.items()}
 
-    def get_interactions_dict(DTIs,seed,subsampling,swap = False, swap_dict = None):
+    def get_interactions_dict(DTIs, seed, subsampling, swap = False, swap_dict = None):
 
         #init default dict (list)
         interactions_dd = dd(list)
@@ -55,24 +56,24 @@ def generate_splits(DTIs,mode='Sp',subsampling=True,foldnum=10):
             else:
                 interactions_dd[Drug_dd[d]].append((Drug_dd[d],Prot_dd[p],1))
                
-
         #add negatives (subsample to have 50%-50%)
         #go through all drugs/proteins
-        for elementid in interactions_dd:
-            
+        for i,elementid in enumerate(interactions_dd):
+            #print(f"elementid {elementid} in i {i}")
             #subsample from the negatives and add it to interactions dictionary
             #drugs if swap = False | proteins if swap = True
             if swap:
-                pos_element = list(map(lambda x: x[0],interactions_dd[elementid])) #x[0] = drug
+                pos_element = list(map(lambda x: x[0], interactions_dd[elementid])) #x[0] = drug
                 neg_element = set(range(Drug_L)).difference((set(pos_element).union(swap_dict[elementid])))
             else:
-                pos_element = list(map(lambda x: x[1],interactions_dd[elementid])) #x[1] = prot
+                pos_element = list(map(lambda x: x[1], interactions_dd[elementid])) #x[1] = prot
                 neg_element = set(range(Prot_L)).difference(set(pos_element))
                
             #print(f"Positive element {len(pos_element)}, negative elements {len(neg_element)}")
 
             if subsampling:
-                neg_sampled_element = r.sample(neg_element,len(pos_element)) #50%-50% (modify if different proportions are desired)
+                #check if we can subsample all
+                neg_sampled_element = r.sample(neg_element,min(len(neg_element),len(pos_element))) #50%-50% (modify if different proportions are desired)
             else:
                 neg_sampled_element = neg_element #get all negatives
 
@@ -215,40 +216,59 @@ def generate_splits(DTIs,mode='Sp',subsampling=True,foldnum=10):
 
             cv_distribution = optimize_folds(cv_distribution,pos_neg_interactions, pos_neg_interactions_dd)
 
+
         #generate the interaction matrix
         pos_neg_matrix = set_to_matrix(f.reduce(lambda a,b: a+b, cv_distribution))
 
-        #define both KFold to maintain proportions (positive and negatives)
-        KFoldobj = KFold(n_splits = foldnum)
 
-        #init the cv list
-        cv_list = []
+        if not cvopt:
 
-        for train_index, test_index in KFoldobj.split(pos_neg_matrix):
-        
-            #get train,test
-            train_edges, test_edges = pos_neg_matrix[train_index],pos_neg_matrix[test_index]
+            X_train, X_val_test = train_test_split(pos_neg_matrix, test_size=0.3, random_state=None)
+            X_val, X_test = train_test_split(X_val_test, test_size=0.66, random_state=None)
+
+            def get_arkar():
+                train_edges_pos, test_edges_pos = X_train[X_train[:,2] == 1,:-1], X_train[X_train[:,2] == 1,:-1]   
+                names_train_pos, names_test_pos = names_from_edges(train_edges_pos,test_edges_pos)
+
+            #1 seed -> [[pos_train,neg_train],[pos_val,neg_val],[pos_test,neg_test]]
+            #2 seed -> ...
+            #..
+            #5 seed -> ...
+
+        else:
+
+            #define both KFold to maintain proportions (positive and negatives)
+            KFoldobj = KFold(n_splits = foldnum)
+
+            #init the cv list
+            cv_list = []
+
+            for train_index, test_index in KFoldobj.split(pos_neg_matrix):
             
-            #--positives--
-            train_edges_pos, test_edges_pos = train_edges[train_edges[:,2] == 1,:-1], test_edges[test_edges[:,2] == 1,:-1]
-            ##create names matrix from edges list
-            names_train_pos, names_test_pos = names_from_edges(train_edges_pos,test_edges_pos)
+                #get train,test
+                train_edges, test_edges = pos_neg_matrix[train_index],pos_neg_matrix[test_index]
+                
+                #--positives--
+                train_edges_pos, test_edges_pos = train_edges[train_edges[:,2] == 1,:-1], test_edges[test_edges[:,2] == 1,:-1]
+                ##create names matrix from edges list
+                names_train_pos, names_test_pos = names_from_edges(train_edges_pos,test_edges_pos)
 
-            #--negatives--
-            train_edges_neg, test_edges_neg = train_edges[train_edges[:,2] == 0,:-1], test_edges[test_edges[:,2] == 0,:-1]
-            
-            ##create names matrix from edges list
-            names_train_neg, names_test_neg = names_from_edges(train_edges_neg,test_edges_neg)
+                #--negatives--
+                train_edges_neg, test_edges_neg = train_edges[train_edges[:,2] == 0,:-1], test_edges[test_edges[:,2] == 0,:-1]
+                
+                ##create names matrix from edges list
+                names_train_neg, names_test_neg = names_from_edges(train_edges_neg,test_edges_neg)
 
-            #print(f"Train pos {len(names_train_pos)}, Train neg {len(names_train_neg)}, Test pos {len(names_test_pos)}, Test neg {len(names_test_neg)}")
+                #print(f"Train pos {len(names_train_pos)}, Train neg {len(names_train_neg)}, Test pos {len(names_test_pos)}, Test neg {len(names_test_neg)}")
 
-            #add each fold
-            cv_list.append((names_train_pos,names_train_neg,names_test_pos,names_test_neg))
+                #add each fold
+                cv_list.append((names_train_pos,names_train_neg,names_test_pos,names_test_neg))
 
-        #add each group of folds for each seed
-        seed_cv_list.append(cv_list)
+            #add each group of folds for each seed
+            seed_cv_list.append(cv_list)
 
     return seed_cv_list
+
 
 #check splits
 def check_splits(splits,verbose=False,foldnum=10):

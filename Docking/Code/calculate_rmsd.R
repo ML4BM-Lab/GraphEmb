@@ -23,6 +23,8 @@ print("Splitting...")
 files <- pdbsplit(pdb_files, ids, overwrite = FALSE)
 print("Aligment...")
 pdbs <- pdbaln(files, ncore = n_cores, exefile = "./muscle3")
+#
+saveRDS(pdbs, "../Data/pdbs_aln.rds")
 # alt records selected automatically to A
 print("RMSD calculation...")
 res <- rmsd(pdbs, fit = TRUE, ncore = n_cores)
