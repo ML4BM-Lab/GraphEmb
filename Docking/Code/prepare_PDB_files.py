@@ -28,6 +28,8 @@ def clean_pdb(IN_PATH, OUT_PATH, uni, data):
     for residue in list(chain):
         if residue.id[0] != ' ': 
             chain.detach_child(residue.id)
+    # if len(list(chain)) != 0:  # add something like this !
+    # problems with P05412
     io = PDBIO()
     io.set_structure(chain)
     io.save(os.path.join(OUT_PATH, f'{uni}.pdb'))
