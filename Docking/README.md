@@ -11,8 +11,21 @@ This makes that we have structure for a 70.25% of the total number of proteins.
 
 ## Codes
 
+For this we need to have all data available in Clean PDB/Afold.
+This script makes use of a modified version of align_all_to_all.py
+the only changes are for saaving the output matrix. 
+```
+calculate_rmsd_pymol.py
+```
 
-nohup Rscript calculate_rmsd.R > calc_rmsd_test2.out &
+From that we extract the statistics of proteins
+
+For extracting data about proteins:
+```
+get_protein_characteristics.py * 
+```
+
+
 
 ## Downloading Data
 ### PDB Database
@@ -27,7 +40,6 @@ nohup bash batch_download.sh -f list_download_pdbs.txt -o PDB_FILES -p > get_pdb
 ```
 
 
-
 ### AlphaFold
 All data from AlphaFold downloaded from:
 --->  [download page](https://alphafold.ebi.ac.uk/download)
@@ -38,22 +50,40 @@ This wll download everythin, delete *.cif.gz
 
 
 ## Preprocessing data
-Select those that we need as in script XXXX
 
-Using Bio3D R package to calculate RMSDs
+Inspect list of proteins and list of drugs(*) with script:
+
+```
+get_list_proteins_PDB.py
+```
 
 
-Docking part? using autodock vina
-
-
+From those, retrieve from PDB and clean them, move available files to the Clean_PDB folder.
 First we selected and cleaned al available pdbs from PDB database.
+```
+prepare_PDB_files.py
+```
+
 Later, we searched the remaining ones in AlphaFold.
+```
+get_list_proteins_afold.py
+```
 
 Once this is done (all files decompresed in format .pdb)
 Presented in folders Clean_from_AFold, Clean_from_PDB
 
+Once proteins are clean in the respective folders, all preprocessing for targets is done. 
 
-## Calculating RMSD
+
+## Calculating RMSD with superimposition of protein structures (Pymol)
+
+Downloaded script from XXX.
+
+Slighly modified to return the whole matrix. 
+
+
+
+## Calculating RMSD with bio3d
 Using R package bio3d, from it the following funcions (information taken from bio3d
 grom the grantlab)
 

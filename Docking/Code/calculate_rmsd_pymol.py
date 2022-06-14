@@ -39,12 +39,12 @@ threshold = 5 # similarity
 
 import matplotlib.pyplot as plt
 import seaborn as sns
-m = pd.read_csv('test.txt', header=0, sep ="\t+", index_col=0,  engine='python')
+m = pd.read_csv('test_E.txt', header=0, sep ="\t+", index_col=0,  engine='python')
 
 # read as pd.read_csv('test.txt', header=0, sep ="\t+", index_col=0)
 
 plt.clf()
-sns.heatmap(m, cmap='RdYlGn')
+sns.heatmap(m<10, cmap='RdYlGn')
 #m[m[m<5]>0.5]
 plt.savefig('test_result.png')
 

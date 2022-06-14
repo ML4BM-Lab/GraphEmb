@@ -5,15 +5,11 @@ from tqdm import tqdm
 import helper_functions as hf
 import requests
 from tqdm import tqdm
-#import glob 
-#from collections import Counter
 import numpy as np
-#from Bio.PDB import PDBParser
-#from Bio.PDB.MMCIFParser import MMCIFParser
-#import gzip
+import requests
+import subprocess as sp
 
-
-### functions
+## Functions
 def get_unis_yamanishi(all_prot):
     GEN_PATH = '../../DB/Data/'
     PATH_E = os.path.join(GEN_PATH, 'Yamanashi_et_al_GoldStandard/E/interactions/e_admat_dgc_mat_2_line.txt')
@@ -40,7 +36,7 @@ def get_unis_yamanishi(all_prot):
         logging.debug(len(all_prot))
     return all_prot
 
-#  
+
 def get_unis_drugbank(all_prot):
     GEN_PATH = '../../DB/Data/'
     PATH_DRUGBANK = os.path.join(GEN_PATH, 'DrugBank/DrugBank_DTIs.tsv')
@@ -53,7 +49,7 @@ def get_unis_drugbank(all_prot):
     logging.debug(len(all_prot))
     return all_prot
 
-# 
+ 
 def get_unis_biosnap(all_prot):
     GEN_PATH = '../../DB/Data/'
     PATH_BIOSNAP = os.path.join(GEN_PATH, 'BIOSNAP/ChG-Miner_miner-chem-gene/ChG-Miner_miner-chem-gene.tsv')
@@ -67,7 +63,7 @@ def get_unis_biosnap(all_prot):
     logging.debug(len(all_prot))
     return all_prot
 
-# 
+ 
 def get_unis_binding(all_prot):
     GEN_PATH = '../../DB/Data/'
     PATH_BINDING =  os.path.join(GEN_PATH,'BindingDB/tdc_package_preprocessing/BindingDB_max_affinity.tsv')
@@ -90,7 +86,7 @@ def get_unis_binding(all_prot):
     logging.debug(len(all_prot))
     return all_prot
 
-# 
+ 
 def get_unis_davis(all_prot):
     GEN_PATH = '../../DB/Data/'
     PATH_DAVIS = os.path.join(GEN_PATH, 'Davis_et_al/tdc_package_preprocessing/DAVIS_et_al_w_labels.tsv')
@@ -113,8 +109,8 @@ def get_unis_davis(all_prot):
     all_prot = list(set(all_prot))
     logging.debug(len(all_prot))
     return all_prot
-#
-## all unis join
+
+
 def get_all_unis():
     # get list of all uniprots
     all_prot = []
@@ -143,34 +139,62 @@ def get_df_info_uni2pdb(all_prot):
 
 
 
-######################
+##########################################
+############### START CODE ###############
+
 logging.basicConfig()
 logging.getLogger('').setLevel(logging.INFO)
-######################
 
+#all_prot = []
 all_prot = get_all_unis()
-logging.info(f'Number of all proteins: {len(all_prot)}') # 6167
+logging.info(f'Number of all proteins: {len(all_prot)}') #
 
 df_uni2pdb = get_df_info_uni2pdb(all_prot)
+
+logging.debug(df_uni2pdb)
+logging.debug(df_uni2pdb.shape)
+
+# saving checkpoints
+folder_checkpoint = '../Data/pkls'
+if not os.path.isdir(folder_checkpoint): 
+    os.makedirs(folder_checkpoint)
+
+df_uni2pdb.to_pickle(os.path.join(folder_checkpoint, 'test_df_uni2pdb.pkl'))
+# df_uni2pdb = pd.read_pickle('../Data/pkls/test_df_uni2pdb.pkl')
+
+# Clean data to retrieve the proteins of interest
+# select only X-Ray and process resolution
 df_uni2pdb = df_uni2pdb.drop(df_uni2pdb[df_uni2pdb.Method != 'X-ray'].index)
 df_uni2pdb = df_uni2pdb.drop(df_uni2pdb[df_uni2pdb.Resolution == '-'].index)
 df_uni2pdb.Resolution = df_uni2pdb.Resolution.str.strip(' A').astype(float)
 df_uni2pdb = df_uni2pdb.drop(columns='Method') # only X-Ray
 
 logging.debug(df_uni2pdb.head(6))
-
+# sort by resolution and get the lowest resolution for the same uniprot
 df_uni2pdb.sort_values(by='Resolution', inplace=True, ignore_index=True) # sorting values by resolution, better will be on top of the dataframe
 df_uni2pdb.drop_duplicates(subset='UniprotID', inplace=True, ignore_index=True) # remove uniprots duplicated, will keep only the first appearing (sorted before)
 df_uni2pdb.sort_values(by=['UniprotID'], inplace=True, ignore_index=True) # Now sorting again by uniprotID alphabet
 res_uni2pdb =  df_uni2pdb.drop(df_uni2pdb[df_uni2pdb.Resolution > 2].index)
-
-res_uni2pdb.to_pickle('pdb_data/res_uni2pdb.pkl')
+res_uni2pdb.to_pickle(os.path.join(folder_checkpoint, 'res_uni2pdb.pkl'))
 # res_uni2pdb = pd.read_pickle('../Data/res_uni2pdb.pkl')
 
-res_uni2pdb.shape
-logging.info(f'Number of proteins (uniprot ID) with available PDB with res<2 A: {len(res_uni2pdb.UniprotID.unique())}')
+logging.debug(f'matrix shape: {res_uni2pdb.shape}')
+logging.info(f'Number of proteins (uniprot ID) with available PDB with res<2 A to download: {len(res_uni2pdb.UniprotID.unique())}')
 
 # save and download again!!!
 unique_pdbs =  res_uni2pdb.PDB.unique().tolist() #batch download
-file_list = 'list_download_pdbs.txt'
+file_list = './../Data/list_download_pdbs.txt'
 np.savetxt(file_list, unique_pdbs , newline='', fmt='%s,')
+
+
+# Download the desired pdbs from PDB database 
+output_pdbs = '../Data/PDB_FILES'
+if not os.path.isdir(output_pdbs): 
+    os.makedirs(output_pdbs)
+
+try:
+    return_code = sp.check_call(f'nohup bash batch_download.sh -f ../Data/list_download_pdbs.txt -o {output_pdbs} -p > get_pdbs.out &', shell=True)
+    if return_code ==0: 
+        logging.info('EXIT CODE 0')
+except sp.CalledProcessError as e:
+    logging.info(e.output)
