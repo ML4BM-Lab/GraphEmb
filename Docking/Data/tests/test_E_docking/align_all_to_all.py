@@ -3,10 +3,10 @@
 
 import os
 import sys
-from tqdm import tqdm
+
 from pymol import cmd
 
-def align_all_to_all(object_list=None, selection='name ca', cutoff=2, cycles=5, debug=0, full_matrix=0, method='align', index = 0):
+def align_all_to_all(object_list=None,selection='name ca',cutoff=2,cycles=5,debug=0,full_matrix=0,method='align'):
   """
   Copyright (c) 2004 Robert L. Campbell (rlc1@queensu.ca)
   Feel free to do whatever you like with this code.
@@ -35,7 +35,6 @@ def align_all_to_all(object_list=None, selection='name ca', cutoff=2, cycles=5, 
     Example:
       align_all_to_all object_list=name1 name2 name3 name4, selection=c. a & n. ca, full_matrix=1
   """
-  print('chunks')
   cutoff = int(cutoff)
   full_matrix = int(full_matrix)
   cycles = int(cycles)
@@ -50,7 +49,7 @@ def align_all_to_all(object_list=None, selection='name ca', cutoff=2, cycles=5, 
   rmsd_list = []
 #  print object_list
   for i in range(len(object_list)):
-    for j in tqdm(range(i+1,len(object_list)), desc=f'loop for it: {i+1} of {len(object_list)}'):
+    for j in range(i+1,len(object_list)):
       if method == 'align':
         rms = cmd.align('%s & %s' % (object_list[j],selection),'%s & %s' % (object_list[i],selection),cutoff=cutoff,cycles=cycles)
       elif method == 'super':
@@ -91,28 +90,22 @@ def align_all_to_all(object_list=None, selection='name ca', cutoff=2, cycles=5, 
 
   print("%6s" % " ", end=' ')
   if full_matrix:
-  # fill in other half of matrix
-    with open(f'test_fullmatrix_{index}.txt','w') as file_out:
-      for i in range(len(object_list)):
-        for j in range(i+1,len(object_list)):
-          rmsd.setdefault(object_list[j],{})[object_list[i]] = rmsd[object_list[i]][object_list[j]]
-        rmsd[object_list[i]][object_list[i]] = 0
-      file_out.write("%6s\t" % " ")
-      for i in range(len(rmsd)):
-        print("%6s" % object_list[i], end=' ')
-        file_out.write("%6s\t" % object_list[i])
+# fill in other half of matrix
+    for i in range(len(object_list)):
+      for j in range(i+1,len(object_list)):
+        rmsd.setdefault(object_list[j],{})[object_list[i]] = rmsd[object_list[i]][object_list[j]]
+      rmsd[object_list[i]][object_list[i]] = 0
+
+    for i in range(len(rmsd)):
+      print("%6s" % object_list[i], end=' ')
+    print("")
+    for i in range(len(object_list)):
+      print("%6s" % object_list[i], end=' ')
+      for j in range(len(object_list)):
+        print("%6.3f" % (rmsd[object_list[i]][object_list[j]]), end=' ')
       print("")
-      file_out.write("\n")
-      for i in range(len(object_list)):
-        print("%6s" % object_list[i], end=' ')
-        file_out.write("%6s\t" % object_list[i])
-        for j in range(len(object_list)):
-          print("%6.3f" % (rmsd[object_list[i]][object_list[j]]), end=' ')
-          file_out.write("%6.3f\t" % (rmsd[object_list[i]][object_list[j]]))
-        print("")
-        file_out.write("\n")
   else:
-    with open(f'RMSD_triang_matrix_{index}.txt','w') as file_out:
+    with open('test.txt','w') as file_out:
       for i in range(len(rmsd)):
         print("%6s" % object_list[i+1], end=' ')
         file_out.write(f"{object_list[i+1]:6s}")

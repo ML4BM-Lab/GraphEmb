@@ -175,13 +175,12 @@ list_objects = list_pdbs + list_afold
 ############# test with E
 # pdbs = np.loadtxt('../Data/tests/test_E_docking/test_E_docking_frompdb.txt', dtype=str).tolist()
 # afold = np.loadtxt('../Data/tests/test_E_docking/test_E_docking_fromafold.txt', dtype=str).tolist()
-
 # pdbs = ['../Data/Clean_from_PDB/' + file + '.pdb' for file in pdbs]
 # afold = ['../Data/Clean_from_AFold/' + file + '.pdb' for file in afold]
-
 # list_objects = pdbs + afold
 
 chunk_size = 52 #get_chunk_size(list_objects)
+ncores = chunk_size
 chunked_index = [i.tolist() for i in np.array_split(list_objects, chunk_size)]
 # adapt later
 list_objects_names = [item.replace('../Data/Clean_from_AFold/', '').replace('../Data/Clean_from_PDB/', '').replace('.pdb', '') for item in list_objects]
@@ -191,8 +190,7 @@ logging.info(f'Created {len(chunked_index[0])} chuncks with size  {chunk_size}')
 
 # Calculate RMSD
 # Superimpose is recommended by Pymol: 
-# super is more robust  than align 
-# for proteins with low sequence similarity. ) 
+# it is more robust than align for proteins with low sequence similarity
 print('Calculating RMSD (method = super)...')
 
 out_folder = '/media/scratch_ssd/tmp/rmsd'
@@ -202,40 +200,28 @@ if not os.path.exists(out_folder):
 logging.info(f'will retrieve {len(chunked_index)**2} files')
 
 ###  With multiprocessing
-
-
-
 a = time.time()
 for i in tqdm(range(len(chunked_index))):
     aa = time.time()
-    logging.info(f'Working with chunk {i}')
+    logging.info(f'Working with chunk {i+1}')
     # Iterating in columns first
-    with mp.Pool(processes=chunk_size) as pool: # change here for less cpu!
+    with mp.Pool(processes=ncores) as pool: # change here for less cpu!
         chunked_index_tmp = [chunked_index] * len(chunked_index)
         i_tmp = [i] * len(chunked_index)
         pool.starmap(row_chunk, zip(chunked_index_tmp, i_tmp, range(len(chunked_index)))) #   j should be generated
     print('i finished')
     bb = time.time()
-    logging.info(f'Time elapsed for chunk {i}: {(bb-aa)/60:.4f} min')
+    logging.info(f'Time elapsed for chunk {i+1}: {(bb-aa)/60:.4f} min')
 
 b = time.time()
 tm = b-a
-logging.info(f'Total Time elapsed {i}: {(tm)/60:.4f} min')
-
-
-# works
-# with mp.Pool(processes=20) as pool: # change here for less cpu!
-#     chunked_index_tmp = [chunked_index] * len(chunked_index)
-#     i_tmp = [i] * len(chunked_index)
-#     pool.starmap(row_chunk, zip(chunked_index_tmp, i_tmp, range(len(chunked_index)))) # j should be generated
+logging.info(f'Total Time elapsed: {(tm)/60:.4f} min')
 
 
 
 ########### FOR READING RESULTS
 # later revome because both are chunked index
 # this is for creating the full matrix
-
-
 df = pd.DataFrame(index=list_objects_names, columns=list_objects_names)
 
 for i, j in product(range(len(chunked_index)), range(len(chunked_index))):

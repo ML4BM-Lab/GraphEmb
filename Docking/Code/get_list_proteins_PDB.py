@@ -177,7 +177,7 @@ df_uni2pdb.drop_duplicates(subset='UniprotID', inplace=True, ignore_index=True) 
 df_uni2pdb.sort_values(by=['UniprotID'], inplace=True, ignore_index=True) # Now sorting again by uniprotID alphabet
 res_uni2pdb =  df_uni2pdb.drop(df_uni2pdb[df_uni2pdb.Resolution > 2].index)
 res_uni2pdb.to_pickle(os.path.join(folder_checkpoint, 'res_uni2pdb.pkl'))
-# res_uni2pdb = pd.read_pickle('../Data/res_uni2pdb.pkl')
+# res_uni2pdb = pd.read_pickle(f'{folder_checkpoint}/res_uni2pdb.pkl')
 
 logging.debug(f'matrix shape: {res_uni2pdb.shape}')
 logging.info(f'Number of proteins (uniprot ID) with available PDB with res<2 A to download: {len(res_uni2pdb.UniprotID.unique())}')
