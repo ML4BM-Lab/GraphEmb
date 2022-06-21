@@ -30,3 +30,5 @@ Docking/Code/muscle3
 Docking/Code/aln.fa
 Docking/Code/split_chain
 *.png
+Docking/Code/chembl_30/
+chembl_30.db

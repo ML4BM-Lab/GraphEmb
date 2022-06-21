@@ -148,6 +148,7 @@ logging.getLogger('').setLevel(logging.INFO)
 #all_prot = []
 all_prot = get_all_unis()
 logging.info(f'Number of all proteins: {len(all_prot)}') #
+np.savetxt('../Data/all_prot.txt',all_prot, fmt='%s')
 
 df_uni2pdb = get_df_info_uni2pdb(all_prot)
 

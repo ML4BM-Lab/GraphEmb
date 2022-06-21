@@ -6,7 +6,7 @@ import sys
 from tqdm import tqdm
 from pymol import cmd
 
-def align_all_to_all(object_list=None,selection='name ca',cutoff=2,cycles=5,debug=0,full_matrix=0,method='align'):
+def align_all_to_all(object_list=None, selection='name ca', cutoff=2, cycles=5, debug=0, full_matrix=0, method='align', index = 0):
   """
   Copyright (c) 2004 Robert L. Campbell (rlc1@queensu.ca)
   Feel free to do whatever you like with this code.
@@ -35,6 +35,7 @@ def align_all_to_all(object_list=None,selection='name ca',cutoff=2,cycles=5,debu
     Example:
       align_all_to_all object_list=name1 name2 name3 name4, selection=c. a & n. ca, full_matrix=1
   """
+  print('chunks')
   cutoff = int(cutoff)
   full_matrix = int(full_matrix)
   cycles = int(cycles)
@@ -91,7 +92,7 @@ def align_all_to_all(object_list=None,selection='name ca',cutoff=2,cycles=5,debu
   print("%6s" % " ", end=' ')
   if full_matrix:
   # fill in other half of matrix
-    with open('../Results/RMSD_full_matrix_E_super.txt','w') as file_out:
+    with open(f'test_fullmatrix_{index}.txt','w') as file_out:
       for i in range(len(object_list)):
         for j in range(i+1,len(object_list)):
           rmsd.setdefault(object_list[j],{})[object_list[i]] = rmsd[object_list[i]][object_list[j]]
@@ -111,7 +112,7 @@ def align_all_to_all(object_list=None,selection='name ca',cutoff=2,cycles=5,debu
         print("")
         file_out.write("\n")
   else:
-    with open('../Results/RMSD_triang_matrix.txt','w') as file_out:
+    with open(f'RMSD_triang_matrix_{index}.txt','w') as file_out:
       for i in range(len(rmsd)):
         print("%6s" % object_list[i+1], end=' ')
         file_out.write(f"{object_list[i+1]:6s}")

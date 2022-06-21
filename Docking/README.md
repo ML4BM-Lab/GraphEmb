@@ -5,7 +5,7 @@ Molecular Docking for subsampling.
 Joining all proteins by UniprotID, we count **6168** proteins.
 
 From these, we were able to retrieve from the PDB Database and clean **2556** proteins (X-Ray, <2 A ...).
-From AlphaFold we take **1777** proteins (restricting to a average of 70 ppXXXX)
+From AlphaFold we take **1776** proteins (restricting to a average of 70 ppXXXX)
 
 This makes that we have structure for a 70.25% of the total number of proteins.
 
@@ -14,15 +14,16 @@ This makes that we have structure for a 70.25% of the total number of proteins.
 For this we need to have all data available in Clean PDB/Afold.
 This script makes use of a modified version of align_all_to_all.py
 the only changes are for saaving the output matrix. 
+
 ```
 calculate_rmsd_pymol.py
 ```
 
-From that we extract the statistics of proteins
 
-For extracting data about proteins:
+From only the selected proteins, extract characteristics. 
+
 ```
-get_protein_characteristics.py * 
+get_annotations_uniprot.py * 
 ```
 
 
@@ -51,27 +52,27 @@ This wll download everythin, delete *.cif.gz
 
 ## Preprocessing data
 
-Inspect list of proteins and list of drugs(*) with script:
+Inspect list of proteins and download them from the PDB Database.
 
 ```
 get_list_proteins_PDB.py
 ```
 
-
-From those, retrieve from PDB and clean them, move available files to the Clean_PDB folder.
+From those, retrieve from PDB and clean them, move available files to the Clean_PDB folder
 First we selected and cleaned al available pdbs from PDB database.
+
 ```
 prepare_PDB_files.py
 ```
 
-Later, we searched the remaining ones in AlphaFold.
+Later, we searched the remaining ones in AlphaFold (the data needs to be bulk downloaded).
+These were copied to our work folder and uncompressed. 
 ```
 get_list_proteins_afold.py
 ```
 
 Once this is done (all files decompresed in format .pdb)
 Presented in folders Clean_from_AFold, Clean_from_PDB
-
 Once proteins are clean in the respective folders, all preprocessing for targets is done. 
 
 
@@ -81,6 +82,9 @@ Downloaded script from XXX.
 
 Slighly modified to return the whole matrix. 
 
+
+--------------------------------
+--------------------------------
 
 
 ## Calculating RMSD with bio3d
