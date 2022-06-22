@@ -9,11 +9,9 @@ import pandas as pd
 import os
 import logging
 import re
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 #####
-# keywords # https://www.uniprot.org/keywords/KW-9992 igual deberia usar algo d esto
+# 
 
 logging.basicConfig()
 logging.getLogger('').setLevel(logging.INFO)
@@ -35,6 +33,8 @@ list_proteins = np.loadtxt('../Data/all_prot.txt', dtype='str').tolist()
 
 class_list = np.loadtxt('keys.txt', dtype='str', delimiter='\n').tolist()
 class_list = [key.lower() for key in class_list]
+logging.debug("""keywords from: https://www.uniprot.org/keywords/KW-9992; 
+                deleting enzyme keywords because using EC Code for those""")
 
 logging.info(f'Retrieving information for {len(list_proteins)}')
 
@@ -76,45 +76,49 @@ for uniprotid in tqdm(list_proteins, desc='Looking up in Uniprot'):
                 if key in class_list:
                     result = key; break
         else:
-            key = 'other' 
+            key = 'notAnnotated' 
     data_uniprot.loc[len(data_uniprot.index)] = [uniprotid, SQ_info, key, ECode]
 
 
-#####################
+
+#### 
 data_uniprot.to_pickle(os.path.join(OUT_PATH, 'data_uniprot_raw.pkl'))
+
+frequencies = data_uniprot['Class'].value_counts()
+condition = frequencies < 10
+mask_obs = frequencies[condition].index
+mask_dict = dict.fromkeys(mask_obs, 'notAnnotated')
+data_uniprot['Class'] = data_uniprot['Class'].replace(mask_dict) 
+
+#####################
+data_uniprot.to_pickle(os.path.join(OUT_PATH, 'data_uniprot.pkl'))
 # data_uniprot = pd.read_pickle(os.path.join(OUT_PATH, 'data_uniprot_raw.pkl'))
 
 ###########################################
+# Quick check - results 
 
-# quick check - results 
+# import matplotlib.pyplot as plt
+# import seaborn as sns
+# df_full = data_uniprot
 
-df_full = data_uniprot
-df_crys = None
+# df_full.UniprotID = df_full.UniprotID.astype(str) 
+# df_crys = df_full[df_full.UniprotID.isin(list_proteins_struct)]
 
-df_full.UniprotID = df_full.UniprotID.astype(str) 
-df_crys = df_full[df_full.UniprotID.isin(list_proteins_struct)]
+# sns.set_style("whitegrid")
+# fig = plt.figure(figsize=(4,3),dpi=400)
+# ax = fig.add_subplot(121)
+# cts = df_full.Class.value_counts().to_frame()
+# ax.pie(cts.Class)
+# ax = fig.add_subplot(122)
+# cts = df_crys.Class.value_counts().to_frame()
+# ax.pie(cts.Class)
+# #fig.legend(cts, fontsize='xx-small', loc="center right")
+# plt.savefig('../Results/test_distr_test2.pdf')
+# plt.clf()
 
-
-sns.set_style("whitegrid")
-
-fig = plt.figure(figsize=(4,3),dpi=400)
-ax = fig.add_subplot(121)
-cts = df_full.Class.value_counts().to_frame()
-ax.pie(cts.Class)
-
-
-ax = fig.add_subplot(122)
-cts = df_crys.Class.value_counts().to_frame()
-ax.pie(cts.Class)
-
-#fig.legend(cts, fontsize='xx-small', loc="center right")
-
-plt.savefig('../Results/test_distr_test2.pdf')
-
-plt.clf()
-
-data_uniprot['Class'].value_counts().plot(kind='pie')
-plt.savefig('../Results/test_distr_test2.png')
+# plt.title('crys')
+# df_crys['Class'].value_counts().plot(kind='pie')
+# plt.savefig('../Results/test_distr_test2.pdf')
 
 # data.EC.fillna(value=np.nan, inplace=True)
 # # select only first class
