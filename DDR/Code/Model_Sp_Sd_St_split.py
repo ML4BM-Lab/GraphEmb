@@ -38,7 +38,7 @@ def generate_splits(DTIs,mode='Sp',subsampling=True,foldnum=10,cvopt=True):
     Prot_dd = dict(zip(sorted(Prot_set),Prot_index))
     Prot_inv_dd = {v: k for k, v in Prot_dd.items()}
 
-    def get_interactions_dict(DTIs,seed,subsampling,swap = False, swap_dict = None):
+    def get_interactions_dict(DTIs, seed, subsampling, swap = False, swap_dict = None):
 
         #init default dict (list)
         interactions_dd = dd(list)
@@ -53,24 +53,24 @@ def generate_splits(DTIs,mode='Sp',subsampling=True,foldnum=10,cvopt=True):
             else:
                 interactions_dd[Drug_dd[d]].append((Drug_dd[d],Prot_dd[p],1))
                
-
         #add negatives (subsample to have 50%-50%)
         #go through all drugs/proteins
-        for elementid in interactions_dd:
-            
+        for i,elementid in enumerate(interactions_dd):
+            #print(f"elementid {elementid} in i {i}")
             #subsample from the negatives and add it to interactions dictionary
             #drugs if swap = False | proteins if swap = True
             if swap:
-                pos_element = list(map(lambda x: x[0],interactions_dd[elementid])) #x[0] = drug
+                pos_element = list(map(lambda x: x[0], interactions_dd[elementid])) #x[0] = drug
                 neg_element = set(range(Drug_L)).difference((set(pos_element).union(swap_dict[elementid])))
             else:
-                pos_element = list(map(lambda x: x[1],interactions_dd[elementid])) #x[1] = prot
+                pos_element = list(map(lambda x: x[1], interactions_dd[elementid])) #x[1] = prot
                 neg_element = set(range(Prot_L)).difference(set(pos_element))
                
             #print(f"Positive element {len(pos_element)}, negative elements {len(neg_element)}")
 
             if subsampling:
-                neg_sampled_element = r.sample(neg_element,len(pos_element)) #50%-50% (modify if different proportions are desired)
+                #check if we can subsample all
+                neg_sampled_element = r.sample(neg_element,min(len(neg_element),len(pos_element))) #50%-50% (modify if different proportions are desired)
             else:
                 neg_sampled_element = neg_element #get all negatives
 
@@ -268,7 +268,8 @@ def generate_splits(DTIs,mode='Sp',subsampling=True,foldnum=10,cvopt=True):
 
 #Lets use Yamanishi NR as an example
 ##Load dataset
-fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','NR','interactions','nr_admat_dgc_mat_2_line.txt')
+#fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','IC','interactions','ic_admat_dgc_mat_2_line.txt')
+fpath = os.path.join(os.getcwd(),'DB','Data','Davis_et_al','tdc_package_preprocessing','DAVIS_et_al.tsv')
 DTIs = pd.read_csv(fpath,sep='\t',header=None)
 DTIs.columns = ['Drug','Protein']
 
@@ -366,7 +367,7 @@ def print_cv_distribution(DTIs,cv_distribution):
 
 # ------------------------------------------------------- Sp ------------------------------------------------------------------ #
 ##Get 5-seed 10-fold CV Sp (all nodes are seeing during the training)
-sp_splits = generate_splits(DTIs, mode= 'Sp', subsampling=False, foldnum=10)
+sp_splits = generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=10)
 
 ##check sp split
 check_splits(sp_splits,verbose=False) 

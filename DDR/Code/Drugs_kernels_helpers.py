@@ -71,6 +71,38 @@ def get_drugs_bindingDB(path):
     return drugs
 
 
+def get_Biosnap_to_Pubchem(drugs):
+    logging.info('Reading DrugBank database')
+    tree = ET.parse(
+        "./DB/Data/cross_side_information_DB/DrugBank/Data/full_database.xml"
+    )
+    root = tree.getroot()
+    binding_to_pbC = {}
+    binding_to_pbS = {}
+    for drug_entry in tqdm(root, desc="retrieving Pubchem IDs"):
+        drugbank_ID = drug_entry.find("{http://www.drugbank.ca}drugbank-id").text
+        if drugbank_ID in drugs:
+            external_ids = drug_entry.find(
+                "{http://www.drugbank.ca}external-identifiers"
+            )
+            if external_ids is not None:
+                all_ext_ids = [ext_id[0].text for ext_id in external_ids]
+            if "PubChem Compound" in all_ext_ids:
+                binding_to_pbC[drugbank_ID] = external_ids[
+                    all_ext_ids.index("PubChem Compound")
+                ][1].text
+                continue
+            elif "PubChem Substance" in all_ext_ids:
+                binding_to_pbS[drugbank_ID] = external_ids[
+                    all_ext_ids.index("PubChem Substance")
+                ][1].text
+                continue
+            else:
+                logging.debug(
+                    "Drug from DB not found in PubChem: {}".format(drugbank_ID)
+                )
+    return binding_to_pbC, binding_to_pbS
+
 def get_drugs_Davis(path):
     logging.info(f"Parsing the DB")
     with open(path, "r") as fl:

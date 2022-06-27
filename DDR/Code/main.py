@@ -56,7 +56,7 @@ def get_paths(arg1,arg2):
         protein_savepath = os.path.join(os.getcwd(),f'DDR/Data/{arg1}/{arg1}_prot_')
         molpath = os.path.join(f'/tmp/{arg1}_drug_mol')
         protpath = os.path.join(f'/tmp/{arg1}_gene_symbol')
-        fastapath = os.path.join(os.getcwd(),f'DDR/{arg1}/{arg1}_Targets_AA_sequences.tsv')
+        fastapath = os.path.join(os.getcwd(),f'DDR/Data/{arg1}/{arg1}_Targets_AA_sequences.tsv')
 
     dataset = arg1
     subdataset = arg2
@@ -185,7 +185,7 @@ def SW(name,subdataset):
 ##Drugs
 #RchemCPP(molpath,drug_savepath)
 #AERS_FDA(dataset,subdataset)
-SIDER(dataset,subdataset)
+#SIDER(dataset,subdataset)
 #SIMCOMP(dataset,subdataset)
 
 ##Proteins

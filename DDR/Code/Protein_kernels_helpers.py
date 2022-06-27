@@ -274,6 +274,42 @@ def check_and_create_fasta(target, seq):
 		fasta1 = write_fasta(PATH, target, seq)
 	return fasta1
 
+def get_seqs_DAVIS(path):
+    """
+    This function reads the database and returns the targets 
+    """
+    targets = []
+    with open(path, 'r') as f:
+        for line in f:
+            if not line.startswith('\t'):
+                line = line.split('\t')
+                targets.append((line[3], line[4]))
+        return targets
+
+def get_seqs_BindingDB(path):
+    """
+    This function reads the database and returns the targets 
+    """
+    targets = []
+    with open(path, 'r') as f:
+        _ = next(f)
+        for line in f:
+            line = line.split('\t')
+            targets.append((line[3], line[4]))
+        return targets
+
+def retrieve_sequences_from_UniProt(ID):
+    """
+    This function retrieves the AA sequence from uniprot.
+    """
+    r = requests.get(f'https://www.uniprot.org/uniprot/{ID}.fasta')
+    if r.status_code == 200:
+        aminoseq = ''.join(r.text.split('\n')[1:])
+    else:
+        logging.error(f'{ID} not found')
+        return (ID, None)
+    return (ID, aminoseq)
+
 def get_SW_score(pair1, pair2, tmp_path):
 	target1, _ = pair1
 	target2, _ = pair2

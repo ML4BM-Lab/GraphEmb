@@ -4,7 +4,10 @@ import os
 from tdc.multi_pred import DTI
 
 data = DTI(name = 'DAVIS')
-data.binarize(threshold = 30, order = 'descending')
+data.label_distribution()
+#data.convert_to_log(form = 'binding')
+#data.convert_to_log(form = 'natural')
+data.binarize(threshold = 5, order = 'descending')
 data.label_distribution()
 
 #harmonize affinities not supported because duplicities already removed

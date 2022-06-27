@@ -15,7 +15,7 @@ def main():
 	# get the parameters from the user
 	parser = argparse.ArgumentParser()
 	parser.add_argument("dbPath", help="Path to the database interaction lits",
-						default = '/home/margaret/data/jfuente/DTI/Data/BIOSNAP/ChG-Miner_miner-chem-gene/ChG-Miner_miner-chem-gene.tsv',
+						default = './../../DB/Data/BIOSNAP/ChG-Miner_miner-chem-gene/ChG-Miner_miner-chem-gene.tsv',
 						type=str)
 	parser.add_argument("-v", "--verbose", dest="verbosity", action="count", default=3,
 						help="Verbosity (between 1-4 occurrences with more leading to more "

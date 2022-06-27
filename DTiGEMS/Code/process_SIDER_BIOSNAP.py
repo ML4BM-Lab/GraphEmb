@@ -12,7 +12,9 @@ from tqdm import tqdm
 def main():
     # get the parameters from the user
     parser = argparse.ArgumentParser()
-    parser.add_argument("dbPath", help="Path to the database", type=str)
+    parser.add_argument("dbPath", 
+	default = './../../DB/Data/BIOSNAP/ChG-Miner_miner-chem-gene/ChG-Miner_miner-chem-gene.tsv',
+	help="Path to the database", type=str)
     parser.add_argument(
         "-v",
         "--verbose",

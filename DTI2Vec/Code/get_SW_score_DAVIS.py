@@ -14,7 +14,6 @@ import helper_functions_DTI2Vec as hf
 #############################################################################################
 
 
-
 def main():
 	level= logging.INFO
 	fmt = '[%(levelname)s] %(message)s'
@@ -74,11 +73,11 @@ def main():
 	SmithWaterman_arr = pd.DataFrame(all_SmithWaterman,columns=targets,index=targets)
 	logging.info('Saving the array')
 	hf.check_and_create_folder(db_name)
-	file_path = os.path.join('./../Data', db_name, 'Drugs_SmithWaterman_scores.tsv')
+	file_path = os.path.join('./../Data', db_name, 'Proteins_SmithWaterman_scores.tsv')
 	SmithWaterman_arr.to_csv(file_path, sep='\t')
 	rmtree(tmp_path)
 	zscore_SmithWaterman_arr = pd.DataFrame(MinMaxScaler().fit_transform(SmithWaterman_arr),columns=targets,index=targets)
-	file_path = os.path.join('./../Data', db_name, 'Drugs_SmithWaterman_scores_MinMax.tsv')
+	file_path = os.path.join('./../Data', db_name, 'Proteins_SmithWaterman_scores_MinMax.tsv')
 	zscore_SmithWaterman_arr.to_csv(file_path, sep='\t')
 
 

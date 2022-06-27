@@ -384,16 +384,21 @@ def get_dti(path):
     return dtis
 
 def get_admat_from_dti(edges):
-    orig = [edge[0] for edge in edges]
-    dest = [edge[1] for edge in edges]
-    all_nodes = list(set(orig).union(set(dest)))
-    all_nodes.sort()
-    node_position = {node: i for i, node in enumerate(all_nodes)}
-    adjacency = [[0]*len(all_nodes) for _ in range(len(all_nodes))]
+    horizontal_nodes = list(set([edge[0] for edge in edges]))
+    horizontal_nodes.sort()
+    horizontal_node_position = {node: i for i, node in enumerate(horizontal_nodes)}
+    vertical_nodes = list(set([edge[1] for edge in edges]))
+    vertical_nodes.sort()
+    vertical_node_position = {node: i for i, node in enumerate(vertical_nodes)}
+    # get the matrix dimensions
+    horizontal_length = len(horizontal_nodes)
+    vertical_length = len(vertical_nodes)
+    adjacency = [[0]*horizontal_length for _ in range(vertical_length)]
     for orig, dest in edges:
-        adjacency[node_position.get(dest)][node_position.get(orig)] = 1
-    adjacency  = pd.DataFrame(adjacency, columns=all_nodes, index=all_nodes)
+        adjacency[vertical_node_position.get(dest)][horizontal_node_position.get(orig)] = 1
+    adjacency  = pd.DataFrame(adjacency, columns=horizontal_nodes, index=vertical_nodes)
     return adjacency
+
 
 def write_edges(edges, path):
     # with open(path, 'w') as f:
@@ -447,6 +452,9 @@ def get_k_neighbors(path, top_k=5):
     drug_drug_sim_metric = [drug_sim[1:] for drug_sim in drug_drug_sim]
     drug_drug_sim_metric = [list(map(float, line)) for line in drug_drug_sim_metric]
     #
+    if len(drug_drug_sim_index) != len(drug_drug_sim_metric):
+        drug_drug_sim_index = drug_drug_sim_index[1:]
+        logging.debug('Removing header')
     for drug in range(len(drug_drug_sim_index)):
         neighbours = sorted(drug_drug_sim_metric[drug], reverse=True)
         # +1 to keep trully the top_k, not himself
