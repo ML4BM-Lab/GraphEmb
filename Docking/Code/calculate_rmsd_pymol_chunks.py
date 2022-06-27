@@ -171,22 +171,14 @@ list_pdbs = glob.glob('../Data/Clean_from_PDB/*.pdb')
 list_afold = glob.glob('../Data/Clean_from_AFold/*.pdb')
 list_objects = list_pdbs + list_afold
 
-
-############# test with E
-# pdbs = np.loadtxt('../Data/tests/test_E_docking/test_E_docking_frompdb.txt', dtype=str).tolist()
-# afold = np.loadtxt('../Data/tests/test_E_docking/test_E_docking_fromafold.txt', dtype=str).tolist()
-# pdbs = ['../Data/Clean_from_PDB/' + file + '.pdb' for file in pdbs]
-# afold = ['../Data/Clean_from_AFold/' + file + '.pdb' for file in afold]
-# list_objects = pdbs + afold
-
-chunk_size = 52 #get_chunk_size(list_objects)
+# Define and prepare chunks
+chunk_size = 52 
 ncores = chunk_size
 chunked_index = [i.tolist() for i in np.array_split(list_objects, chunk_size)]
-# adapt later
+# adapt for later create the matrix
 list_objects_names = [item.replace('../Data/Clean_from_AFold/', '').replace('../Data/Clean_from_PDB/', '').replace('.pdb', '') for item in list_objects]
-#chunked_names_index = [i.tolist() for i in np.array_split(list_objects_names, chunk_size)]
 
-logging.info(f'Created {len(chunked_index[0])} chuncks with size  {chunk_size}')
+logging.info(f'Created {len(chunked_index[0])} chunks with size  {chunk_size}')
 
 # Calculate RMSD
 # Superimpose is recommended by Pymol: 
@@ -230,7 +222,7 @@ for i, j in product(range(len(chunked_index)), range(len(chunked_index))):
     chunk_cols = load_data.columns.tolist()
     df.loc[chunk_rows, chunk_cols] = load_data.to_numpy()
 
-PATH_OUT = '../Results/test_E_multiproces.pkl'
+PATH_OUT = '../Results/RMSD_full_matrix.pkl'
 logging.info(f'saving files in {PATH_OUT}')
 df.to_pickle(PATH_OUT)
 
