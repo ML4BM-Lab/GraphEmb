@@ -187,7 +187,11 @@ drugs_binding = get_drugs_binding()
 drugs_biosnap = get_drugs_biosnap()
 drugs_yamanishi = get_drugs_yamanishi()
 
-all_drugs = list(set(drugs_drugbank + drugs_davis + drugs_binding + drugs_biosnap + drugs_yamanishi))
+list_drugs_ = drugs_drugbank + drugs_davis + drugs_binding + drugs_biosnap + drugs_yamanishi
+list_drugs_ = [str(drug) for drug in list_drugs_]
+all_drugs = list(set(list_drugs_))
+#all_drugs_2 = list(set([str(drug) for drug in all_drugs]))
+
 logging.info(f'Total number of drugs: {len(all_drugs)}')
 list_drug_smiles_inch = get_SMILES_n_InCh_from_Pubchem_web_batch(all_drugs) 
 
@@ -217,6 +221,8 @@ for drug in tqdm(range(len(list_drugs)), desc='Retrieving Pairwise Tanimoto for 
 df_all_Sim_Tani = pd.DataFrame(all_Sim_Tani, columns= list_drugs, index = list_drugs) 
 logging.debug(f'Drug Similarity Matrix Shape {df_all_Sim_Tani.shape}')
 df = df_all_Sim_Tani.astype(float)
+df.index = df.index.astype(str)
+df.columns = df.columns.astype(str)
 df.to_pickle('../Data/pkls/drugs_tani_full.pkl')
 
 ###########################
