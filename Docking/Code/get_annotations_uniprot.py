@@ -145,6 +145,7 @@ df_uniprot_cristal['Class'].value_counts()
 df_uniprot.to_pickle('../Data/pkls/proteins_annot_full.pkl')
 df_uniprot_cristal.to_pickle('../Data/pkls/proteins_annot_crys.pkl')
 
+# df_uniprot_cristal = pd.read_pickle('../Data/pkls/proteins_annot_crys.pkl')
 # import matplotlib.pyplot as plt
 # plt.clf()
 # fig, axes = plt.subplots(nrows=1, ncols=2, sharey=True)

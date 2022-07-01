@@ -50,11 +50,15 @@ for key in list(dict_dfs.keys()):
 
 
 for key in list(dict_dfs.keys()):
-    out_path = f'../Data/data_per_dataset/{key}'
+    out_path = f'../Results/data_per_dataset/{key}'
     logging.info(f'Working in {key}')
     df = dict_dfs.get(key)
     drugs = df.PubChemID.astype(str).unique().tolist()
     prots = df.UniprotID.astype(str).unique().tolist()
+    # save dataframe and list drugs & proteins
+    df.to_csv(os.path.join(out_path, f'dtis_{key}.csv'), index = False, sep=";")
+    np.savetxt(os.path.join(out_path, f'drugs_{key}.txt'), drugs, fmt='%s')
+    np.savetxt(os.path.join(out_path, f'prots_{key}.txt'), prots, fmt='%s')
     # create tanimoto matrix
     df_drugs = drugs_tani.loc[drugs_tani.index.astype(str).isin(drugs), drugs_tani.columns.astype(str).isin(drugs)]
     df_drugs = df_drugs.iloc[~df_drugs.index.duplicated(keep='first'),~df_drugs.columns.duplicated(keep='first')]

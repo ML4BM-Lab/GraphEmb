@@ -226,7 +226,7 @@ def main():
 	# once we have the list, we have the index and columns for all matrix!!
 	logging.info('-'*30)
 	logging.info('Getting matrix....')
-
+	
 	######### Drug-Disease Matrix
 	logging.info('   - Drug Disease Matrix')
 	matrix_drug_dis_ = pd.get_dummies(drug_dis.set_index('DrugBankID')['DiseaseID']).max(level=0) 
@@ -289,10 +289,11 @@ def main():
 	logging.info(f'        * matrix shape {matrix_prot_dis.shape}')
 	logging.info(f'        * # protein-disease edges {matrix_prot_dis.sum().sum()}')
 	matrix_prot_dis.to_csv(os.path.join(wdir, 'mat_protein_disease.txt'), index=False, header=False, sep=" ") 
-
+	
 	# DTI  (DRUG - PROTEIN) ----> Changes for each Database
 	logging.info('   - Drug Protein Interaction Matrix (DTIs)')
 	dti = dti.drop_duplicates()
+	dti.to_csv(os.path.join(wdir, f'final_dtis_{DB_PATH}.tsv'), index=False, header=False, sep="\t")
 	matrix_drug_protein_ = pd.get_dummies(dti.set_index('Drug')['Protein']).max(level=0)
 	#logging.info(f'        * # unique drugs in DTI info {len(set(matrix_drug_protein_.index))}; # unique drugs in DTI info {len(set(matrix_drug_protein_.columns))}')
 	matrix_drug_protein = pd.DataFrame(matrix_drug_protein_, columns= list_of_protein_nodes, index= list_of_drug_nodes)
@@ -328,7 +329,7 @@ def main():
 		get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_of_protein_nodes, dict_protein_sequence)
 	else:
 		logging.info('Matrix already in folder')
-
+	
 ################################################################
 
 

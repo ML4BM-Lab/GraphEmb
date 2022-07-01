@@ -488,3 +488,71 @@ def get_biosnap_dtis():
     df = dti[['PubChemID', 'UniprotID']].dropna().drop_duplicates()
     return df
 
+
+
+### get dtis original xx
+class original_dtis:
+        def __init__(self):
+                self.GEN_PATH = '../../DB/Data/'
+        #
+        def biosnap(self):
+                GEN_PATH = self.GEN_PATH
+                PATH_BIOSNAP = 'BIOSNAP/ChG-Miner_miner-chem-gene/ChG-Miner_miner-chem-gene.tsv'
+                dti_file_path = os.path.join(GEN_PATH, PATH_BIOSNAP)
+                dti = pd.read_csv(os.path.join(os.getcwd(), dti_file_path), sep='\t', comment='#', header=None) 
+                dti.columns = ['DrugBankID', 'UniprotID']
+                dti = dti.dropna().drop_duplicates()
+                return dti
+        #
+        def bindingdb(self):
+                GEN_PATH = self.GEN_PATH
+                PATH_BINDING = 'BindingDB/tdc_package_preprocessing/BindingDB_max_affinity.tsv'
+                db_file_path = os.path.join(GEN_PATH, PATH_BINDING)
+                bindingdb = pd.read_csv(db_file_path, sep="\t", header=0, usecols=['Drug_ID', 'SMILES', 'Target_ID', 'Target Sequence', 'Y'])
+                bindingdb = bindingdb.rename({'Drug_ID': 'PubChemID', 'Target_ID': 'UniprotID', 'Target Sequence': 'Sequence'}, axis=1)
+                mod_bind = bindingdb.copy()
+                threshold = 30
+                mod_bind['Label'] = [1 if x < threshold else 0 for x in mod_bind['Y']]
+                mod_bind = mod_bind.drop(mod_bind[mod_bind.Label == 0].index)
+                mod_bind = mod_bind.drop(columns=['Y', 'Label', 'Sequence', 'SMILES'])
+                mod_bind['PubChemID'] = mod_bind.PubChemID.astype(int).astype(str)
+                df = mod_bind
+                df = df.dropna().drop_duplicates()
+                return df
+        #
+        def davis(self):
+                GEN_PATH = self.GEN_PATH
+                PATH_DAVIS = os.path.join(GEN_PATH, 'Davis_et_al/tdc_package_preprocessing/DAVIS_et_al_w_labels.tsv')
+                davis = pd.read_csv(PATH_DAVIS, sep="\t", header=0, usecols=['Drug_ID', 'SMILES', 'Target_ID', 'Target Sequence', 'Label'])
+                davis = davis.rename({'Drug_ID': 'PubChemID', 'Target_ID': 'GeneName', 'Target Sequence': 'Sequence'}, axis=1)
+                mod_davis = davis.copy()
+                # then drop those with 0
+                mod_davis = mod_davis.drop(mod_davis[mod_davis.Label == 0].index)
+                mod_davis = mod_davis.drop(columns=['SMILES','Label', 'Sequence'])
+                mod_davis = mod_davis.dropna().drop_duplicates()
+                return mod_davis
+        #
+        def drugbank(self):
+                GEN_PATH = self.GEN_PATH
+                PATH_DRUGBANK = os.path.join(GEN_PATH, 'DrugBank/DrugBank_DTIs.tsv')
+                df = pd.read_csv(PATH_DRUGBANK, sep='\t') 
+                df.columns = ['DrugBankID', 'UniprotID']
+                df = df.dropna().drop_duplicates()
+                return df
+        #
+        def dict_yamanishi(self):
+                GEN_PATH = self.GEN_PATH
+                PATH_E = os.path.join(GEN_PATH, 'Yamanashi_et_al_GoldStandard/E/interactions/e_admat_dgc_mat_2_line.txt')
+                PATH_NR = os.path.join(GEN_PATH, 'Yamanashi_et_al_GoldStandard/NR/interactions/nr_admat_dgc_mat_2_line.txt')
+                PATH_GPCR = os.path.join(GEN_PATH, 'Yamanashi_et_al_GoldStandard/GPCR/interactions/gpcr_admat_dgc_mat_2_line.txt')
+                PATH_IC = os.path.join(GEN_PATH, 'Yamanashi_et_al_GoldStandard/IC/interactions/ic_admat_dgc_mat_2_line.txt')
+                list_yam = [PATH_E, PATH_NR, PATH_GPCR, PATH_IC]
+                names_yam = ['E', 'NR', 'GPCR', 'IC']
+                dics_yam = {}
+                for yam_db,name in zip(list_yam,names_yam):
+                        colnames_data = ['Kegg_ID', 'Gene']
+                        df = pd.read_csv(yam_db, header = None, names = colnames_data, index_col=False, sep='\t')
+                        df = df.dropna().drop_duplicates()
+                        dics_yam[name] = df
+                return dics_yam
+
