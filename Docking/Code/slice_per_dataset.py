@@ -19,6 +19,12 @@ drugs_tani.columns = drugs_tani.columns.astype(str)
 drugs_annot = pd.read_pickle(os.path.join(PKLS_PATH, 'drugs_all_annotation.pkl'))
 drugs_annot.PubChemID = drugs_annot.PubChemID.astype(str)
 
+## save general in csv
+drugs_tani.to_csv(os.path.join('../Data', f'tani_drugs.csv'), index = False, sep=";")
+drugs_annot.to_csv(os.path.join('../Data', f'df_annot_drugs.csv'), index = False, sep=";")
+
+
+
 # for Proteins
 prot_rmsd = pd.read_pickle(os.path.join(PKLS_PATH, 'RMSD_full_matrix.pkl')) #
 prot_annot = pd.read_pickle(os.path.join(PKLS_PATH, 'final_protein_annot.pkl'))

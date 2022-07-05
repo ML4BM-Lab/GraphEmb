@@ -16,10 +16,8 @@ library(RColorBrewer)
 # DRUGS
 
 ## Load files
-FILE_ANNOT <- "../Data/df_annot_drugbank.csv"
-FILE_SIM <- "../Data/tani_drugbank.csv"
-
-# tests
+FILE_ANNOT <- "../Data/df_annot_drugs.csv"
+FILE_SIM <- "../Data/tani_drugs.csv"
 
 
 # Load annotations (drug classification)
@@ -34,11 +32,8 @@ mat_drug_sim <- read.table(FILE_SIM, sep = ";", header=T)
 mat_drug_sim <- as.matrix(mat_drug_sim)
 
 
-
-
-### 
+##
 # First generate histogram
-
 hits_drug = mat_drug_sim[upper.tri(mat_drug_sim, diag = FALSE)]
 data <- data.frame(hits_drug)
 #head(data)
@@ -72,7 +67,7 @@ col_fun(seq(-150, 150))
 
 
 ### Annotations
-tags_king <- unique(annot_kingdom)[unique(annot_kingdom) != "-"]
+tags_king <- unique(annot_kingdom)[unique(annot_kingdom) != ""] # change again for -
 
 if (length(tags_king)==1) { 
     color_vec_kig = c('#17b46a')
@@ -80,7 +75,7 @@ if (length(tags_king)==1) {
         color_vec_kig = c('#17b46a','#ee451b')
 } 
 color_kingdom <- setNames(color_vec_kig, tags_king)
-color_kingdom <- c(color_kingdom, setNames('#ffffff', "-"))
+color_kingdom <- c(color_kingdom, setNames('#ffffff', ""))
 
 # Load Paletes
 qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
@@ -92,10 +87,31 @@ color_superclass = setNames(col_vec_super[1:length(tags_superclass)], tags_super
 color_superclass <- c(color_superclass, setNames('#FFFFFF', "-"))
 
 
+######### Molecular Descriptors
+
+names(annots_drugs)
+
+logp <- annots_drugs$log_p
+numhet <- annots_drugs$numhet
+molwt <- annots_drugs$molwt
+
+pale_molwt <- c("#78f47c", "#f5f5f5")
+
+col_fun_molwt <- colorRamp2(c(max(molwt), mean(molwt), min(molwt)), c('black', 'orange','white'))
+col_fun_molwt(seq(-200, 200))
+
+
+col_fun_logp <- colorRamp2(c(max(logp), mean(logp), min(logp)), c('black', '#589cdb','white'))
+col_fun_logp(seq(-200, 200))
+
+
+col_fun_numhet <- colorRamp2(c(max(numhet), mean(numhet), min(numhet)), c('black', '#b740ad','white'))
+col_fun_numhet(seq(-200, 200))
+
 # create dataframe for annotations
 #if only kindgom and superclass
-anno_df = data.frame(kingdom = annot_kingdom,
-                     superclass = annot_superclass)
+anno_df = data.frame(kingdom = annot_kingdom[1:400],
+                     superclass = annot_superclass[1:400])
 
 
 ha <- HeatmapAnnotation(df = anno_df,
@@ -104,6 +120,7 @@ ha <- HeatmapAnnotation(df = anno_df,
                         simple_anno_size = unit(15, "mm"), 
                         width = NULL
                         )
+                        
 
 row_ha = rowAnnotation(df = anno_df, 
                         col = list(kingdom = color_kingdom,
@@ -112,9 +129,19 @@ row_ha = rowAnnotation(df = anno_df,
                         show_legend = FALSE,
                         show_annotation_name = FALSE)
 
+anno_df_moldes = data.frame(molwt = molwt[1:400],
+                            logp = logp[1:400],
+                            numhet = numhet[1:400])
 
-pdf(file = "../Results/test_hmap_v2.pdf", width = 20, height = 18)
-Heatmap(mat_drug_sim, col = col_fun, name = 'Drug Similarity',
+left_ha <- rowAnnotation(df=anno_df_moldes, 
+                        col= list(molwt= col_fun_molwt,
+                                  logp = col_fun_logp,
+                                   numhet = col_fun_numhet), 
+                        simple_anno_size = unit(15, "mm"))
+
+
+pdf(file = "../Results/test_hmap_v3.pdf", width = 20, height = 18)
+Heatmap(mat_drug_sim[1:400, 1:400], col = col_fun, name = 'Drug Similarity',
         show_row_names = FALSE, show_column_names = FALSE,
         show_row_dend = FALSE, show_column_dend = FALSE, 
         heatmap_legend_param = list(at = c(0, 0.25, 0.5,0.75,1),
@@ -123,6 +150,7 @@ Heatmap(mat_drug_sim, col = col_fun, name = 'Drug Similarity',
                                 ),
         top_annotation = ha, 
         right_annotation = row_ha,
+        left_annotation = left_ha,
         use_raster = TRUE
 )
 dev.off()
