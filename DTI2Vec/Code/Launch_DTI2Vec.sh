@@ -4,6 +4,7 @@
 # usage() { echo "Usage: $0 [-s <45|90>] [-p <string>]" 1>&2; exit 1; }
 
 # nohup bash Launch_DTI2Vec.sh -p ./../Data/BIOSNAP -d dti2vec:1.0 &
+# nohup bash Launch_DTI2Vec.sh -p ./../Data/DrugBank -d dti2vec:1.0 &
 
 while getopts "p:d:" opt; do
     case $opt in
@@ -15,8 +16,6 @@ while getopts "p:d:" opt; do
 done
 echo "path: $path_2_data";
 echo "docker_name: $docker_name";
-
-
 
 
 #====================== DOCKER PREPARATION======================
@@ -104,10 +103,10 @@ fi
 
 
 
-echo "here";
+echo 'Non Yamanishi-like'
 echo "GS: $GS"
 if $GS; then
-    if [[ $path_2_data =~ (Data\/)([A-Z]*) ]]; then
+    if [[ $path_2_data =~ (Data\/)([A-Za-z]*) ]]; then
         DB=${BASH_REMATCH[2]}
         echo "DB :: $DB";
         else
@@ -119,14 +118,14 @@ if $GS; then
     emb_file="_Nodes_Embedding_"
     docker cp  $path_2_data/$DB$admat $DOCKER_ID:/DTi2Vec/Input/Custom/Custom_admat_dgc.txt
     docker cp  $path_2_data/$DB$dti $DOCKER_ID:/DTi2Vec/Input/Custom/R_Custom.txt
-    for k in 2 5 10
+    for k in 2 5 
     do echo "k: $k";
         for embeddings in 128_ 256_ 512_ 
         do echo ""embeddings: $embeddings"";
             for ((ind = 1; ind<=10; ind++))
             do 
-                echo "docker cp $path_2_data/$DB$emb_file$embeddings$k$ind_.emb $DOCKER_ID:/DTi2Vec/EMBED/Custom/EmbeddingFold_$ind.txt"
-                eval "docker cp $path_2_data/$DB$emb_file$embeddings$k$ind_.emb $DOCKER_ID:/DTi2Vec/EMBED/Custom/EmbeddingFold_$ind.txt"
+                echo "docker cp $path_2_data/$DB$emb_file$embeddings${k}_$ind.emb $DOCKER_ID:/DTi2Vec/EMBED/Custom/EmbeddingFold_$ind.txt"
+                eval "docker cp $path_2_data/$DB$emb_file$embeddings${k}_$ind.emb $DOCKER_ID:/DTi2Vec/EMBED/Custom/EmbeddingFold_$ind.txt"
             done
             for func in Hadmard Concat
             do  mkdir -p ./../Results/$DB/

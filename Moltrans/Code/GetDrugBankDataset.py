@@ -90,6 +90,13 @@ df['SMILES'] = df['DrugBank ID'].map(drugs_smiles)
 df['Target Sequence'] = df['Gene'].map(genes_targetsequences)
 df = df.dropna()
 
+#Get data for splits
+columns = df[['DrugBank ID','Gene', 'Label']]
+df_splits = columns.copy()
+output_path=os.getcwd() + '/../Data/DrugBank/DrugBank_pairs.txt'
+df_splits.to_csv(output_path)
+
+
 #Randomnly choose unseen pairs
 seenpairs = set(df['DrugBank ID'] + df['Gene'])
 unseenpairs = set()

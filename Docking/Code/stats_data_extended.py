@@ -111,13 +111,30 @@ dict_data_dtinet = get_data_DTINet(model='DTINet')
 
 dict_data_eegdti = get_data_DTINet(model='EEG-DTI')
 
+
+
+
 for dataset in list(dict_data_dtinet.keys()):
     print(f'Dataset: {dataset} with sparsity {dict_data_dtinet[dataset]["sparsity"]}')
 
 
 
 import json
-with open('test_dtinet_info.json', 'w') as outfile:
+
+with open('../Results/statistics_extended_dtinet.json', 'w') as outfile:
     json.dump(dict_data_dtinet, outfile)
   
 
+with open('../Results/statistics_extended_eegdti.json', 'w') as outfile:
+    json.dump(dict_data_eegdti, outfile)
+  
+
+df_data_dtinet = pd.DataFrame.from_dict(dict_data_dtinet)
+df_only_data_dtinet = df_data_dtinet.iloc[:-2,:]
+df_only_data_dtinet.to_excel('../Results/statistics_extended_dtinet.xlsx')
+
+
+df_data_eegdti = pd.DataFrame.from_dict(dict_data_eegdti)
+
+df_only_data_eegdti = df_data_eegdti.iloc[:-2,:]
+df_only_data_eegdti.to_excel('../Results/statistics_extended_eeg-dti.xlsx')

@@ -30,6 +30,7 @@ def get_key(df_line, EC, class_list):
         result = 'notAnnotated' 
     return result
 
+
 def get_uniprot_info(protein_list):
     idfrom = "ACC"
     url = 'https://www.uniprot.org/uploadlists/'

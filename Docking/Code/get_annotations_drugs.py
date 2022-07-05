@@ -10,6 +10,7 @@ import requests
 from itertools import repeat
 from rdkit import Chem
 import re
+from rdkit.Chem import Descriptors
 
 # Using PubChemID Return all drugs in PubChemID
 # Calculate similarity with Tanimoto
@@ -228,6 +229,7 @@ df.to_pickle('../Data/pkls/drugs_tani_full.pkl')
 ###########################
 ####### Annotations #######
 
+### CLASS (CLASSYFIRE)
 annotations = []
 retrieve = ['kingdom', 'superclass', 'class', 'subclass']
 for i in tqdm(range(len(list_inchi)), desc='Annotating drugs'):
@@ -248,5 +250,33 @@ for i in tqdm(range(len(list_inchi)), desc='Annotating drugs'):
 
 df_annot = pd.DataFrame.from_records(annotations, columns=['PubChemID', 'kingdom', 'superclass', 'class', 'subclass'])
 df_annot.to_pickle('../Data/pkls/drugs_annot_full.pkl')
+
+
+## MOL DESCRIPTORS
+
+# Number Heteroatoms
+
+smile_test = list_smiles[2]
+
+mol_descrt_list = []
+for drug, smiles in zip(list_drugs, list_smiles):
+    m = Chem.MolFromSmiles(smiles)
+    log_p = Descriptors.MolLogP(m)
+    molwt = Descriptors.MolWt(m)
+    numhet = Descriptors.NumHeteroatoms(m)
+    res = (drug, log_p, molwt, numhet)
+    mol_descrt_list.append(res)
+
+
+cols_mol_descript = ['PubChemID', 'log_p', 'molwt', 'numhet']
+df_mol_descr = pd.DataFrame.from_records(mol_descrt_list, columns=cols_mol_descript)
+
+# join 2 dataframes
+frames = [df_annot, df_mol_descr]
+all_anot_drugs = pd.concat(frames, axis =1)
+test_shape = (df_annot.shape[0], df_annot.shape[1]+df_mol_descr.shape[1])
+assert all_anot_drugs.shape == test_shape, 'Shapes do not coincide'
+
+all_anot_drugs.to_pickle('../Data/pkls/drugs_all_annotation.pkl')
 
 logging.debug('0')

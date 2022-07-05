@@ -169,7 +169,7 @@ def main():
     logging.debug(f'Thera are {len(dtis_binding.UniprotID.unique())} unique proteins')
     logging.info("Saving files...")
     
-    dtis_binding.to_csv(os.path.join(wdir, f'DTI_{DB_PATH}.tsv'), header=True,index=False ,sep="\t")
+    #dtis_binding.to_csv(os.path.join(wdir, f'DTI_{DB_PATH}.tsv'), header=True,index=False ,sep="\t")
 
     file_path_dic_protein_seq = os.path.join(wdir, 'dic_protein_seq.json')
     with open(file_path_dic_protein_seq, 'w', encoding='utf-8') as f:

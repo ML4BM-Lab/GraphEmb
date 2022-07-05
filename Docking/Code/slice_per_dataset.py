@@ -16,15 +16,25 @@ drugs_tani = pd.read_pickle(os.path.join(PKLS_PATH, 'drugs_tani_full.pkl'))
 drugs_tani.index = drugs_tani.index.astype(str)
 drugs_tani.columns = drugs_tani.columns.astype(str)
 # Annotations
-drugs_annot = pd.read_pickle(os.path.join(PKLS_PATH, 'drugs_annot_full.pkl'))
+drugs_annot = pd.read_pickle(os.path.join(PKLS_PATH, 'drugs_all_annotation.pkl'))
 drugs_annot.PubChemID = drugs_annot.PubChemID.astype(str)
 
 # for Proteins
 prot_rmsd = pd.read_pickle(os.path.join(PKLS_PATH, 'RMSD_full_matrix.pkl')) #
-prot_annot = pd.read_pickle(os.path.join(PKLS_PATH, 'proteins_annot_crys.pkl'))
+prot_annot = pd.read_pickle(os.path.join(PKLS_PATH, 'final_protein_annot.pkl'))
 
 
-#
+list_prots = list(set(prot_annot.UniprotID.tolist()).intersection(set(prot_rmsd.index.tolist())))
+list_prots.sort()
+
+prot_rmsd_final = prot_rmsd.loc[list_prots, list_prots]
+
+
+prot_annot = prot_annot[prot_annot.UniprotID.isin(list_prots)].drop_duplicates()
+prot_annot = prot_annot.set_index('UniprotID').loc[list_prots]
+assert prot_rmsd_final.shape[0] ==  prot_annot.shape[0], 'shapes do not coincide'
+logging.info(f'# prots {prot_rmsd_final.shape[0]}')
+
 # Load all DTIS in a dicionary
 dict_dfs  = {
              'DrugBank': hf.get_dtis_drugbank(),
@@ -35,7 +45,6 @@ dict_dfs  = {
 
 dict_dfs.update(hf.get_dict_dtis_yamanishi())
 
-#dict_dfs = hf.get_dict_dtis_yamanishi()
 
 
 ### check if all folders exists if not create them
@@ -73,6 +82,8 @@ for key in list(dict_dfs.keys()):
     df_drugs_annot = df_drugs_annot.fillna("-")
     df_drugs_annot.to_csv(os.path.join(out_path, f'drugs_annot_{key}.csv'), index = False, sep=";")
     logging.debug(df_drugs_annot.head(3))
+    # check that index is the same !
+    
     ####
     # rmsd protein matrix
     df_protein_rmsd = prot_rmsd.loc[prot_rmsd.index.isin(prots), prot_rmsd.columns.isin(prots)]

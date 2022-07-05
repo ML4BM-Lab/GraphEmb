@@ -12,8 +12,8 @@ def main():
 	fmt = '[%(levelname)s] %(message)s'
 	logging.basicConfig(format=fmt, level=level)
 	parser = argparse.ArgumentParser()
-	parser.add_argument("dbPath", nargs='?', help="Path to the database interaction lits",
-						default='./../../DB/Data/BIOSNAP/ChG-Miner_miner-chem-gene/ChG-Miner_miner-chem-gene.tsv',
+	parser.add_argument("dbPath", help="Path to the database interaction lits",
+						default='./../../DB/Data/DrugBank/DrugBank_DTIs.tsv',
 						type=str)
 	parser.add_argument("-v", "--verbose", dest="verbosity", default=3,
 						help="Verbosity (between 1-4 occurrences with more leading to more "
@@ -32,17 +32,16 @@ def main():
 	fmt = '[%(levelname)s] %(message)s'
 	logging.basicConfig(format=fmt, level=level)
 	# we need to create a adjacency matrix with the drugs on the columns and the proteins on the rows
-	# sanity check for the DB
 	DB_PATH = args.dbPath
+	# DB_PATH = './../../DB/Data/DrugBank/DrugBank_DTIs.tsv'
 	###################
-	# DB_PATH = './../../DB//Data/BIOSNAP/ChG-Miner_miner-chem-gene/ChG-Miner_miner-chem-gene.tsv'
+	# sanity check for the DB
 	logging.info(f'Reading database from: {DB_PATH}')
 	db_name = hf.get_DB_name(DB_PATH)
 	edges = hf.get_dti(DB_PATH)
-	edges=[edge for edge in edges if len(edge) == 2]
 	admat = hf.get_admat_from_dti(edges)
-	logging.debug(f"Output files at : {os.path.join('./../Data',db_name ,db_name +'_admat.tsv')}")
-	admat.to_csv(os.path.join('./../Data',db_name , db_name +'_admat.tsv'), sep='\t')
+	logging.debug(f"Output files at : {os.path.join('./../Data',db_name, db_name +'_admat.tsv')}")
+	admat.to_csv(os.path.join('./../Data',db_name ,db_name +'_admat.tsv'), sep='\t')
 	hf.write_edges(edges, os.path.join('./../Data',db_name , db_name +'_dti.tsv'))
 
 #####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

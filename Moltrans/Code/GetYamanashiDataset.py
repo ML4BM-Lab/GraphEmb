@@ -9,6 +9,7 @@ random.seed(1)
 def getamino_KEGG(protein):
     r = requests.get(f'http://rest.kegg.jp/get/{protein}/aaseq')
     aminoseq = ''.join(r.text.split('\n')[1:])
+    print(aminoseq)
 
     if aminoseq =='':
         return None
@@ -16,8 +17,10 @@ def getamino_KEGG(protein):
 
 def get_drug_KEGG(drug):
     r = requests.get(f'http://rest.kegg.jp/get/{drug}/mol')
-    mol = Chem.MolFromMolBlock(r.text) 
-    return Chem.MolToSmiles(mol)
+    mol = Chem.MolFromMolBlock(r.text)
+    smiles = Chem.MolToSmiles(mol)
+    print(smiles)
+    return smiles
 
 def get_dataset(name):
     #Read csv to dataframe for positive pairs
@@ -36,33 +39,49 @@ def get_dataset(name):
     #print(drugs)
 
     #Get the smiles and sequences of drugs and proteins
-    fname = 'smiles_Yamanashi_' + name + '.txt'
-    path_smiles = os.getcwd() + '/../Data/Yamanashi_et_al_GoldStandard/' + fname
+    fname = 'drugs_smiles_Yamanishi_' + name + '.txt'
+    path_smiles = os.getcwd() + '/../Data/Yamanishi_et_al_GoldStandard/' + fname
     if not os.path.exists(path_smiles):
         smiles = np.vectorize(get_drug_KEGG)(drugs)
-        np.savetxt(path_smiles, smiles, fmt="%s")
-    else:
-        smiles = np.genfromtxt(path_smiles, dtype = 'str')
-    
-    fname = 'targetsequences_Yamanashi_' + name + '.txt'
-    path_targetsequences = os.getcwd() + '/../Data/Yamanashi_et_al_GoldStandard/' + fname
+        df_smiles = pd.DataFrame()
+        df_smiles['Drug ID'] = drugs
+        df_smiles['SMILES'] = smiles
+        df_smiles.to_csv(path_smiles, header=None, index = None, sep = ' ')
+        
+    drugs_smiles = pd.read_csv(path_smiles, delimiter=" ", header = None)
+    drugs_smiles = dict(zip(drugs_smiles[0], drugs_smiles[1]))
+
+    fname = 'genes_targetsequences_Yamanishi_' + name + '.txt'
+    path_targetsequences = os.getcwd() + '/../Data/Yamanishi_et_al_GoldStandard/' + fname
     if not os.path.exists(path_targetsequences):
         targetsequences = np.vectorize(getamino_KEGG)(genes)
-        np.savetxt(path_targetsequences, targetsequences, fmt="%s")
-    else:
-        targetsequences = np.genfromtxt(path_targetsequences, dtype = 'str')
+        df_genes = pd.DataFrame()
+        df_genes['Gene'] = genes
+        df_genes['Target Sequence'] = targetsequences
+        df_genes.to_csv(path_targetsequences, header=None, index = None, sep = ' ')
+    
+    genes_targetsequences = pd.read_csv(path_targetsequences, delimiter=" ", header = None)
+    genes_targetsequences = dict(zip(genes_targetsequences[0], genes_targetsequences[1]))   
 
     #print(smiles)
 
     #Create dictionaries
-    drugs_smiles = {d:s for d, s in zip(drugs, smiles)}
-    genes_targetsequences = {g:t for g,t in zip(genes, targetsequences)}
+    #drugs_smiles = {d:s for d, s in zip(drugs, smiles)}
+    #genes_targetsequences = {g:t for g,t in zip(genes, targetsequences)}
     #Add columns for corresponding SMILES and Target Sequence of each pair
     df['SMILES'] = df['Drug ID'].map(drugs_smiles)
     df['Target Sequence'] = df['Gene'].map(genes_targetsequences)
     print(len(df.index))
     df = df.replace(to_replace='None', value=np.nan).dropna()
     print(len(df.index))
+
+    #Get data for splits
+    columns = df[['Drug ID','Gene', 'Label']]
+    df_splits = columns.copy()
+    output_path=os.getcwd() + '/../Data/Yamanishi_et_al_GoldStandard/Yamanishi_' + name + '_pairs.txt'
+    df_splits.to_csv(output_path)
+
+
     #Randomnly choose unseen pairs
     seenpairs = set(df['Drug ID'] + df['Gene'])
     unseenpairs = set()
@@ -87,7 +106,7 @@ def get_dataset(name):
 
 
     #Save it as a csv file
-    output_path = os.getcwd() + '/../Data/Yamanashi_et_al_GoldStandard/Yamanashi_' + name.upper() + ".csv"
+    output_path = os.getcwd() + '/../Data/Yamanishi_et_al_GoldStandard/Yamanishi_' + name.upper() + ".csv"
     df.to_csv(output_path)
 
     print("Yamanishi " + name + " done")

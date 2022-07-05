@@ -14,7 +14,7 @@ def main():
     parser.add_argument(
         "dbPath",
         help="Path to the database interaction lits",
-        default="./../../DB/Data/DrugBank/DrugBank_DTIs.tsvnr_admat_dgc_mat_2_line.txt",
+        default="./../../DB/Data/DrugBank/DrugBank_DTIs.tsv",
         type=str,
     )
     parser.add_argument(
@@ -46,7 +46,7 @@ def main():
     db_name = hf.get_DB_name(DB_PATH)
     for K_neigh in [2, 5, 10, 20]:
         dtis, node_index_dict = hf.read_dtis_DrugBank(DB_PATH)
-        new_drug_edges = hf.get_k_neighbors(f'./../Data/{db_name}/Drugs_SIMCOMP_scores.tsv', top_k=K_neigh)
+        new_drug_edges = hf.get_k_neighbors(f'./../Data/{db_name}/Drug_simmatrix/simmatrix/TFIDF__media_scratch_ssd_tmp_DrugBank_simmat_dc.txt', top_k=K_neigh)
         dtis.extend(hf.create_edges(new_drug_edges))
         new_prot_edges = hf.get_k_neighbors(f'./../Data/{db_name}/Proteins_SmithWaterman_scores_MinMax.tsv', top_k=K_neigh)
         dtis.extend(hf.create_edges(new_prot_edges, replace_dots=False))
@@ -69,7 +69,7 @@ def main():
             cv = cv + 1
             for dim in tqdm(dimensions, desc="Creating the embeddings"):
                 embeddings_file = (
-                    f"./../Data/{db_name}/Binding_Nodes_Embedding_{str(dim)}_{K_neigh}_{cv}.emb"
+                    f"./../Data/{db_name}/DrugBank_Nodes_Embedding_{str(dim)}_{K_neigh}_{cv}.emb"
                 )
                 cmd = f"{PATH_N2V} -i:{dti_coded_path} -o:{embeddings_file} -d:{dim} -v"
                 out_1 = sp.check_call(cmd, shell=True, stdout=sp.DEVNULL)
@@ -79,7 +79,7 @@ def main():
                     logging.error(
                         f"Something went wrong with the node2vec implementation. Check the output of the command: {cmd}"
                     )
-
+                    
 
 #####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

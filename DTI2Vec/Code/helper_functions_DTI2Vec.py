@@ -380,6 +380,7 @@ def write_all_fastas(fastas, path):
 def get_dti(path):
     with open(path, 'r') as f:
         dtis = f.readlines()
+        dtis = [edge for edge in dtis if not edge.startswith('#')]
         dtis = [line.strip().split('\t') for line in dtis]
     return dtis
 
@@ -436,7 +437,7 @@ def get_SMILES_from_Pubchem_web_batch(drugs):
     return smiles
 
 def write_smiles(db_name, drugs_smiles):
-    with open(os.path.join('/./../Data/DTI2Vec/', db_name, 'drugs_smiles.tsv'), 'w') as f:
+    with open(os.path.join('./../Data/', db_name, 'drugs_smiles.tsv'), 'w') as f:
         for drug_id, smiles in drugs_smiles:
             if smiles:
                 _ = f.write(f'{drug_id}\t{smiles}\n')
