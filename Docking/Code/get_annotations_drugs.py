@@ -11,6 +11,10 @@ from itertools import repeat
 from rdkit import Chem
 import re
 from rdkit.Chem import Descriptors
+import time
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+import sys
 
 # Using PubChemID Return all drugs in PubChemID
 # Calculate similarity with Tanimoto
@@ -18,14 +22,14 @@ from rdkit.Chem import Descriptors
 #  -> Family Annotations from ClassyFire
 
 logging.basicConfig()
-logging.getLogger('').setLevel(logging.DEBUG)
+logging.getLogger('').setLevel(logging.INFO)
 
 ##########
 
-def get_SMILES_n_InCh_from_Pubchem_web_batch(drugs):
-    smiles = []
+
+def get_SMILES_n_InCh_from_Pubchem_web_batch(drugs, size=500):
+    res = []
     # split the list in chunks of 100 to make requests
-    size = 100
     drugs = [str(drug) for drug in drugs]
     split_list = lambda big_list, x: [
         big_list[i : i + x] for i in range(0, len(big_list), x)
@@ -37,22 +41,20 @@ def get_SMILES_n_InCh_from_Pubchem_web_batch(drugs):
         response = requests.get(url)
         if response.status_code == 200:
             jsons = response.json()
-        elif response.status_code == 404:
-            url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/sid/{chunk}/json"
-            response = requests.get(url)
-            jsons = response.json()
-        for id in jsons.get("PC_Compounds"):
-            cid = id.get('id').get('id').get('cid')
-            smile = [prop.get('value').get('sval') for prop in id.get('props') if prop.get('urn').get('label') == 'SMILES' and prop.get('urn').get('name') == 'Canonical']
-            inchikey =  [prop.get('value').get('sval') for prop in id.get('props') if prop.get('urn').get('label') == 'InChIKey']
-            if smile:
-                try:
-                    mol1 = Chem.MolFromSmiles(str(smile[0]))
-                    fp1  = Chem.RDKFingerprint(mol1)
-                    smiles.append((cid, smile[0], inchikey[0]))
-                except:
-                    logging.info(f'Error for pubchemid {cid}')
-    return smiles
+            for id in jsons.get("PC_Compounds"):
+                cid, smile, inchikey = None, None, None
+                cid = id.get('id').get('id').get('cid')
+                smile = [prop.get('value').get('sval') for prop in id.get('props') if prop.get('urn').get('label') == 'SMILES' and prop.get('urn').get('name') == 'Canonical'][0]
+                inchikey =  [prop.get('value').get('sval') for prop in id.get('props') if prop.get('urn').get('label') == 'InChIKey'][0]
+                if smile:
+                    try:
+                        mol1 = Chem.MolFromSmiles(str(smile))
+                        fp1  = Chem.RDKFingerprint(mol1)
+                    except:
+                        logging.info(f'Error for pubchemid {cid}')
+                        smile = None
+                res.append((cid, smile, inchikey))
+    return res
 
 
 def get_cid_from_sid(drugs):
@@ -180,6 +182,47 @@ def get_drugs_yamanishi():
     return drugs_yam_pc
 
 
+
+
+def get_drug_moldesc(smiles):
+    mol = Chem.MolFromSmiles(smiles)
+    log_p = Descriptors.MolLogP(mol)
+    molwt = Descriptors.MolWt(mol)
+    numhet = Descriptors.NumHeteroatoms(mol)
+    return [log_p, molwt, numhet]
+
+
+
+
+
+def get_drug_class(drugid, inkey, adapter):
+    # search for classification
+    retrieve_list = ['kingdom', 'superclass', 'class', 'subclass']
+    #url = f'http://classyfire.wishartlab.com/entities/{inkey}.json'
+    #response = requests.get(url)
+    http = requests.Session()
+    http.mount("https://", adapter)
+    http.mount("http://", adapter)
+    try:
+        response = http.get(f'http://classyfire.wishartlab.com/entities/{inkey}.json')
+    except:
+        logging.info(f'connection did not work {sys.exc_info()[0]}')
+    res = []
+    if response.status_code == 200:
+        json = response.json()
+        clasif = [json.get(item, None).get('name', '-') for item in retrieve_list if json.get(item, None)]
+        if len(clasif)<4:
+            clasif.extend([None]*(4-len(clasif)))
+        res.extend(clasif)        
+    else:
+        logging.info(f'status code {response.status_code} for {drugid} : {inkey}')
+        results_.extend([None]*4)
+    # Molecular descriptors
+    res.insert(0, drugid)
+    return res
+
+
+
 #################################################### 
 ################ Load Drugs & SMILES ###############
 drugs_drugbank = get_drugs_drugbank() # only drugbank
@@ -194,15 +237,24 @@ all_drugs = list(set(list_drugs_))
 #all_drugs_2 = list(set([str(drug) for drug in all_drugs]))
 
 logging.info(f'Total number of drugs: {len(all_drugs)}')
+
 list_drug_smiles_inch = get_SMILES_n_InCh_from_Pubchem_web_batch(all_drugs) 
 
+
+df_smiles = pd.DataFrame(list_drug_smiles_inch, columns= ['drugid', 'smiles', 'inchkey']) 
+df_smiles = df_smiles.drop_duplicates().dropna()
 
 ############################################ 
 ## TANIMOTO SCORE FOR CHEMICAL SIMILITUDE ##
 
-list_drugs = [code for code, _, _ in list_drug_smiles_inch]
-list_smiles = [smiles for _, smiles,_ in list_drug_smiles_inch] 
-list_inchi = [inchi for _,_,inchi in list_drug_smiles_inch]
+# list_drugs = [str(code) for code, _,_ in list_drug_smiles_inch]
+# list_smiles = [str(smiles) for _, smiles,_ in list_drug_smiles_inch] 
+# list_inchi = [str(inchi) for _,_,inchi in list_drug_smiles_inch]
+list_drugs = df_smiles.drugid.astype(str).tolist()
+list_smiles = df_smiles.smiles.astype(str).tolist()
+list_inchkey = df_smiles.inchkey.astype(str).tolist()
+
+drug2smiles = dict(zip(df_smiles.drugid.astype(str), df_smiles.smiles.astype(str)))
 
 # Loop for creating Similarity Matrix
 all_Sim_Tani = []
@@ -219,64 +271,101 @@ for drug in tqdm(range(len(list_drugs)), desc='Retrieving Pairwise Tanimoto for 
     all_Sim_Tani.append(sim_for_drug)
 
 
-df_all_Sim_Tani = pd.DataFrame(all_Sim_Tani, columns= list_drugs, index = list_drugs) 
+df_all_Sim_Tani = pd.DataFrame(all_Sim_Tani, columns = list_drugs, index = list_drugs) 
 logging.debug(f'Drug Similarity Matrix Shape {df_all_Sim_Tani.shape}')
 df = df_all_Sim_Tani.astype(float)
-df.index = df.index.astype(str)
-df.columns = df.columns.astype(str)
+# df.index = df.index.astype(str)
+# df.columns = df.columns.astype(str)
 df.to_pickle('../Data/pkls/drugs_tani_full.pkl')
+#df = pd.read_pickle('../Data/pkls/drugs_tani_full.pkl')
+
 
 ###########################
 ####### Annotations #######
 
-### CLASS (CLASSYFIRE)
-annotations = []
-retrieve = ['kingdom', 'superclass', 'class', 'subclass']
-for i in tqdm(range(len(list_inchi)), desc='Annotating drugs'):
-    elmt = list_inchi[i]
-    url = f'http://classyfire.wishartlab.com/entities/{elmt}.json'
-    response = requests.get(url)
-    results_ = []
-    if response.status_code == 200:
-        json = response.json()
-        for item in retrieve:
-            t = json.get(item, None)
-            if t: 
-                result = t.get('name', None)
-                results_.append(result)
-    results_.insert(0, list_drugs[i])
-    annotations.append(tuple(results_))
+## create dict smiles
+
+# annotations_moldesc = []
+# for i in tqdm(range(len(list_smiles))):
+#     line = get_drug_moldesc(list_smiles[i])
+#     line.insert(0, list_drugs[i])
+#     annotations_moldesc.append(line)
+
+# try instead
+annotations_moldesc = []
+for drug in tqdm(df.index):    
+    sml = drug2smiles.get(drug, None)
+    line = [drug]
+    line.extend(get_drug_moldesc(sml))
+    annotations_moldesc.append(line)
+
+annotations_moldesc
+df_annot_moldesc = pd.DataFrame.from_records(annotations_moldesc, columns=['PubChemID',  'log_p', 'molwt', 'numhet'])
+df_annot_moldesc.to_pickle('../Data/pkls/annot_moldesc.pkl')
 
 
-df_annot = pd.DataFrame.from_records(annotations, columns=['PubChemID', 'kingdom', 'superclass', 'class', 'subclass'])
-df_annot.to_pickle('../Data/pkls/drugs_annot_full.pkl')
+## 
+retry_strategy = Retry(
+    total=3,
+    status_forcelist = [429], # , 500, 502, 503, 504
+    method_whitelist=["HEAD", "GET", "OPTIONS"]
+)
+adapter = HTTPAdapter(max_retries=retry_strategy)
 
+# create dict inchkey
+annotations_family = []
+for i in tqdm(range(len(list_drugs)), desc='Annotating drugs'):
+    drugid = list_drugs[i]
+    smiles = list_smiles[i]
+    inkey = list_inchkey[i]
+    results_ =  get_drug_class(drugid, inkey, adapter)
+    annotations_family.append(tuple(results_))
+
+
+##
+df_annot_cols = ['PubChemID', 'kingdom', 'superclass', 'class', 'subclass']
+df_annot_fam = pd.DataFrame.from_records(annotations_family, columns=df_annot_cols)
+df_annot_fam.to_pickle('../Data/pkls/df_annot_fam.pkl')
+
+
+
+Annot_Drugs = pd.DataFrame(df.index.tolist(), columns=['PubChemID'])
+
+final_Annot_Drugs = pd.merge(Annot_Drugs, df_annot.drop_duplicates(), on='PubChemID', how='left').fillna('-')
+assert (df.index != final_Annot_Drugs.PubChemID).sum() == 0, 'order do not coincide'
+logging.info(f'shape tanimoto matrix {df.shape}, shape annotation {final_Annot_Drugs.shape}')
+
+final_Annot_Drugs.to_pickle('../Data/pkls/drugs_all_annotation.pkl')
+
+#df_annot = pd.read_pickle('../Data/pkls/drugs_annot_full.pkl')
 
 ## MOL DESCRIPTORS
 
 # Number Heteroatoms
 
-smile_test = list_smiles[2]
-
-mol_descrt_list = []
-for drug, smiles in zip(list_drugs, list_smiles):
-    m = Chem.MolFromSmiles(smiles)
-    log_p = Descriptors.MolLogP(m)
-    molwt = Descriptors.MolWt(m)
-    numhet = Descriptors.NumHeteroatoms(m)
-    res = (drug, log_p, molwt, numhet)
-    mol_descrt_list.append(res)
+# mol_descrt_list = []
+# for drug, smiles in zip(list_drugs, list_smiles):
+#     m = Chem.MolFromSmiles(smiles)
+#     log_p = Descriptors.MolLogP(m)
+#     molwt = Descriptors.MolWt(m)
+#     numhet = Descriptors.NumHeteroatoms(m)
+#     res = (drug, log_p, molwt, numhet)
+#     mol_descrt_list.append(res)
 
 
-cols_mol_descript = ['PubChemID', 'log_p', 'molwt', 'numhet']
-df_mol_descr = pd.DataFrame.from_records(mol_descrt_list, columns=cols_mol_descript)
+# cols_mol_descript = ['PubChemID', 'log_p', 'molwt', 'numhet']
+# df_mol_descr = pd.DataFrame.from_records(mol_descrt_list, columns=cols_mol_descript)
 
-# join 2 dataframes
-frames = [df_annot, df_mol_descr]
-all_anot_drugs = pd.concat(frames, axis =1)
-test_shape = (df_annot.shape[0], df_annot.shape[1]+df_mol_descr.shape[1])
-assert all_anot_drugs.shape == test_shape, 'Shapes do not coincide'
+# # join 2 dataframes
 
-all_anot_drugs.to_pickle('../Data/pkls/drugs_all_annotation.pkl')
+# all_anot_drugs = df_annot.merge(df_mol_descr, on='PubChemID')
 
-logging.debug('0')
+# # frames = [df_annot, df_mol_descr]
+# # all_anot_drugs = pd.concat(frames, axis =1)
+# # test_shape = (df_annot.shape[0], df_annot.shape[1]+df_mol_descr.shape[1])
+
+# assert all_anot_drugs.shape[0] == df.shape[0], 'Shapes do not coincide'
+
+# all_anot_drugs.to_pickle('../Data/pkls/drugs_all_annotation.pkl')
+
+# logging.debug('0')

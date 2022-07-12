@@ -12,7 +12,7 @@ library(RColorBrewer)
 
 ##################
 # LOAD FILES
-database_name <- 'E'
+database_name <- 'NR'
 
 print(database_name)
 folder_path <- '../Results/data_per_dataset'

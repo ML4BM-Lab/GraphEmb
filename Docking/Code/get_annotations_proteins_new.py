@@ -104,13 +104,13 @@ dic_source.update(dic_alfa)
 dic_source.update(dict_pdb)
 df_all['source'] = df_all.UniprotID.map(dic_source)
 
-df_all[df_all.source.isna()]
+#df_all[df_all.source.isna()]
 
 
 # changes
 # {'P06312': 'P01911',# 'Q8ILQ7': 'P01911'}
 
-df_all  = df_all[~df_all.source.isna()]
+#df_all  = df_all[~df_all.source.isna()]
 
 OUT_FILE = '../Data/pkls/df_annot_proteins_structure.pkl'
 df_all.to_pickle(OUT_FILE)
@@ -127,5 +127,13 @@ len(df_all.UniprotID.unique().tolist())
 Annot_Prot = pd.DataFrame(prot_rmsd.index.unique().tolist(), columns=['UniprotID'])
 
 final_annot = pd.merge(Annot_Prot, df_all, on='UniprotID', how='right').fillna('-')
+
+#
+frequencies = final_annot['mol_func'].value_counts()
+condition = frequencies < 10
+mask_obs = frequencies[condition].index
+mask_dict = dict.fromkeys(mask_obs, 'other')
+final_annot['mol_func'] = final_annot['mol_func'].replace(mask_dict) 
+final_annot['mol_func'].value_counts()
 
 final_annot.to_pickle('../Data/pkls/final_protein_annot.pkl')

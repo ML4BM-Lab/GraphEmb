@@ -10,37 +10,29 @@ library(ggplot2)
 library(RColorBrewer)
 
 
-
-
 #############
 # DRUGS
+# Paths
+folder_path <- '../Results/data_per_dataset/full_data'
+FILE_ANNOT <- file.path(folder_path, 'df_annot_drugs.csv')
+FILE_SIM <- file.path(folder_path, 'tani_drugs.csv')
 
-## Load files
-FILE_ANNOT <- "../Data/df_annot_drugs.csv"
-FILE_SIM <- "../Data/tani_drugs.csv"
-
-
-# Load annotations (drug classification)
+# Load  
 annots_drugs <- read.table(FILE_ANNOT, header = TRUE, sep = ";", quote = "")
-annot_kingdom <- annots_drugs$kingdom
-annot_superclass <- annots_drugs$superclass
-#annot_class <- annots$class; annot_subclass <- annots$subclass
-
-
-
 mat_drug_sim <- read.table(FILE_SIM, sep = ";", header=T)
 mat_drug_sim <- as.matrix(mat_drug_sim)
 
 
-##
+########################
+### PLOT HISTOGRAM
 # First generate histogram
 hits_drug = mat_drug_sim[upper.tri(mat_drug_sim, diag = FALSE)]
 data <- data.frame(hits_drug)
 #head(data)
 
-file_fig <- '../Results/full_hist_drugs_v2.pdf'
+file_fig_hist <- file.path(folder_path, 'hist_drugs.pdf')
 
-pdf(file = file_fig)
+pdf(file = file_fig_hist)
 ggplot(data, aes(hits_drug)) +
   ggtitle("Histogram of drug pairwise similarity")+
   labs(x = "Drug Similarity (Tanimoto score)") +             
@@ -67,6 +59,7 @@ col_fun(seq(-150, 150))
 
 
 ### Annotations
+annot_kingdom <- annots_drugs$kingdom
 tags_king <- unique(annot_kingdom)[unique(annot_kingdom) != ""] # change again for -
 
 if (length(tags_king)==1) { 
