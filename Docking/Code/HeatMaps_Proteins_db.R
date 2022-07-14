@@ -9,25 +9,25 @@ library(magick)
 library(ggplot2)
 library(RColorBrewer)
 
+##################
+# LOAD FILES
+database_name <- 'DrugBank'
+
+print(database_name)
+folder_path <- '../Results/data_per_dataset'
+folder_db_path <-  file.path(folder_path, database_name)
+
+# FILES
+file_prot_sim <- file.path(folder_path, database_name, paste0('prots_rmsd_', database_name, '.csv'))
+file_prot_annot <- file.path(folder_path, database_name, paste0('prots_annot_', database_name, '.csv'))
 
 
-#############
-# PROTEINS
-folder_path <- '../Results/data_per_dataset/full_data'
-
-## Load files
-FILE_ANNOT <- file.path(folder_path, 'prot_annot.csv')
-FILE_SIM <- file.path(folder_path, 'prot_rmsd_final.csv')
-
-# tests
-
-# PROTEINS
-# Mat rmsd protein
-mat_rmsd_proteins <- read.table(FILE_SIM, sep = ";", header=T)
+# load
+mat_rmsd_proteins <- read.table(file_prot_sim, sep = ";", header=T)
 mat_rmsd_proteins <- as.matrix((mat_rmsd_proteins))
 dim(mat_rmsd_proteins)
 # Protein annotation
-annots_prot <- read.table(FILE_ANNOT, header = TRUE, sep = ";", quote = "")
+annots_prot <- read.table(file_prot_annot, header = TRUE, sep = ";", quote = "")
 names(annots_prot)
 
 
@@ -36,7 +36,7 @@ names(annots_prot)
 hits_prot = mat_rmsd_proteins[upper.tri(mat_rmsd_proteins, diag = FALSE)]
 data_hist <- data.frame(hits_prot)
 
-file_fig_hist <- file.path(folder_path, 'hist_prot.pdf')
+file_fig_hist <- paste0(folder_db_path, '/hist_prot_', database_name, '.pdf')
 
 pdf(file = file_fig_hist)
 ggplot(data_hist, aes(hits_prot)) +
@@ -49,12 +49,17 @@ ggplot(data_hist, aes(hits_prot)) +
 dev.off()
 
 
-#####
-## HEATMAP
+####### HEATMAP
 
 # color gradient of matix
-col_fun <- colorRamp2(c(max(mat_rmsd_proteins), 50, 10, 5, 0), c("#07090b", "#122e4a","#649fde","#6ee7dd","white"))
-col_fun(seq(-200, 200))
+if (max(mat_rmsd_proteins)>50){
+    col_fun <- colorRamp2(c(max(mat_rmsd_proteins), 50, 10, 5, 0), c("#07090b", "#122e4a","#649fde","#6ee7dd","white"))
+    col_fun(seq(-200, 200))
+    list_legend = c(max(mat_rmsd_proteins), 50, 10, 5, 0)}else{
+    col_fun <- colorRamp2(c(max(mat_rmsd_proteins), 10, 0), c("#07090b", "#438ddc","white"))
+    col_fun(seq(-200, 200))
+    list_legend = c(max(mat_rmsd_proteins), 10, 0)
+    }
 
 
 # Load Paletes
@@ -93,9 +98,11 @@ color_prot_class= setNames(color_vec_protclass, tag_prot_class)
 ## Enzyme code
 ec_code <- annots_prot$EC
 tags_ec <- sort(unique(ec_code)[unique(ec_code) != "-"]) # change again for -
-color_list_ec = c('#ea481f', '#ffad0a', '#6dcd3c', '#f50093', '#009eb4', '#6a1145', '#041f1e')
-color_ec <- setNames(color_list_ec, tags_ec)
-color_ec <- c(color_ec, setNames('#ffffff', "-"))
+if (length(tags_ec)!=0){
+    color_list_ec = c('#ea481f', '#ffad0a', '#6dcd3c', '#f50093', '#009eb4', '#6a1145', '#041f1e')
+    color_ec <- setNames(color_list_ec[1:length(tags_ec)], tags_ec)
+    color_ec <- c(color_ec, setNames('#ffffff', "-"))
+}
 
 
 #### Create annotations
@@ -113,13 +120,20 @@ ha_top <- HeatmapAnnotation(df = annot_top,
 
 
 # LENGTH AND FUNCTION
-annot_left = data.frame(Length = annots_prot$length,
+# min(annots_prot$length) changed for 0
+# max(annots_prot$length) changed for 1000
+lengths <- as.double(annots_prot$length)
+
+col_fun_len <- colorRamp2(c(max(annots_prot$length), 800, 400,200, min(annots_prot$length)), 
+c('#3d1e2e','#5d2e46', '#bc928a','#d0ada7', '#eedfd6'))
+col_fun_len(seq(-150, 150))
+
+
+if (length(tags_ec)!=0){
+annot_left = data.frame(Length = lengths,
                         Function  = annots_prot$mol_func,
                         EC = annots_prot$EC
                         )
-
-col_fun_len <- colorRamp2(c(max(annots_prot$length), 800, 400,200,min(annots_prot$length)), c('#3d1e2e','#5d2e46', '#bc928a','#d0ada7', '#eedfd6'))
-col_fun_len(seq(-150, 150))
 
 left_annot <- rowAnnotation(df = annot_left,
                 col = list(Length = col_fun_len,
@@ -127,21 +141,32 @@ left_annot <- rowAnnotation(df = annot_left,
                          EC = color_ec),
                 simple_anno_size = unit(10, "mm"), 
                 width = NULL,
-                show_annotation_name=TRUE)
+                show_annotation_name=TRUE)}else{
+    annot_left = data.frame(Length = lengths,
+                            Function  = annots_prot$mol_func
+                            )
 
-
+    left_annot <- rowAnnotation(df = annot_left,
+                    col = list(Length = col_fun_len,
+                            Function = color_prot_class),
+                    simple_anno_size = unit(10, "mm"), 
+                    width = NULL,
+                    show_annotation_name=TRUE)
+}
 
 ### SAVE
 
-file_fig_heat <- file.path(folder_path, 'heatmap_prots.png')
+#file_fig_heat <- file.path(folder_path, 'heatmap_prots.png')
 
-png(file = file_fig_heat, width=1200, height=1200)
+file_fig_heat <- paste0(folder_db_path, '/heatmap_prots_', database_name, '.png')
+
+png(file = file_fig_heat, width = 1200, height = 1000)
 Heatmap(mat_rmsd_proteins, 
         col = col_fun, name = 'Protein RMSD',
         clustering_distance_rows = "euclidean",
         show_row_names = FALSE, show_column_names = FALSE,
         show_row_dend = FALSE, show_column_dend = FALSE,
-        heatmap_legend_param = list(at = c(max(mat_rmsd_proteins), 50, 10, 5, 0),
+        heatmap_legend_param = list(at = list_legend,
                                 legend_direction = "vertical",
                                 legend_height = unit(10, "cm") 
                                 ),
@@ -150,3 +175,6 @@ Heatmap(mat_rmsd_proteins,
         left_annotation = left_annot,
         )
 dev.off()
+
+print('xxxxx')
+print(database_name)

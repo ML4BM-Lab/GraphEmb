@@ -52,7 +52,7 @@ dev.off()
 
 pale <- c("#133c55","#386fa4","#78b7e2","#f5f5f5")
 col_fun <- colorRamp2(c(0, 0.5,0.75,1), pale)
-col_fun(seq(-150, 150))
+col_fun(seq(-300, 300))
 
 # col_fun = circlize::colorRamp2(seq(0, 1, by=(0-(-1))/(150-1)),
 #  , colors=colorRampPalette(rev(RColorBrewer::brewer.pal(n = 11, name = "Blues")))(150))
@@ -60,7 +60,7 @@ col_fun(seq(-150, 150))
 
 ### Annotations
 annot_kingdom <- annots_drugs$kingdom
-tags_king <- unique(annot_kingdom)[unique(annot_kingdom) != ""] # change again for -
+tags_king <- unique(annot_kingdom)[unique(annot_kingdom) != "-"] # change again for -
 
 if (length(tags_king)==1) { 
     color_vec_kig = c('#17b46a')
@@ -68,21 +68,27 @@ if (length(tags_king)==1) {
         color_vec_kig = c('#17b46a','#ee451b')
 } 
 color_kingdom <- setNames(color_vec_kig, tags_king)
-color_kingdom <- c(color_kingdom, setNames('#ffffff', ""))
+color_kingdom <- c(color_kingdom, setNames('#ffffff', "-"))
 
 # Load Paletes
 qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
 col_vec_super = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
 
 # superclass
+annot_superclass <- annots_drugs$superclass
 tags_superclass = unique(annot_superclass)[unique(annot_superclass) != "-"]
 color_superclass = setNames(col_vec_super[1:length(tags_superclass)], tags_superclass)
 color_superclass <- c(color_superclass, setNames('#FFFFFF', "-"))
 
+# # class
+# annot_class <- annots_drugs$class
+# tags_class = unique(annot_class)[unique(annot_class) != "-"]
+# color_class = setNames(col_vec_super[1:length(tags_class)], tags_class)
+# color_class <- c(color_class, setNames('#FFFFFF', "-"))
 
-######### Molecular Descriptors
 
-names(annots_drugs)
+##########
+## Molecular Descriptors
 
 logp <- annots_drugs$log_p
 numhet <- annots_drugs$numhet
@@ -90,7 +96,8 @@ molwt <- annots_drugs$molwt
 
 pale_molwt <- c("#78f47c", "#f5f5f5")
 
-col_fun_molwt <- colorRamp2(c(max(molwt), mean(molwt), min(molwt)), c('black', 'orange','white'))
+col_fun_molwt <- colorRamp2(c(max(molwt), mean(molwt)*2, mean(molwt), mean(molwt)/2, min(molwt)), 
+                                c("#cc5803","#e2711d","#ff9505","#ffb627","#ffc971"))
 col_fun_molwt(seq(-200, 200))
 
 
@@ -103,8 +110,10 @@ col_fun_numhet(seq(-200, 200))
 
 # create dataframe for annotations
 #if only kindgom and superclass
-anno_df = data.frame(kingdom = annot_kingdom[1:400],
-                     superclass = annot_superclass[1:400])
+
+
+anno_df = data.frame(kingdom = annot_kingdom,
+                     superclass = annot_superclass)
 
 
 ha <- HeatmapAnnotation(df = anno_df,
@@ -122,9 +131,9 @@ row_ha = rowAnnotation(df = anno_df,
                         show_legend = FALSE,
                         show_annotation_name = FALSE)
 
-anno_df_moldes = data.frame(molwt = molwt[1:400],
-                            logp = logp[1:400],
-                            numhet = numhet[1:400])
+anno_df_moldes = data.frame(molwt = molwt,
+                            logp = logp,
+                            numhet = numhet)
 
 left_ha <- rowAnnotation(df=anno_df_moldes, 
                         col= list(molwt= col_fun_molwt,
@@ -133,8 +142,11 @@ left_ha <- rowAnnotation(df=anno_df_moldes,
                         simple_anno_size = unit(15, "mm"))
 
 
-pdf(file = "../Results/test_hmap_v3.pdf", width = 20, height = 18)
-Heatmap(mat_drug_sim[1:400, 1:400], col = col_fun, name = 'Drug Similarity',
+
+file_fig_heat <- file.path(folder_path, 'heatmap_drugs.png')
+
+png(file = file_fig_heat, width = 1400, height = 1200)
+Heatmap(mat_drug_sim, col = col_fun, name = 'Drug Similarity',
         show_row_names = FALSE, show_column_names = FALSE,
         show_row_dend = FALSE, show_column_dend = FALSE, 
         heatmap_legend_param = list(at = c(0, 0.25, 0.5,0.75,1),
@@ -142,8 +154,8 @@ Heatmap(mat_drug_sim[1:400, 1:400], col = col_fun, name = 'Drug Similarity',
                                 legend_height = unit(20, "cm") 
                                 ),
         top_annotation = ha, 
-        right_annotation = row_ha,
-        left_annotation = left_ha,
+        right_annotation = left_ha,
+        left_annotation = row_ha,
         use_raster = TRUE
 )
 dev.off()

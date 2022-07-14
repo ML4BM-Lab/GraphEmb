@@ -21,10 +21,11 @@ drugs_annot_fam = drugs_annot_fam.astype(str)
 
 drugs_annot_moldesc = pd.read_pickle(os.path.join(PKLS_PATH, 'annot_moldesc.pkl'))
 drugs_annot_moldesc.PubChemID = drugs_annot_moldesc.PubChemID.astype(str)
-
 drugs_annot = pd.merge(drugs_annot_moldesc, drugs_annot_fam, on='PubChemID', how='left', sort=False)
 assert (drugs_annot.PubChemID.astype(str) != drugs_tani.index.astype(str)).sum() == 0, 'order must be the same'
+drugs_annot.replace('None', np.nan, inplace=True)
 drugs_annot = drugs_annot.fillna("-")
+
 logging.info(f'shape tanimoto matrix {drugs_tani.shape}, shape annotation {drugs_annot.shape}')
 ## save general in csv
 drugs_tani.to_csv(os.path.join('../Results/data_per_dataset/full_data', f'tani_drugs.csv'), index = False, sep=";")
@@ -34,10 +35,10 @@ drugs_annot.to_csv(os.path.join('../Results/data_per_dataset/full_data', f'df_an
 # for Proteins
 prot_rmsd = pd.read_pickle(os.path.join(PKLS_PATH, 'RMSD_full_matrix.pkl')) #
 prot_annot = pd.read_pickle(os.path.join(PKLS_PATH, 'final_protein_annot.pkl'))
+prot_annot.EC = prot_annot.EC.apply(lambda x: x[0])
 list_prots = list(set(prot_annot.UniprotID.tolist()).intersection(set(prot_rmsd.index.tolist())))
 list_prots.sort()
 prot_rmsd_final = prot_rmsd.loc[list_prots, list_prots]
-
 prot_annot = prot_annot[prot_annot.UniprotID.isin(list_prots)].drop_duplicates()
 prot_annot = prot_annot.set_index('UniprotID').loc[list_prots]
 assert prot_rmsd_final.shape[0] ==  prot_annot.shape[0], 'shapes do not coincide'
@@ -62,7 +63,6 @@ dict_dfs.update(hf.get_dict_dtis_yamanishi())
 
 ### check if all folders exists if not create them
 for key in list(dict_dfs.keys()):
-
     out_path = f'../Results/data_per_dataset/{key}'
     check_folder = os.path.isdir(out_path)
     if not check_folder:
@@ -114,6 +114,18 @@ for key in list(dict_dfs.keys()):
     new_annot = new_annot.fillna("-")
     assert (new_annot.UniprotID.astype(str) != df_protein_rmsd.index.astype(str)).sum() == 0, 'not coinciding order'
     new_annot.to_csv(os.path.join(out_path, f'prots_annot_{key}.csv'), index = False, sep=";")
+    test_deleted_prots = new_annot[new_annot.length == '-'].shape[0]
+    if test_deleted_prots !=0:
+        print(f'case for {key}, droping {test_deleted_prots}')
+        drop_index = new_annot[new_annot.length == '-'].index
+        drop_columns = new_annot[new_annot.length == '-'].UniprotID
+        new_annot = new_annot.drop(drop_index).reset_index(inplace=False).drop(columns='index')
+        df_protein_rmsd = df_protein_rmsd.drop(index=drop_columns, columns=drop_columns)
+        assert (new_annot.UniprotID.astype(str) != df_protein_rmsd.index.astype(str)).sum() == 0, 'not coinciding order'
+        # save again
+        df_protein_rmsd.to_csv(os.path.join(out_path, f'prots_rmsd_{key}.csv'), index = False, sep=";")
+        new_annot.to_csv(os.path.join(out_path, f'prots_annot_{key}.csv'), index = False, sep=";")
+
     print("")
 
 
