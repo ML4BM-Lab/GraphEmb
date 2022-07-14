@@ -36,8 +36,8 @@ def main():
 
 	# sanity check for the DB
 	DB_PATH = args.dbPath
-	JAR_PATH = '/home/margaret/data/gserranos/SMILESbasedSimilarityKernels/SMILESSimv2.jar'
 	# DB_PATH =  './../../DB/Data/BindingDB/tdc_package_preprocessing/BindingDB_max_affinity.tsv'
+	JAR_PATH = '/home/margaret/data/gserranos/SMILESbasedSimilarityKernels/SMILESSimv2.jar'
 	paper_cite = 'https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-016-0977-x#Sec19'
 	logging.info(f'\n\n{paper_cite}\n')
 	logging.info(f'Reading database from: {DB_PATH}')

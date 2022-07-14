@@ -81,6 +81,12 @@ def get_dataset(name):
     output_path=os.getcwd() + '/../Data/Yamanishi_et_al_GoldStandard/Yamanishi_' + name + '_pairs.txt'
     df_splits.to_csv(output_path)
 
+    print(len(df_splits.index))
+    df_drugs = df['Drug ID'].drop_duplicates(inplace=False)
+    print(len(df_drugs.index))
+    df_targets = df['Gene'].drop_duplicates(inplace=False)
+    print(len(df_targets.index))
+
 
     #Randomnly choose unseen pairs
     seenpairs = set(df['Drug ID'] + df['Gene'])

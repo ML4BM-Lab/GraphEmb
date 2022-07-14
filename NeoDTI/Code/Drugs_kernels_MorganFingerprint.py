@@ -6,58 +6,60 @@ from tqdm import tqdm
 import numpy as np
 import sys
 import pandas as pd
+from itertools import repeat
+import json
 
-def MorganDiceSimilarity(mol1,mol2,moldd):
-    return DataStructs.DiceSimilarity(moldd[mol1],moldd[mol2])
 
-def MorganAdjMat(molpath,savepath):
+def get_drug_similarity_matrix(file_path_simdrug_mat, list_of_drug_nodes, dict_drugid_smiles):
+	list_drugs = list_of_drug_nodes
+	list_smiles = [dict_drugid_smiles[i] for i in list_drugs] # 
+	all_Sim_Tani = []
+	dic = {}
+	for drug in tqdm(range(len(list_drugs)), desc='Retrieving Pairwise Tanimoto for drugs', position=0, leave=True): 
+		id_drug_1 = list_drugs[drug]
+		smiles_drug_1 = list_smiles[list_drugs.index(id_drug_1)]
+		sim_for_drug = []
+		tmp = []
+		tmp.extend(repeat(smiles_drug_1, len(list_drugs))) 
+		for j in range(len(tmp)):
+			result = get_pairwise_dice(tmp[j], list_smiles[j], dic)
+			sim_for_drug.append(result)
+		all_Sim_Tani.append(sim_for_drug)
+	#
+	df_all_Sim_Tani = pd.DataFrame(all_Sim_Tani, columns= list_drugs, index = list_drugs) # add columns, & index
+	# save pickle
+	#df_all_Sim_Tani.to_pickle(file_path_sim_pickle) # add here column %& index next time
+	# save csv for model
+	df_all_Sim_Tani.to_csv(file_path_simdrug_mat, sep='\t', header=False, index=False) # add here column %& index next time
 
-    #check if file exists
-    if os.path.exists(savepath+'MorganFingerprint.tsv'):
-        print('File already generated!')
-        return 
 
-    moldd = {}
+def get_pairwise_dice(smiles1,smiles2, dic): #dic == smile2fp
+	try:
+		for smile in [smiles1, smiles2]:
+			if not smile in dic:
+				mol1 = Chem.MolFromSmiles(str(smile))
+				#fp1  = Chem.RDKFingerprint(mol1)
+				fp1 = AllChem.GetMorganFingerprint(mol1,2) #RADIUS 2
+				dic[smile] = fp1
+		#tani = DataStructs.FingerprintSimilarity(dic[smiles1],dic[smiles2]) #pairwise similarity
+		tani = DataStructs.DiceSimilarity(dic[smiles1],dic[smiles2])
+		return tani
+	except:
+		return None
 
-    for fname in tqdm(os.listdir(molpath), 'Building Morgan Dict'):
-        try:
-            molf = Chem.MolFromMolFile(os.path.join(molpath,fname))
-            moldd[fname[:-4]] = AllChem.GetMorganFingerprint(molf,2)
-        except:
-            print(f'Could not compute Morgan Fingerprint for Drug {fname}')
+try:
+	subdataset = sys.argv[2]
+except:
+	subdataset = ""
+dataset = sys.argv[1]
+wdir = f'NeoDTI/Data/{dataset}/{subdataset}'
+file_path_simdrug_mat = os.path.join(wdir, 'Similarity_Matrix_Drugs.txt')
+list_of_drug_nodes = np.loadtxt(os.path.join(wdir,'drug.txt'), dtype='str').tolist()
+# save json 
+with open(os.path.join(wdir,'dic_smiles.json'), 'r') as f:
+	dict_drugid_smiles = json.load(f)
 
-    GenerateMatrix(moldd,savepath)
-
-def GenerateMatrix(moldd,savepath):
-
-    drugnames = sorted(moldd.keys())
-    drugnames_L = len(drugnames)
-    adjmat = np.zeros(shape=(drugnames_L,drugnames_L))
-
-    for i in tqdm(range(drugnames_L), 'Building Dice Similarity'):
-        for j in range(i,drugnames_L):
-            adjmat[i,j] = MorganDiceSimilarity(drugnames[i],drugnames[j],moldd)
-
-    #flip and fill the matrix (its symmetric)
-    utriindex = np.triu_indices(adjmat.shape[0],k=1)
-    adjmat.T[utriindex] = adjmat[utriindex]
-
-    #to df and save
-    adjmat_df = pd.DataFrame(adjmat,index = drugnames, columns = drugnames)
-    adjmat_df.to_csv(savepath+'MorganFingerprint.tsv', sep='\t')
-
-molpath, savepath = sys.argv[1], sys.argv[2]
-MorganAdjMat(molpath, savepath)
-
-# def get_pairwise_tanimoto(smiles1,smiles2, dic): #dic == smile2fp
-# 	try:
-# 		for smile in [smiles1, smiles2]:
-# 			if not smile in dic:
-# 				mol1 = Chem.MolFromSmiles(str(smile))
-# 				#fp1  = Chem.RDKFingerprint(mol1)
-# 				fp1 = AllChem.GetMorganFingerprint(mol1,2) #RADIUS 2
-# 				dic[smile] = fp1
-# 		tani = DataStructs.FingerprintSimilarity(dic[smiles1],dic[smiles2]) #pairwise similarity
-# 		return tani
-# 	except:
-# 		return None
+if ((not os.path.exists(file_path_simdrug_mat)) ):
+	# call function: 
+	get_drug_similarity_matrix(file_path_simdrug_mat, list_of_drug_nodes, dict_drugid_smiles)
+	#pass

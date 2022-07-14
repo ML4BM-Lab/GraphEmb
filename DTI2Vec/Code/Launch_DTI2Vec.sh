@@ -5,6 +5,7 @@
 
 # nohup bash Launch_DTI2Vec.sh -p ./../Data/BIOSNAP -d dti2vec:1.0 &
 # nohup bash Launch_DTI2Vec.sh -p ./../Data/DrugBank -d dti2vec:1.0 &
+# nohup bash Launch_DTI2Vec.sh -p ./../Data/BindingDB -d dti2vec:1.0 &
 
 while getopts "p:d:" opt; do
     case $opt in

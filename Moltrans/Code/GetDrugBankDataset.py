@@ -93,9 +93,14 @@ df = df.dropna()
 #Get data for splits
 columns = df[['DrugBank ID','Gene', 'Label']]
 df_splits = columns.copy()
+print(len(df_splits.index))
 output_path=os.getcwd() + '/../Data/DrugBank/DrugBank_pairs.txt'
 df_splits.to_csv(output_path)
 
+df_drugs = df['DrugBank ID'].drop_duplicates(inplace=False)
+print(len(df_drugs.index))
+df_targets = df['Gene'].drop_duplicates(inplace=False)
+print(len(df_targets.index))
 
 #Randomnly choose unseen pairs
 seenpairs = set(df['DrugBank ID'] + df['Gene'])

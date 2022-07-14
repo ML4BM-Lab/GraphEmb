@@ -123,7 +123,7 @@ def read_dtis_Binding(path):
     with open(path, 'r') as f:
         _ = next(f)
         dtis = f.readlines()
-    dtis = [(entry.split('\t')[1], entry.split('\t')[3])  for entry in dtis]
+    dtis = [(entry.split('\t')[1], entry.split('\t')[3])  for entry in dtis if float(entry.split('\t')[-1])<30]
     all_elements = list(set(element for entry in dtis for element in entry))
     logging.info(f'Number of unique nodes: {len(all_elements)}')
     logging.info(f'Number of unique edges: {len(dtis)}')
@@ -176,7 +176,8 @@ def get_seqs_BindingDB(path):
         _ = next(f)
         for line in f:
             line = line.split('\t')
-            targets.append((line[3], line[4]))
+            if float(line[-1]) < 30:
+                targets.append((line[3], line[4]))
         return targets
 
 def read_and_extract_BINDING_smiles(path):
@@ -187,7 +188,7 @@ def read_and_extract_BINDING_smiles(path):
         _ = next(f)
         smiles = f.readlines()
     smiles = [entry.strip().split('\t') for entry in smiles]
-    smiles = [(entry[1], entry[2]) for entry in smiles]
+    smiles = [(entry[1], entry[2]) for entry in smiles if float(entry[-1]) < 30]
     smiles = list(set(smiles))
     return smiles
 

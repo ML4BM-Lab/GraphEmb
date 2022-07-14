@@ -33,6 +33,13 @@ df_splits = columns.copy()
 output_path=os.getcwd() + '/../Data/BindingDB/BindingDB_pairs.txt'
 df_splits.to_csv(output_path)
 
+print(len(df_splits.index))
+df_drugs = df_positives['Drug_ID'].drop_duplicates(inplace=False)
+print(len(df_drugs.index))
+df_targets = df_positives['Target_ID'].drop_duplicates(inplace=False)
+print(len(df_targets.index))
+
+
 #Get drugs_smiles
 df_drugs_smiles = df_positives[['Drug_ID', 'SMILES']]
 print(df_drugs_smiles)

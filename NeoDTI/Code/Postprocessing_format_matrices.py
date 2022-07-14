@@ -5,13 +5,12 @@ import sys
 import functools as ft
 from tqdm import tqdm
 from numpy import savetxt
+from collections import defaultdict as dd
 
 def format_matrices(dataset,subdataset):
 
     #define path
     fpath = os.path.join(os.getcwd(),'NeoDTI/Data',dataset,subdataset)
-    
-    #print(f"path {fpath}")
 
     def retrieve_matrices():
         
@@ -28,117 +27,69 @@ def format_matrices(dataset,subdataset):
         #return the sorted array
         return sorted(prot_f), sorted(drug_f)
 
-    def retrieve_dti():
+    def generate_dti_mat(drug_shape, prot_shape):
 
-        dtipath = [f for f in os.listdir(fpath) if '2line' in f][0]
+        def dict_from_dti(dti):
+            dtidd= dd(int)
+            for pair in dti:
+                dtidd['||'.join(pair)] = 1
+            return dtidd
 
-        #read the f
-        dtif = pd.read_csv(os.path.join(fpath,dtipath),sep='\t',header=None)
-        dtif.columns = ['Drugs','Targets']
+        drugs = pd.read_csv(os.path.join(fpath,'drug.txt'), header=None).values.flatten().tolist()
+        prots = pd.read_csv(os.path.join(fpath,'protein.txt'), header=None).values.flatten().tolist()
 
-        return dtif.Drugs.tolist(), dtif.Targets.tolist()
+        print(f"Total drugs -> {len(drugs)}, drugs used {drug_shape}")
+        print(f"Total proteins -> {len(prots)}, proteins used {prot_shape}")
 
-    def filter_matrices_proteins_symmat(mat_l,savepath,dtil=None):
+        if len(drugs) == drug_shape and len(prots) == prot_shape:
 
-        names = []
+
+            print("Consistency accomplished!")
+            #read the f
+            dtipath = [f for f in os.listdir(fpath) if 'DTI' in f][0]
+            dtif = pd.read_csv(os.path.join(fpath,dtipath),sep='\t').values
+            dtidd = dict_from_dti(dtif)
+
+            #define matrix
+            mat_drug_mat = np.zeros(shape=(drug_shape,prot_shape),dtype=int)
+
+            for i,drug in enumerate(drugs):
+                for j,prot in enumerate(prots):
+
+                    mat_drug_mat[i,j] = dtidd['||'.join([drug,prot])]
+
+            np.savetxt(os.path.join(fpath,'mat_drug_protein.txt'),mat_drug_mat,delimiter='\t',fmt='%i')
+
+        else:
+            print(f"Inconsistency!\n Drugs: {drugs} \n Proteins: {prots}")
+
+    def filter_matrices_proteins_symmat(mat_l):
+
+        shapes_v = []
 
         for f in mat_l:
-            mat = pd.read_csv(os.path.join(fpath,f),sep='\t',index_col=0)
+            mat = pd.read_csv(os.path.join(fpath,f),sep='\t',header=None)
+            shapes_v.append(mat.shape[0])
 
-            try:
-                matnames = [gene.replace(':','') for gene in mat.columns.to_list()]
-            except:
-                matnames = mat.columns.to_list()
-
-            print(f'{matnames[0:5]} for file {f} (targets)')
-            names.append(matnames)
-
-        #now select the intersection
-        inames = sorted(ft.reduce(lambda a,b: set(a).intersection(set(b)),names))
-
-        if dtil:
-            inames = sorted(set(inames).intersection(set(dtil)))
-
-        for f in mat_l:
-            mat = pd.read_csv(os.path.join(fpath,f),sep='\t',index_col=0)
-
-            try:
-                matnames = [gene.replace(':','') for gene in mat.columns.to_list()]
-            except:
-                matnames = mat.columns.to_list()
+        if len(set(shapes_v)) == 1:
+            return shapes_v[0]
+        else:
+            print("Inconsistency of samples")
             
-            mat.columns = matnames
-            mat.index = matnames
-            #generate the final mat and save
-            fmat = mat.loc[inames,inames]
-            print(f"shape of formatted target matrix-> {fmat.shape}")
-            fmat.to_csv(os.path.join(savepath,'Form_symmat_preSNF_'+f),sep='\t')
+    def filter_matrices_drugs_symmat(mat_l):
 
-    def filter_matrices_drugs_symmat(mat_l,savepath,dtil=None):
-
-        def sortedIntersect(v1,v2):
-            sortInt = []
-            for itemV1 in v1:
-                if itemV1 in v2:
-                    sortInt.append(itemV1)
-            return sortInt
-
-        names = []
-
-        #get the MorganFingerprint file
-        for f in os.listdir(fpath):
-            if 'MorganFingerprint' in f:
-                Morganf = f
-
-        
-
-        #read the morganfingerprint file
-        morganMat = pd.read_csv(os.path.join(fpath,Morganf),sep='\t',index_col=0)
-        morganIndex = mat.index.tolist()
-        refMat = pd.read_csv(os.path.join(fpath,'drug.txt'),header=None).values.flatten().tolist()
-        sortedIntersect = [drug for drug in refMat if drug in morganIndex]
-
-        #now select the intersection
-        inames = sorted(ft.reduce(lambda a,b: set(a).intersection(set(b)),names))
-
-        if dtil:
-            print(f"inames type {type(inames[0])}, dtil type {type(dtil[0])}")
-            inames = sorted(set(inames).intersection(set(dtil)))
+        shapes_v = []
 
         for f in mat_l:
+            mat = pd.read_csv(os.path.join(fpath,f),sep='\t',header=None)
+            shapes_v.append(mat.shape[0])
 
-            if 'aers' in f and dataset == 'BindingDB':
-                mat = pd.read_csv(os.path.join(fpath,f),sep=',',index_col=0)
-            else:
-                if 'Rchem' not in f:
-                    mat = pd.read_csv(os.path.join(fpath,f),sep='\t',index_col=0)
-                else:
-                    mat = pd.read_csv(os.path.join(fpath,f),sep=' ',index_col=0)
-
-            try:
-                matnames = [drug.replace(':','') for drug in mat.index.to_list()]
-            except:
-                matnames = mat.index.to_list()
-
-            mat.index = matnames
-            mat.columns = matnames
-            
-            #intersect names
-            fmat = mat.loc[inames,inames]
-
-            print(f"shape of formatted drug matrix-> {fmat.shape}")
-
-            fmat.to_csv(os.path.join(savepath,'Form_symmat_preSNF_'+f),sep='\t')
-
-    
-    prot_f, drug_f = retrieve_matrices()
-    #dtidrug, dtiprot = retrieve_dti()
-
-    #print(f'Matrices for proteins {prot_f}')
-    #print(f'Matrices for drugs {drug_f}')
+        if len(set(shapes_v)) == 1:
+            return shapes_v[0]
+        else:
+            print("Inconsistency of samples")
 
     folder_path = os.path.join(fpath,'Formatted/')
-    #print(f"folder path {folder_path}")
 
     if not os.path.isdir(folder_path):
         #create the folder
@@ -146,9 +97,10 @@ def format_matrices(dataset,subdataset):
 
     #------------------- Format matrices ------------------ #
 
-    print("\ngenerating symmat")
-    filter_matrices_proteins_symmat(prot_f,savepath = folder_path)
-    filter_matrices_drugs_symmat(drug_f,savepath = folder_path)
+    prot_f, drug_f = retrieve_matrices()
+    drug_shape = filter_matrices_drugs_symmat(drug_f)
+    prot_shape = filter_matrices_proteins_symmat(prot_f)
+    generate_dti_mat(drug_shape, prot_shape)
     
 
 #get sys
@@ -162,6 +114,5 @@ except:
     arg1, arg2 = '','' 
 
 dataset, subdataset = arg1, arg2
-
 
 format_matrices(dataset,subdataset)
