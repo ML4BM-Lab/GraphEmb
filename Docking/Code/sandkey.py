@@ -53,6 +53,23 @@ def get_json_info_uni(data):
     return res
 
 
+def get_json_info_uni_sec_w_first(prot,data):
+    check_uni_id = data['primaryAccession']
+    length = int(data['sequence']['length'])
+    ecode = None
+    if data.get('proteinDescription').get('recommendedName'):
+        recname = data.get('proteinDescription').get('recommendedName')
+        if recname.get('ecNumbers'):
+            ecode = recname.get('ecNumbers')[0].get('value')
+    mol_funct = None
+    if data.get('keywords'):
+        dic_molfunc = [line for line in data.get('keywords') if line.get('category') == 'Molecular function']
+        keywords = [line.get('name').lower() for line in dic_molfunc]
+        mol_funct = get_key(ecode, keywords) 
+    res = (prot, length, ecode, mol_funct)
+    return res
+
+
 def get_prot_function(proteins):
     #list_proteins =  list_proteins_struct # np.loadtxt('../Data/all_prot.txt', dtype='str').tolist()
     nprots = len(proteins)
@@ -71,9 +88,8 @@ def get_prot_function(proteins):
         for data in jsons:
             res = get_json_info_uni(data)
             full_info.append(res)
-    #
-    # requests lost conection using time just to be ok
-    time.sleep(2)
+        # requests lost conection using time just to be ok
+        #time.sleep(1)
     #
     if len([(id, func) for id,_,_,func in full_info]) == nprots:
         logging.info('all proteis as principal accesion id')
@@ -86,12 +102,14 @@ def get_prot_function(proteins):
         # those can be queried with the secondary accesion number 
         for prot in tqdm(lost_proteins, desc='Secondary Acc'):
             r = requests.get(f'https://rest.uniprot.org/uniprotkb/search?&query=sec_acc:{prot}')
-            data = r.json()['results'][0]
-            res = get_json_info_uni(data)
-            full_info.append(res)
-        retrn_prots = [id for id,_,_,_ in full_info]
-        lost_proteins = list(set(proteins) - set(retrn_prots))
-        logging.info(f'loosing {len(lost_proteins)} proteins')
+            if r.json()['results']:
+                data = r.json()['results'][0]
+                res = get_json_info_uni_sec_w_first(prot,data) 
+                logging.info(f'Recovered: {res}')
+                full_info.append(res)
+        retrn_prots_2 = [id for id,_,_,_ in full_info]
+        lost_proteins_2 = list(set(proteins) - set(retrn_prots_2))
+        logging.info(f'loosing {len(lost_proteins_2)} proteins')
         protein2function = dict([(id, func) for id,_,_,func in full_info])
     return protein2function
 
@@ -155,7 +173,8 @@ def get_SMILES_n_InCh_from_Pubchem_web_batch(drugs, size=500):
 
 
 def get_drug_superclass(drugs):
-    drug2inchkey = dict([(str(drugid), inchkey) for drugid,_,inchkey in get_SMILES_n_InCh_from_Pubchem_web_batch(drugs)])
+    drugs = [str(drug) for drug in drugs]
+    drug2inchkey = dict([(str(drugid), inchkey) for drugid,_,inchkey in get_SMILES_n_InCh_from_Pubchem_web_batch(drugs) if inchkey])
     ## 
     retry_strategy = Retry(
         total=3,
@@ -166,10 +185,10 @@ def get_drug_superclass(drugs):
     # create dict inchkey
     annotations_family = []
     for drug in tqdm(drugs, desc='Annotating drugs'):
-        inkey = drug2inchkey.get(drug, None)
+        inkey = drug2inchkey.get(str(drug), None)
         results_ =  get_drug_class(drug, inkey, adapter)
         annotations_family.append(tuple(results_))
-    #
+        #
     drug2superclass = dict([(id, superclass) for id,_,superclass,_,_ in annotations_family ])
     return drug2superclass
 
@@ -194,7 +213,7 @@ def get_drug_subclass(drugs):
     return drug2subclass
 
 ############################################################
-###### START ###
+##############     START    #############
 
 logging.info('Loading dtis')
 # Load all DTIS in a dicionary
@@ -226,10 +245,26 @@ for key in dict_dfs.keys():
     #
     # append to df
     df['prot_func'] = df.UniprotID.map(protein2function)
-    df['drug_fam'] = df.PubChemID.map(drug2superclass)
+    df.prot_func = df.prot_func.fillna('notAnnotated')
+    df['drug_fam'] = df.PubChemID.astype(str).map(drug2superclass)
+    df.drug_fam = df.drug_fam.fillna('notClassified')
+    ### assig other to those proteins with less than 10 proteins in the group
+    frequencies = df['prot_func'].value_counts()
+    condition = frequencies < 10
+    mask_obs = frequencies[condition].index
+    mask_dict = dict.fromkeys(mask_obs, 'other')
+    df_other = df.copy()
+    df_other['prot_func'] = df_other['prot_func'].replace(mask_dict) 
+    df_other['prot_func'].value_counts()
+    # 
     df_grouped = df.groupby(['drug_fam', 'prot_func'])['drug_fam'].count()
     data_plot = pd.DataFrame([(a[0], a[1],c) for a,c in zip(df_grouped.index,df_grouped.tolist())], columns = ['source', 'target', 'count'])
     data_plot.to_pickle(f'../Results/sankeys/data_grouped_{key}.pkl')
     data_plot.to_csv(f'../Results/sankeys/data_grouped_{key}.csv', sep=';', index=False)
+    # same but with the other for freq < 10
+    df_grouped_other = df_other.groupby(['drug_fam', 'prot_func'])['drug_fam'].count()
+    data_plot_other = pd.DataFrame([(a[0], a[1],c) for a,c in zip(df_grouped_other.index, df_grouped_other.tolist())], columns = ['source', 'target', 'count'])
+    data_plot_other.to_pickle(f'../Results/sankeys/data_grouped_{key}_w_other.pkl')
+    data_plot_other.to_csv(f'../Results/sankeys/data_grouped_{key}_w_other.csv', sep=';', index=False)
     logging.info('--')
 

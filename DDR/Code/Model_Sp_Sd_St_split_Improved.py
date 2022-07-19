@@ -235,61 +235,50 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 
         return cv_distribution
 
+    def Sp_reorder(cv_distribution,pos_neg_interactions):
+
+        def compute_cruciality(cv_distribution,pos_neg_interactions):
+
+            #get the proteins, as the drugs are well distributed by the way we have generated cv_distribution
+            prots = list(map(lambda x: x[1],pos_neg_interactions))
+
+            #init crucial and non-crucial lists
+            crucial = []
+            non_crucial = []
+
+            for prot in prots:
+
+                prot_trues  = sum([1 for fold in cv_distribution if prot in list(map(lambda y: y[0], fold))])
+
+                if prot_trues >= 3:
+                    crucial.append(prot)
+
+        #We are going to divide DTIs in 2 groups, crucial and non-crucial
+        #For a subsampling dataset to accomplish Sp requirement:
+
+        #Drugs with +=2 targets > Drugs with == 1 target
+        #(OR)
+        #Proteins with +=2 drugs > Proteins with == 1 drugs
+
+        ## Non-Crucial DTI (Di - Tj) requirement
+        # Di is at least in 3 folds (2 folds would accomplish Sp requirement ✓, so if its in 3 then if moved will still accomplish)
+        # Tj also accomplish this requirement
+
+        ## Crucial DTI (Di - Tj) requirement
+        # Tj is only present in 1 fold, so it needs to be swap with a Non-Crucial DTI
+
+
+        #
+
+
     #init seed cv list
     seed_cv_list = []
 
     for seed in tqdm([7183,556,2,81,145], desc='Performing 10-CV fold for each seed'):
 
-        # check if subsampling
-        if subsampling:
-
-            ##drugs
-            drug_interactions_dd = get_interactions_dict(DTIs, seed, subsampling=True, swap=False)
-            # append all interactions
-            pos_neg_interactions_drugs = f.reduce(lambda a,b: a+b, drug_interactions_dd.values())
-
-            #generate the inverse drug_interaction_dd to avoid duplicates when 
-            #merging drug/proteins interactions_dd
-            def inverse_interactions_dd(drug_interactions_dd):
-                interactions_dd = dd(set)
-
-                for drugid in drug_interactions_dd:
-                    for element in drug_interactions_dd[drugid]:
-                        #add entry (protein) = {drugs that have already been used}
-                        interactions_dd[element[1]].add(drugid)
-            
-                return interactions_dd
-
-            #compute inverse dict
-            inv_drug_interactions_dd = inverse_interactions_dd(drug_interactions_dd)
-
-            ##proteins
-            prot_interactions_dd = get_interactions_dict(DTIs, seed, subsampling=True, swap=True, swap_dict = inv_drug_interactions_dd)
-            # append all interactions
-            pos_neg_interactions_proteins = f.reduce(lambda a,b: a+b, prot_interactions_dd.values())
-
-            def merge_interactions(drugs_interactions,prots_interactions):
-
-                #merge
-                interactions = drugs_interactions + prots_interactions
-                #remove possible duplicities
-                unique_interactions = []
-                #(use a dict for checking)
-                interactions_d = {}
-                for element in interactions:
-                    if element not in interactions_d:
-                        interactions_d[element] = None
-                        unique_interactions.append(element)
-
-                return unique_interactions
-
-            #merge
-            pos_neg_interactions = merge_interactions(pos_neg_interactions_drugs,pos_neg_interactions_proteins)
-           
-        else:
-            drug_interactions_dd = get_interactions_dict(DTIs, seed, subsampling=False)
-            # append all interactions
-            pos_neg_interactions = f.reduce(lambda a,b: a+b, drug_interactions_dd.values())
+        drug_interactions_dd = get_interactions_dict(DTIs, seed, subsampling=subsampling)
+        # append all interactions
+        pos_neg_interactions = f.reduce(lambda a,b: a+b, drug_interactions_dd.values())
         
         #check % of positives/negatives
         pos_percentage = sum(list(map(lambda x: x[2],pos_neg_interactions)))/len(pos_neg_interactions)

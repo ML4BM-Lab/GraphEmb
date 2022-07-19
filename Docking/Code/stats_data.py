@@ -55,6 +55,9 @@ for key in list(dict_dfs.keys()):
         sparsity = round(sparsity, 6)
         connected_componnents = nx.number_connected_components(G)
         list_number_degrees = [degree for _, degree in G.degree]
+        list_number_degrees_drugs = [degree for node, degree in G.degree if node in drugs]
+        list_number_degrees_proteins = [degree for node, degree in G.degree if node in proteins]
+        assert len(list_number_degrees) == len(list_number_degrees_drugs) + len(list_number_degrees_proteins), 'invalid list'
         list_subgraphs_size = [len(sublist) for sublist in list(nx.connected_components(G))]
         #
         dataset_info = {
@@ -64,16 +67,19 @@ for key in list(dict_dfs.keys()):
                 'total_edges' : n_edges,
                 'sparsity_ratio' : sparsity,
                 'connected_components': connected_componnents,
+                'mean_degree_drugs':  np.mean(list_number_degrees_drugs),
+                'mean_degree_proteins': np.mean(list_number_degrees_proteins),
                 'list_number_degrees' : list_number_degrees,
+                'list_num_degree_drugs': list_number_degrees_drugs,
+                'list_num_degree_proteins': list_number_degrees_proteins,
                 'list_subgraphs_size' : list_subgraphs_size
         }
         all_datasets_info[key] = dataset_info
 
 
-
 df_data = pd.DataFrame.from_dict(all_datasets_info)
 
-df_only_data = df_data.iloc[:-2,:]
+df_only_data = df_data.iloc[:-4,:]
 df_only_data.to_excel('../Results/statistics_datasets.xlsx')
 
 with open('../Results/statistics_only_dtis.json', 'w') as outfile:
