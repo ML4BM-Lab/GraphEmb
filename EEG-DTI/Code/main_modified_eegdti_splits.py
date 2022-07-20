@@ -94,24 +94,6 @@ os.makedirs('./log/'+data_set+str(nowTime)+instruction)
 sys.stdout = Logger('./log/'+data_set+str(nowTime)+instruction+'/terminal.txt')
 
 
-#01
-AUROC_01_list = []
-AUPR_01_list  = []
-APatK_01_list = []
-ACC_01_list   = []
-F1_01_list    = []
-MSE_01_list   = []
-MAE_01_list   = []
-
-#10
-
-AUROC_10_list = []
-AUPR_10_list  = []
-APatK_10_list = []
-ACC_10_list   = []
-F1_10_list    = []
-MSE_10_list   = []
-MAE_10_list   = []
 
 # RealNet
 # About Drug-Drug
@@ -163,7 +145,27 @@ side_effect_drug_adj = loadData.load_Adj_adj_transpose(threshold=0, toone=0, dra
 # here should be other loop over all our seeds => creating also another vector
 mean_AUROC_averages = []
 mean_AUPR_averages = []
+
 for seed in range(5):
+    # chck this
+    #01
+    AUROC_01_list = []
+    AUPR_01_list  = []
+    APatK_01_list = []
+    ACC_01_list   = []
+    F1_01_list    = []
+    MSE_01_list   = []
+    MAE_01_list   = []
+
+    #10
+    AUROC_10_list = []
+    AUPR_10_list  = []
+    APatK_10_list = []
+    ACC_10_list   = []
+    F1_10_list    = []
+    MSE_10_list   = []
+    MAE_10_list   = []
+
     print('Current seed: ', seed)
     # 10 fold cross-validation, 
     # I am changing their seed for fold to be more easily followed
@@ -289,7 +291,7 @@ for seed in range(5):
                 'batch_col_edge_type': tf.placeholder(tf.int64, shape=(), name='batch_col_edge_type'),
                 'degrees': tf.placeholder(tf.int64),
                 'dropout': tf.placeholder_with_default(0., shape=()),
-                'self_negative_dtis': tf.placeholder(tf.int64, name='self_negative_dtis'),
+                'negative_dtis': tf.placeholder(tf.int64, name='negative_dtis'),
             }
             placeholders.update({
                 'adj_mats_%d,%d,%d' % (i, j, k): tf.sparse_placeholder(tf.float32)
@@ -452,8 +454,6 @@ for seed in range(5):
                 placeholders=placeholders,
                 batch_size=FLAGS.batch_size,
                 margin=FLAGS.max_margin,
-                seed = seed, 
-                fold = fold
             )
 
         print("Initialize session")

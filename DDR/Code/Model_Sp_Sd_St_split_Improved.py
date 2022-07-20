@@ -10,6 +10,7 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 from random import randint
 from functools import reduce as red
+from collections import Counter 
 
 #Here we will define the model splits.
 #We will have 4 type of splits, 3 of them have been already mentioned in the literature.
@@ -213,7 +214,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
         #maximizing the number of different drugs we have in each fold
 
         #first we compute length of each drug
-        drugs_L_tuple = sorted([(drug,len(pos_neg_interactions_dd[drug])) for drug in pos_neg_interactions_dd], key= lambda x: x[1])
+        drugs_L_tuple = sorted([(drug,len(pos_neg_interactions_dd[drug])) for drug in pos_neg_interactions_dd], key= lambda x: x[1], reverse=True)
 
         #compute elements per fold
         elements_per_fold = len(pos_neg_interactions)//foldnum
@@ -221,37 +222,24 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
         i = 0
         while True:
             drugs_tuple = drugs_L_tuple.pop(0)
-            #length
-            fold_length = drugs_tuple[1]
+            
+            #elements to add
+            elems = pos_neg_interactions_dd[drugs_tuple[0]]
+
+            #remaining length
+            remlen = len(cv_distribution[i%foldnum])
+
             #check if its empty enough to include that drug
-            if len(cv_distribution[i%foldnum]) + fold_length <= elements_per_fold:
-                cv_distribution[i%foldnum]+=pos_neg_interactions_dd[drugs_tuple[0]]
-            else:
-                for element in pos_neg_interactions_dd[drugs_tuple[0]]:
-                    cv_distribution[i%foldnum].append(element)
+            cv_distribution[i%foldnum] += elems[0:min(len(elems), remlen)]
+            
             if not len(drugs_L_tuple):
                 break
+
             i+=1
 
         return cv_distribution
 
-    def Sp_reorder(cv_distribution,pos_neg_interactions):
-
-        def compute_cruciality(cv_distribution,pos_neg_interactions):
-
-            #get the proteins, as the drugs are well distributed by the way we have generated cv_distribution
-            prots = list(map(lambda x: x[1],pos_neg_interactions))
-
-            #init crucial and non-crucial lists
-            crucial = []
-            non_crucial = []
-
-            for prot in prots:
-
-                prot_trues  = sum([1 for fold in cv_distribution if prot in list(map(lambda y: y[0], fold))])
-
-                if prot_trues >= 3:
-                    crucial.append(prot)
+    def Sp_reorder(cv_distribution, pos_neg_interactions):
 
         #We are going to divide DTIs in 2 groups, crucial and non-crucial
         #For a subsampling dataset to accomplish Sp requirement:
@@ -267,18 +255,322 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
         ## Crucial DTI (Di - Tj) requirement
         # Tj is only present in 1 fold, so it needs to be swap with a Non-Crucial DTI
 
+        def compute_cruciality(cv_distribution, pos_neg_interactions):
 
-        #
+            def build_fold_dict(cv_distribution):
 
+                def bfd_helper(mode='drug'):
 
+                    if mode=='drug':
+                        ind = 0
+                    elif mode == 'prot':
+                        ind = 1
+
+                    #init default dict  (default int is 0)
+                    fold_dd = dd(lambda: dd(int))
+
+                    for i,fold in enumerate(cv_distribution):
+                        fold_elements = set(list(map(lambda y: y[ind], fold)))
+                        for element in fold_elements:
+                            fold_dd[i][element] += 1
+                        
+                    return fold_dd
+
+                protfold_dd = bfd_helper(mode='prot')
+                drugfold_dd = bfd_helper(mode='drug')
+
+                return drugfold_dd,protfold_dd
+
+            def cc_helper(cv_distribution, fold_dd):
+
+                #init crucial and non-crucial lists
+                crucial = []
+                non_crucial = []
+
+                for prot in prots:
+
+                    prot_trues = sum([1 if fold_dd[i][prot] >= 1 else 0 for i,_ in enumerate(cv_distribution)])
+
+                    if prot_trues >= 3:
+                        non_crucial.append(prot)
+                    elif prot_trues == 1:
+                        crucial.append(prot)
+
+                return crucial, non_crucial
+
+            #get the proteins, as the drugs are well distributed by the way we have generated cv_distribution
+            prots = set(list(map(lambda x: x[1], pos_neg_interactions)))
+
+            #retrieve prot fold dd
+            drugfold_dd, protfold_dd = build_fold_dict(cv_distribution)
+
+            #compute crucial and non crucial for drugs and proteins
+            crucial_prots, non_crucial_prots = cc_helper(cv_distribution, protfold_dd)
+            _, non_crucial_drugs = cc_helper(cv_distribution, drugfold_dd)
+
+            return crucial_prots, non_crucial_prots, non_crucial_drugs
+
+        def manage_cruciality(cvdist, crucial_prots, non_crucial_prots, non_crucial_drugs):
+
+            def find_prot(prot):
+                for i,fold in enumerate(cvdist):
+                    for dtis in fold:
+                        if dtis[1] == prot:
+                            return dtis,i
+
+                print("ERROR: NOT FOUND")
+                raise Exception
+
+            def double_dti(foldi1, foldi2, dti1, dti2, cvdist):
+
+                #get indexes
+                ind1 = cvdist[foldi1].index(dti1)
+                #ind2 = cvdist[foldi2].index(dti2)
+
+                #double
+                #cvdist[foldi1][ind1], cvdist[foldi2][ind2] = cvdist[foldi2][ind2], cvdist[foldi1][ind1]
+                cvdist[foldi1][ind1] = (dti1[0], dti2[1], 0)
+
+                return cvdist
+
+            #go through crucial_prots
+            for crucial_prot in crucial_prots:
+
+                #init temp var
+                swap_done = False
+
+                #find the fold is in
+                crucial_dti, fold_prot_i = find_prot(crucial_prot)
+
+                #go through the remaining folds
+                rem_folds = set(range(foldnum)).difference(set([fold_prot_i]))
+
+                for foldi in rem_folds:
+                    
+                    #set fold
+                    fold = cvdist[foldi]
+
+                    #find a DTI with no_crucial prot and no_crucial drug + negative label + drug are not the same so we can assure new label = 0
+                    for dti in fold:
+                        drug, prot, label = dti[0], dti[1], dti[2]
+
+                        if not label and drug != crucial_dti[0]:
+
+                            if drug in non_crucial_drugs and prot in non_crucial_prots:
+
+                                cvdist = double_dti(foldi1 = foldi, foldi2 = fold_prot_i, 
+                                                    dti1 = dti, dti2 = crucial_dti, 
+                                                    cvdist = cvdist)
+                                #print(f"Crucial prot {crucial_prot} doubled")
+                                swap_done = True
+                                break
+
+                    if swap_done:
+                        break
+                                                        
+            return cvdist
+
+        while True:
+
+            #compute cruciality
+            crucial_prots, non_crucial_prots, non_crucial_drugs = compute_cruciality(cv_distribution, pos_neg_interactions)
+
+            if not len(crucial_prots):
+                print(f"There are no crucial DTIs!\n")
+                return cv_distribution
+            else:
+                print(f"There are some crucial DTIs ({len(crucial_prots)})!\n")
+                cv_distribution = manage_cruciality(cv_distribution, crucial_prots, non_crucial_prots, non_crucial_drugs)
+ 
+    def Sd_St_reorder(cv_distribution, mode = 'Sd'):
+
+        #We are going to divide DTIs in 2 groups, crucial and non-crucial
+        #For a subsampling dataset to accomplish Sp requirement:
+
+        #Drugs with +=2 targets > Drugs with == 1 target
+        #(OR)
+        #Proteins with +=2 drugs > Proteins with == 1 drugs
+
+        ## Non-Crucial DTI (Di - Tj) requirement
+        # Di is at least in 3 folds (2 folds would accomplish Sp requirement ✓, so if its in 3 then if moved will still accomplish)
+        # Tj also accomplish this requirement
+
+        ## Crucial DTI (Di - Tj) requirement
+        # Tj is only present in 1 fold, so it needs to be swap with a Non-Crucial DTI
+
+        def compute_cruciality(cv_distribution, pos_neg_interactions, mode = 'Sd'):
+
+            def build_fold_dict(cv_distribution):
+
+                def bfd_helper(mode='drug'):
+
+                    if mode=='drug':
+                        ind = 0
+                    elif mode == 'prot':
+                        ind = 1
+
+                    #init default dict  (default int is 0)
+                    fold_dd = dd(lambda: dd(int))
+
+                    for i,fold in enumerate(cv_distribution):
+                        fold_elements = set(list(map(lambda y: y[ind], fold)))
+                        for element in fold_elements:
+                            fold_dd[i][element] += 1
+                        
+                    return fold_dd
+
+                protfold_dd = bfd_helper(mode='prot')
+                drugfold_dd = bfd_helper(mode='drug')
+
+                return drugfold_dd,protfold_dd
+
+            def cc_helper(cv_distribution, fold_dd, elements):
+
+                #init crucial and non-crucial lists
+                crucial = []
+                non_crucial = []
+
+                for elm in elements:
+
+                    prot_trues = sum([1 if fold_dd[i][elm] >= 1 else 0 for i,_ in enumerate(cv_distribution)])
+
+                    if prot_trues >= 3:
+                        non_crucial.append(elm)
+                    elif prot_trues == 1:
+                        crucial.append(elm)
+
+                    # debugging
+                    # if prot in [336, 682, 775, 1502]:
+                    #     print(prot_trues)
+
+                return crucial, non_crucial
+
+            #get the proteins, as the drugs are well distributed by the way we have generated cv_distribution
+            prots = set(list(map(lambda x: x[1], pos_neg_interactions)))
+            drugs = set(list(map(lambda x: x[0], pos_neg_interactions)))
+
+            #retrieve prot fold dd
+            drugfold_dd, protfold_dd = build_fold_dict(cv_distribution)
+
+            #compute crucial and non crucial for drugs and proteins
+            
+            crucial_prots, non_crucial_prots = cc_helper(cv_distribution, protfold_dd, prots)
+            crucial_drugs, non_crucial_drugs = cc_helper(cv_distribution, drugfold_dd, drugs)
+
+            if mode == 'Sd':
+                return crucial_prots, non_crucial_prots, crucial_drugs, non_crucial_drugs
+            elif mode== 'St':
+                return crucial_drugs, non_crucial_drugs, crucial_prots, non_crucial_prots, 
+
+        def manage_cruciality(cvdist, crucial_prots, non_crucial_prots, crucial_drugs, mode= 'Sd'):
+
+            def find_crucial(elem, mode = 1):
+                for i,fold in enumerate(cvdist):
+                    for dtis in fold:
+                        if dtis[mode] == elem:
+                            return dtis,i
+
+                print("ERROR: NOT FOUND")
+                raise Exception
+
+            def double_dti(foldi1, dti1, dti2, cvdist, mode = 'Sd'):
+
+                #get indexes
+                ind1 = cvdist[foldi1].index(dti1)
+
+                if mode == 'Sd':
+                    #double
+                    cvdist[foldi1][ind1] = (dti1[0], dti2[1], 0)
+
+                elif mode == 'St':
+                    #double
+                    cvdist[foldi1][ind1] = (dti2[0], dti1[1], 0)
+
+                return cvdist
+
+            #go through crucial_prots
+            for crucial_prot in crucial_prots:
+
+                #init temp var
+                swap_done = False
+
+                if mode == 'Sd':
+                    #find the fold the crucial element is in
+                    crucial_dti, fold_crucial_i = find_crucial(crucial_prot)
+
+                elif mode == 'St':
+                    #find the fold the crucial element is in
+                    crucial_dti, fold_crucial_i = find_crucial(crucial_prot,0)
+
+                #go through the remaining folds
+                rem_folds = set(range(foldnum)).difference(set([fold_crucial_i]))
+
+                for foldi in rem_folds:
+                    
+                    #set fold
+                    fold = cvdist[foldi]
+
+                    #find a DTI with no_crucial prot and no_crucial drug + negative label 
+                    # + drug are not the same so we can assure new label = 0
+                    for dti in fold:
+                        drug, prot, label = dti[0], dti[1], dti[2]
+
+                        if mode == 'Sd':
+
+                            if not label and drug != crucial_dti[0]:
+
+                                if drug in crucial_drugs and prot in non_crucial_prots:
+
+                                    cvdist = double_dti(foldi1 = foldi, 
+                                                        dti1 = dti, dti2 = crucial_dti, 
+                                                        cvdist = cvdist)
+                                                        
+                                    #print(f"Crucial prot {crucial_prot} doubled")
+                                    swap_done = True
+                                    break
+
+                        elif mode == 'St':
+
+                            if not label and prot != crucial_dti[1]:
+
+                                if prot in crucial_drugs and drug in non_crucial_prots:
+
+                                    cvdist = double_dti(foldi1 = foldi, 
+                                                        dti1 = dti, dti2 = crucial_dti, 
+                                                        cvdist = cvdist, mode = mode)
+
+                                    #print(f"Crucial drug {crucial_prot} doubled")
+                                    swap_done = True
+                                    break
+
+                    if swap_done:
+                        break
+                                                        
+            return cvdist
+
+        while True:
+
+            #compute pos_neg_interactions
+            pos_neg_interactions = list(set(f.reduce(lambda a,b: a+b, cv_distribution)))
+
+            #compute cruciality
+            crucial_prots, non_crucial_prots, crucial_drugs, _ = compute_cruciality(cv_distribution, pos_neg_interactions, mode)
+
+            if not len(crucial_prots):
+                print(f"There are no crucial DTIs!\n")
+                return cv_distribution
+            else:
+                print(f"There are some crucial DTIs ({len(crucial_prots)})!\n")
+                cv_distribution = manage_cruciality(cv_distribution, crucial_prots, non_crucial_prots, crucial_drugs, mode)
+                
     #init seed cv list
     seed_cv_list = []
 
-    for seed in tqdm([7183,556,2,81,145], desc='Performing 10-CV fold for each seed'):
+    for seed in tqdm([7183, 556, 2, 81, 145], desc='Performing 10-CV fold for each seed'):
 
         drug_interactions_dd = get_interactions_dict(DTIs, seed, subsampling=subsampling)
         # append all interactions
-        pos_neg_interactions = f.reduce(lambda a,b: a+b, drug_interactions_dd.values())
+        pos_neg_interactions = list(set(f.reduce(lambda a,b: a+b, drug_interactions_dd.values())))
         
         #check % of positives/negatives
         pos_percentage = sum(list(map(lambda x: x[2],pos_neg_interactions)))/len(pos_neg_interactions)
@@ -294,6 +586,9 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
                 #get positives for that drug
                 cv_distribution[i%foldnum].append(interaction)
 
+            if subsampling:
+                cv_distribution = Sp_reorder(cv_distribution, pos_neg_interactions)
+
         elif mode == 'Sd':
 
             #drugs are new, targets have been seen during the training
@@ -302,6 +597,9 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
                 pos_neg_interactions_dd[interaction[0]].append(interaction)
 
             cv_distribution = optimize_folds(cv_distribution, pos_neg_interactions, pos_neg_interactions_dd)
+
+            if subsampling:
+                cv_distribution = Sd_St_reorder(cv_distribution, mode= 'Sd')
 
         elif mode == 'St':
 
@@ -312,10 +610,11 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 
             cv_distribution = optimize_folds(cv_distribution, pos_neg_interactions, pos_neg_interactions_dd)
 
+            if subsampling:
+                cv_distribution = Sd_St_reorder(cv_distribution, mode = 'St')
 
         #generate the interaction matrix
         pos_neg_matrix = set_to_matrix(f.reduce(lambda a,b: a+b, cv_distribution))
-
 
         ## MIKEL OPTION
         if not cvopt:
@@ -364,6 +663,8 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
             #add each group of folds for each seed
             seed_cv_list.append(cv_list)
 
+        
+
     return seed_cv_list
 
 def genRMSDdict():
@@ -396,18 +697,20 @@ def genRMSDdict():
 
 #Lets use Yamanishi NR as an example
 ##Load dataset
-fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','IC','interactions','ic_admat_dgc_mat_2_line.txt')
+#fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','IC','interactions','ic_admat_dgc_mat_2_line.txt')
 #fpath = os.path.join(os.getcwd(),'DB','Data','Davis_et_al','tdc_package_preprocessing','DAVIS_et_al_2line.tsv')
-#fpath = os.path.join(os.getcwd(),'DB','Data','BIOSNAP','ChG-Miner_miner-chem-gene','ChG-Miner_miner-chem-gene.tsv')
-DTIs = pd.read_csv(fpath,sep='\t')
-DTIs.columns = ['Drug','Protein']
+fpath = os.path.join(os.getcwd(), 'DB', 'Data', 'BIOSNAP', 'ChG-Miner_miner-chem-gene', 'ChG-Miner_miner-chem-gene.tsv')
+DTIs = pd.read_csv(fpath, sep='\t')
+DTIs.columns = ['Drug', 'Protein']
 
 #check splits
 def check_splits(splits, verbose=False, foldnum=10):
 
     def check_condition():
-        drugs_counter, prots_counter = 0,0
+        
         for seed in range(len(splits)):
+            print(f"Seed {seed}")
+            drugs_counter, prots_counter = 0,0
             #print(f"Seed {seed}")
             for fold in range(len(splits[seed])):
                 #TRAIN
@@ -428,22 +731,22 @@ def check_splits(splits, verbose=False, foldnum=10):
                         print(f"Seed {seed}, Fold {fold} does not accomplish proteins")
 
 
-        if drugs_counter > 0:
-            if drugs_counter == (len(splits)*foldnum):
-                print("Sd split configuration accomplished!")
+            if drugs_counter > 0:
+                if drugs_counter == (foldnum):
+                    print("Sd split configuration accomplished!")
 
-            else:
-                print("Sd split configuration not exactly accomplished!")
+                else:
+                    print(f"Sd split configuration not exactly accomplished! ({drugs_counter})")
 
-        if prots_counter > 0:
-            
-            if prots_counter == (len(splits)*foldnum):
-                print("St split configuration accomplished!")
-            else:
-                print("St split configuration not exactly accomplished!")
+            if prots_counter > 0:
+                
+                if prots_counter == (foldnum):
+                    print("St split configuration accomplished!")
+                else:
+                    print(f"St split configuration not exactly accomplished! ({prots_counter})")
 
-        if not prots_counter and not drugs_counter:
-            print('Sp split configuration accomplished!')
+            if not prots_counter and not drugs_counter:
+                print('Sp split configuration accomplished!')
 
     def print_proportions(verbose=True):
         for seed in range(len(splits)):

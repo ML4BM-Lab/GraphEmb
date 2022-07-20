@@ -9,81 +9,71 @@ FLAGS = flags.FLAGS
 class DecagonOptimizer(object):
     def __init__(self, embeddings, latent_inters, latent_varies,
                  degrees, edge_types, edge_type2dim, placeholders,
-                 margin=0.1, neg_sample_weights=1., batch_size=100):
+                 margin=0.1, neg_sample_weights=1., batch_size=100
+                 ):
         self.embeddings= embeddings
         self.latent_inters = latent_inters
         self.latent_varies = latent_varies
         self.edge_types = edge_types
         self.degrees = degrees
         self.edge_type2dim = edge_type2dim
-        obj_type2n = {i: edge_type2dim[i,j][0][0] for i, j in edge_types}
+        self.obj_type2n = {i: self.edge_type2dim[i,j][0][0] for i, j in self.edge_types}
         self.margin = margin
         self.neg_sample_weights = neg_sample_weights
         self.batch_size = batch_size
-
-        inputs = placeholders['batch']
-        batch_edge_type_idx = placeholders['batch_edge_type_idx']
-        batch_row_edge_type = placeholders['batch_row_edge_type']
-        batch_col_edge_type = placeholders['batch_col_edge_type']
-        row_inputs = tf.squeeze(gather_cols(inputs, [0]))
-        col_inputs = tf.squeeze(gather_cols(inputs, [1]))
-
-        obj_type_n = [obj_type2n[i] for i in range(len(embeddings))]
-        obj_type_lookup_start = tf.cumsum([0] + obj_type_n[:-1])
-        obj_type_lookup_end = tf.cumsum(obj_type_n)
-        labels = tf.reshape(tf.cast(row_inputs, dtype=tf.int64), [batch_size, 1])
-        print('-----------------------------------------------')
-        neg_samples_list = []
+        self.inputs = placeholders['batch']
+        self.batch_edge_type_idx = placeholders['batch_edge_type_idx']
+        self.batch_row_edge_type = placeholders['batch_row_edge_type']
+        self.batch_col_edge_type = placeholders['batch_col_edge_type']
+        self.row_inputs = tf.squeeze(gather_cols(self.inputs, [0]))
+        self.col_inputs = tf.squeeze(gather_cols(self.inputs, [1]))
+        # load placeholder negative dtis
+        self.negative_dtis = placeholders['negative_dtis']
+        # continue code
+        obj_type_n = [self.obj_type2n[i] for i in range(len(self.embeddings))]
+        self.obj_type_lookup_start = tf.cumsum([0] + obj_type_n[:-1])
+        self.obj_type_lookup_end = tf.cumsum(obj_type_n)
+        labels = tf.reshape(tf.cast(self.row_inputs, dtype=tf.int64), [self.batch_size, 1])
+        # load negative dtis
+        self.row_inputs_01 = tf.squeeze(gather_cols(self.negative_dtis, [0]))
+        self.col_inputs_01 = tf.squeeze(gather_cols(self.negative_dtis, [1]))
+        neg_samples_row_list = []
+        neg_samples_col_list = []
         for i, j in self.edge_types:
             for k in range(self.edge_types[i,j]):
-                #if self.edge_types == (1,0):
-                print('i', i)
-                print('j', j )
-                print('k,', k)
-                print('k: ', k)
-                neg_samples, _, _ = tf.nn.fixed_unigram_candidate_sampler(
-                    true_classes=labels,
-                    num_true=1,
-                    num_sampled=batch_size,
-                    unique=False,
-                    range_max=len(degrees[0][i][k]),
-                    distortion=0.75,
-                    unigrams=degrees[0][i][k].tolist())
-                print('neg_samples item: ', neg_samples)
-                print('neg_samples device', neg_samples.device)
-                print('neg_samples shape', neg_samples.get_shape)
-                #print('neg samples eval: ', neg_samples.eval())
-                # with tf.Session() as sess:     
-                #     x_value = sess.run(neg_samples)
-                #     print(neg_samples) #[1.  1.5 2. ]
-                #     np.save("x.npy", neg_samples, allow_pickle=False)
-                #one_string = tf.strings.format("{neg_samples}\n", (neg_samples))
-                #print('test saving')
-                #tf.io.write_file('test_saving_test.npy', one_string, name=None)
-                #break
-                # sess = tf.Session()
-                # with sess.as_default():
-                #     print(type(tf.constant([1,2,3]).eval()))
-                #     print(type(neg_samples.eval()))
-                #     print(neg_samples.eval())
-                #sess = tf.InteractiveSession()
-                # print(type(tf.constant([1,2,3]).eval()))
-                print('...')
-                #print('neg_samples to array', dir(neg_samples))
+                if (i,j,k) == (0,1,0):
+                    print('loading (01) zeros')
+                    neg_samples_row = self.row_inputs_01
+                    neg_samples_col = self.col_inputs_01
+                elif (i,j,k) == (1,0,0):
+                    print('flip flop case (10)')
+                    neg_samples_row = self.col_inputs_01
+                    neg_samples_col = self.row_inputs_01
+                else:
+                    #print('just as in original!')
+                    neg_samples_row, _, _ = tf.nn.fixed_unigram_candidate_sampler(
+                        true_classes=labels,
+                        num_true=1,
+                        num_sampled=self.batch_size,
+                        unique=False,
+                        range_max=len(self.degrees[i][k]),
+                        distortion=0.75,
+                        unigrams=self.degrees[i][k].tolist())
+                    # for columns like before
+                    neg_samples_col = self.col_inputs 
+                neg_samples_row_list.append(neg_samples_row)
+                neg_samples_col_list.append(neg_samples_col)
+        self.neg_samples_row = tf.gather(neg_samples_row_list, self.batch_edge_type_idx)
+        self.neg_samples_col = tf.gather(neg_samples_col_list, self.batch_edge_type_idx)
 
-                neg_samples_list.append(neg_samples)
-        print('neg_samples_list: ', neg_samples_list)
-        print('len neg samples: ', len(neg_samples_list))
-        print('ended ..........')
-        
-        self.neg_samples = tf.gather(neg_samples_list, self.batch_edge_type_idx)
-        # aqui predice los que en teoria son positivos
+        ## USING BATCH PREDICTIC
+        # WITH TRUES !
         self.preds = self.batch_predict(self.row_inputs, self.col_inputs)
         self.outputs = tf.diag_part(self.preds)
         self.outputs = tf.reshape(self.outputs, [-1])
-        # aqui los k en teoria son negativos
-        
-        self.neg_preds = self.batch_predict(self.neg_samples, self.col_inputs)
+
+        # NEGATIVES
+        self.neg_preds = self.batch_predict(self.neg_samples_row,  self.neg_samples_col)
         self.neg_outputs = tf.diag_part(self.neg_preds)
         self.neg_outputs = tf.reshape(self.neg_outputs, [-1])
 
@@ -193,4 +183,3 @@ def gather_cols(params, indices, name=None):
                                        [-1, 1]) + indices, [-1])
         return tf.reshape(
             tf.gather(p_flat, i_flat), [p_shape[0], -1])
-
