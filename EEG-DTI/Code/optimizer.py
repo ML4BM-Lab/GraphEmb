@@ -9,7 +9,9 @@ FLAGS = flags.FLAGS
 class DecagonOptimizer(object):
     def __init__(self, embeddings, latent_inters, latent_varies,
                  degrees, edge_types, edge_type2dim, placeholders,
-                 margin=0.1, neg_sample_weights=1., batch_size=100):
+                 seed, fold,
+                 margin=0.1, neg_sample_weights=1., batch_size=100
+                 ):
         self.embeddings= embeddings
         self.latent_inters = latent_inters
         self.latent_varies = latent_varies
@@ -20,47 +22,50 @@ class DecagonOptimizer(object):
         self.margin = margin
         self.neg_sample_weights = neg_sample_weights
         self.batch_size = batch_size
-
+        self.seed = seed
+        self.fold = fold
         self.inputs = placeholders['batch']
         self.batch_edge_type_idx = placeholders['batch_edge_type_idx']
         self.batch_row_edge_type = placeholders['batch_row_edge_type']
         self.batch_col_edge_type = placeholders['batch_col_edge_type']
         self.row_inputs = tf.squeeze(gather_cols(self.inputs, [0]))
         self.col_inputs = tf.squeeze(gather_cols(self.inputs, [1]))
+        # load placeholder dtis
 
+        self.negative_dtis = placeholders['self_negative_dtis']
         obj_type_n = [self.obj_type2n[i] for i in range(len(self.embeddings))]
         self.obj_type_lookup_start = tf.cumsum([0] + obj_type_n[:-1])
         self.obj_type_lookup_end = tf.cumsum(obj_type_n)
         labels = tf.reshape(tf.cast(self.row_inputs, dtype=tf.int64), [self.batch_size, 1])
-        neg_samples_list = []
-        print('----------- WORKING HERE')
-        ratio='oneTooneIndex'
-        data_folder = 'data_dti'
-        seed, fold = 0,0
+
+        '''
+        The idea just had means to put also columns inside the loop and pass the same tf gather
+        this way then we can conserve the line self.neg_preds as self.neg_samples_ros, self.neg_samples_cols
+        rows is similar to the original, cols should be the original column for the other cases and the
+        corresponding vector to the wanted cases
+        '''
+
+        print(f'Check - Seed in optimizer: {self.fold }')
+        print(f'Check - Fold in optimizer: {self.seed }')
+
+        self.row_inputs_01 = tf.squeeze(gather_cols(self.negative_dtis, [0]))#[:batch_size]
+        self.col_inputs_01 = tf.squeeze(gather_cols(self.negative_dtis, [1]))#[:batch_size]
+
+        neg_samples_row_list = []
+        neg_samples_col_list = []
         for i, j in self.edge_types:
             for k in range(self.edge_types[i,j]):
                 if (i,j,k) == (0,1,0):
-                    print('Here To MODIFY 0s !!!!!!')
-                    neg_samples = np.loadtxt('./'+data_folder+'/'+ratio+'/train_index_neg(0,1)'+str(seed)+'_'+str(fold)+'.txt',dtype=int)
-                    print(neg_samples)
-                    print('shape neg samples:', neg_samples.shape)
-                    row_neg_inputs = tf.squeeze(gather_cols(neg_samples, [0]))
-                    col_neg_inputs = tf.squeeze(gather_cols(neg_samples, [1]))
+                    print('loading (01) zeros')
+                    neg_samples_row = self.row_inputs_01
+                    neg_samples_col = self.col_inputs_01
                 elif (i,j,k) == (1,0,0):
-                    print('Here To MODIFY 0s, same but inverse !!!!!!')
-                    neg_samples = np.loadtxt('./'+data_folder+'/'+ratio+'/train_index_neg(0,1)'+str(seed)+'_'+str(fold)+'.txt',dtype=int)
-                    for ii in range(len(neg_samples)):
-                        temp = neg_samples[ii][0]
-                        neg_samples[ii][0] = neg_samples[ii][1]
-                        neg_samples[ii][1] = temp
-                    print(neg_samples)
-                    row_neg_inputs = tf.squeeze(gather_cols(neg_samples, [0]))
-                    col_neg_inputs = tf.squeeze(gather_cols(neg_samples, [1]))
-                    print('shape neg samples:', neg_samples.shape)
-
+                    print('flip flop case (10)')
+                    neg_samples_row = self.col_inputs_01
+                    neg_samples_col = self.row_inputs_01
                 else:
-                    print('this is for non dtis... we dont care..')
-                    neg_samples, _, _ = tf.nn.fixed_unigram_candidate_sampler(
+                    #print('just as in original!')
+                    neg_samples_row, _, _ = tf.nn.fixed_unigram_candidate_sampler(
                         true_classes=labels,
                         num_true=1,
                         num_sampled=self.batch_size,
@@ -68,15 +73,21 @@ class DecagonOptimizer(object):
                         range_max=len(self.degrees[i][k]),
                         distortion=0.75,
                         unigrams=self.degrees[i][k].tolist())
-                neg_samples_list.append(neg_samples)
-        self.neg_samples = tf.gather(neg_samples_list, self.batch_edge_type_idx)
-        print('<<<<<<<<<<<----- shape ?')
-        print(self.neg_samples.shape)
+                    # for columns like before
+                    neg_samples_col = self.col_inputs # what entered before
+                neg_samples_row_list.append(neg_samples_row)
+                neg_samples_col_list.append(neg_samples_col)
+        self.neg_samples_row = tf.gather(neg_samples_row_list, self.batch_edge_type_idx)
+        self.neg_samples_col = tf.gather(neg_samples_col_list, self.batch_edge_type_idx)
+
+        ###### USING BATCH PREDICTIC
+        # WITH TRUES !
         self.preds = self.batch_predict(self.row_inputs, self.col_inputs)
         self.outputs = tf.diag_part(self.preds)
         self.outputs = tf.reshape(self.outputs, [-1])
 
-        self.neg_preds = self.batch_predict(self.neg_samples, self.col_inputs)
+        # NEGATIVES
+        self.neg_preds = self.batch_predict(self.neg_samples_row,  self.neg_samples_col)
         self.neg_outputs = tf.diag_part(self.neg_preds)
         self.neg_outputs = tf.reshape(self.neg_outputs, [-1])
 

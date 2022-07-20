@@ -51,7 +51,7 @@ class EdgeMinibatchIterator(object):
         for i, j in self.edge_types:
             for k in range(self.edge_types[i,j]):
                 print("Minibatch edge type:", "(%d, %d, %d)" % (i, j, k))
-                self.mask_test_edges((i, j), k, fold)
+                self.mask_test_edges((i, j), k, fold, seed)
 
                 print("Train edges=", "%04d" % len(self.train_edges[i,j][k]))
                 print("Val edges=", "%04d" % len(self.val_edges[i,j][k]))
@@ -80,12 +80,12 @@ class EdgeMinibatchIterator(object):
 
 
 
-    def mask_test_edges(self, edge_type, type_idx, fold):
+    def mask_test_edges(self, edge_type, type_idx, fold, seed):
+        data_set = self.data_set
+        ratio='oneTooneIndex'
+        data_folder = 'data_dti'
+        #seed = 0 # cambiar luego
         if edge_type==(0,1) or edge_type==(1,0):
-            data_set = self.data_set
-            ratio='oneTooneIndex'
-            data_folder = 'data_dti'
-            seed = 0 # cambiar luego
             #### Train edges
             # positive
             train_edges = np.loadtxt('./'+data_folder+'/'+ratio+'/train_index_pos(0,1)'+str(seed)+'_'+str(fold)+'.txt',dtype=int)
@@ -94,13 +94,7 @@ class EdgeMinibatchIterator(object):
                     temp = train_edges[ii][0]
                     train_edges[ii][0] = train_edges[ii][1]
                     train_edges[ii][1] = temp
-            # negative
-            train_edges_false = np.loadtxt('./'+data_folder+'/'+ratio+'/train_index_neg(0,1)'+str(seed)+'_'+str(fold)+'.txt',dtype=int)
-            if edge_type == (1, 0):
-                for ii in range(len(train_edges_false)):
-                    temp = train_edges_false[ii][0]
-                    train_edges_false[ii][0] = train_edges_false[ii][1]
-                    train_edges_false[ii][1] = temp
+        
             # Test Edges
             test_edges_false = np.loadtxt('./'+data_folder+'/'+ratio+'/test_index_neg(0,1)'+str(seed)+'_'+str(fold)+'.txt',dtype=int)
             if edge_type == (1,0):
@@ -184,7 +178,9 @@ class EdgeMinibatchIterator(object):
             self.val_edges_false[edge_type][type_idx] = np.array(val_edges_false)
             self.test_edges[edge_type][type_idx] = test_edges
             self.test_edges_false[edge_type][type_idx] = np.array(test_edges_false)
-
+            # negatives
+            train_edges_false = np.loadtxt('./'+data_folder+'/'+ratio+'/train_index_neg(0,1)'+str(seed)+'_'+str(fold)+'.txt',dtype=int)
+            self.negatives_dtis = train_edges_false
 
     def end(self):
         a = self.edge_type2idx[0, 1, 0] not in self.freebatch_edge_types
@@ -205,13 +201,13 @@ class EdgeMinibatchIterator(object):
 
         return feed_dict
 
-    def batch_feed_dict(self, batch_edges, batch_edge_type, placeholders):
+    def batch_feed_dict(self, batch_edges, batch_edge_type, placeholders, batch_neg_edges):
         feed_dict = dict()
         feed_dict.update({placeholders['batch']: batch_edges})
         feed_dict.update({placeholders['batch_edge_type_idx']: batch_edge_type})
         feed_dict.update({placeholders['batch_row_edge_type']: self.idx2edge_type[batch_edge_type][0]})
         feed_dict.update({placeholders['batch_col_edge_type']: self.idx2edge_type[batch_edge_type][1]})
-
+        feed_dict.update({placeholders['self_negative_dtis']: batch_neg_edges})
         return feed_dict
 
     # Needs to be changed
@@ -249,7 +245,8 @@ class EdgeMinibatchIterator(object):
         start = self.batch_num[self.current_edge_type_idx] * self.batch_size
         self.batch_num[self.current_edge_type_idx] += 1
         batch_edges = self.train_edges[i,j][k][start: start + self.batch_size]
-        return self.batch_feed_dict(batch_edges, self.current_edge_type_idx, placeholders)
+        batch_neg_edges = self.negatives_dtis[start: start + self.batch_size]
+        return self.batch_feed_dict(batch_edges, self.current_edge_type_idx, placeholders, batch_neg_edges)
 
     def num_training_batches(self, edge_type, type_idx):
         return len(self.train_edges[edge_type][type_idx]) // self.batch_size + 1

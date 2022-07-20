@@ -289,6 +289,7 @@ for seed in range(5):
                 'batch_col_edge_type': tf.placeholder(tf.int64, shape=(), name='batch_col_edge_type'),
                 'degrees': tf.placeholder(tf.int64),
                 'dropout': tf.placeholder_with_default(0., shape=()),
+                'self_negative_dtis': tf.placeholder(tf.int64, name='self_negative_dtis'),
             }
             placeholders.update({
                 'adj_mats_%d,%d,%d' % (i, j, k): tf.sparse_placeholder(tf.float32)
@@ -422,7 +423,7 @@ for seed in range(5):
             adj_mats=adj_mats_orig,
             feat=feat,
             fold=fold,
-            seed = seed, # changed ghere to seeed
+            seed = seed, #
             data_set = data_set,
             edge_types=edge_types,
             batch_size= FLAGS.batch_size,
@@ -450,7 +451,9 @@ for seed in range(5):
                 edge_type2dim=edge_type2dim,
                 placeholders=placeholders,
                 batch_size=FLAGS.batch_size,
-                margin=FLAGS.max_margin
+                margin=FLAGS.max_margin,
+                seed = seed, 
+                fold = fold
             )
 
         print("Initialize session")
