@@ -59,13 +59,12 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 
         return dpdd, pddd
 
-    def get_interactions_dict(DTIs, seed, subsampling, swap = False, swap_dict = None, RMSD_dict = None):
+    def get_interactions_dict(DTIs, seed, subsampling, RMSD_dict = None):
 
         def get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict, Prot_inv_dd):
 
             def unify_genes(allItems, maxSample, negprots):
 
-                
                 #first sort
                 sortAllItems= sorted(allItems, key = lambda x: x[1])
 
@@ -101,48 +100,6 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 
             return unify_genes(allItems, maxSample, negprots)
 
-        def get_drugs_for_targets_RMSD(pos_element, neg_element, RMSD_dict, Drug_inv_dd, DrugProteinDD, ProteinDrugDD):
-
-            def unify_genes(allItems, maxSample, negdrugs, ProteinDrugDD):
-
-                #first sort
-                sortAllItems= sorted(allItems, key = lambda x: x[1])
-
-                #init Max
-                uniqueSortedItems = []
-                ref = sortAllItems[0][0]
-
-                #remove duplicities
-                for tupla in sortAllItems:
-                    gen = tupla[0]
-
-                    if gen != ref:
-                        ref = gen
-                        if gen in negdrugs:
-                            uniqueSortedItems.append(gen)
-                            if len(uniqueSortedItems) >= maxSample:
-                                return uniqueSortedItems
-
-            #define maximum amount of genes to be sampled 
-            maxSample = min(len(neg_element),len(pos_element))
-
-            #get all proteins
-            drugs = [Drug_inv_dd[protid] for protid in pos_element]
-            negdrugs =[Drug_inv_dd[protid] for protid in neg_element]
-
-            #get the associated proteins
-            assocprots = set(red(lambda x,y : x+y, [DrugProteinDD[drug] for drug in drugs]))
-
-            #get all items
-            allItems = []
-
-            #concat
-            for prot in assocprots:
-                if prot in RMSD_dict:
-                        allItems += RMSD_dict[prot].items()
-
-            return unify_genes(allItems,maxSample,negdrugs,ProteinDrugDD)
-
         #init default dict (list)
         interactions_dd = dd(list)
 
@@ -151,10 +108,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 
         #get positives
         for d,p in zip(DTIs['Drug'],DTIs['Protein']):
-            if swap:
-                interactions_dd[Prot_dd[p]].append((Drug_dd[d],Prot_dd[p],1))
-            else:
-                interactions_dd[Drug_dd[d]].append((Drug_dd[d],Prot_dd[p],1))
+            interactions_dd[Drug_dd[d]].append((Drug_dd[d],Prot_dd[p],1))
                
         #add negatives (subsample to have 50%-50%)
         #go through all drugs/proteins
@@ -163,12 +117,8 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
             #print(f"elementid {elementid} in i {i}")
             #subsample from the negatives and add it to interactions dictionary
             #drugs if swap = False | proteins if swap = True
-            if swap:
-                pos_element = list(map(lambda x: x[0], interactions_dd[elementid])) #x[0] = drug
-                neg_element = set(range(Drug_L)).difference((set(pos_element).union(swap_dict[elementid])))
-            else:
-                pos_element = list(map(lambda x: x[1], interactions_dd[elementid])) #x[1] = prot
-                neg_element = set(range(Prot_L)).difference(set(pos_element))
+            pos_element = list(map(lambda x: x[1], interactions_dd[elementid])) #x[1] = prot
+            neg_element = set(range(Prot_L)).difference(set(pos_element))
             #print(f"Positive element {len(pos_element)}, negative elements {len(neg_element)}")
 
             if subsampling:
@@ -176,21 +126,16 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
                 if RMSD_dict is None:
                     neg_sampled_element = r.sample(neg_element,min(len(neg_element),len(pos_element))) #50%-50% (modify if different proportions are desired)
                 else:
-                    if swap:
-                        neg_sampled_element = get_drugs_for_targets_RMSD(pos_element, neg_element, RMSD_dict, Prot_inv_dd)
-                    else:
-                        neg_sampled_element = get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict, Prot_inv_dd)
+                    neg_sampled_element = get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict, Prot_inv_dd)
             else:
                 neg_sampled_element = neg_element #get all negatives
 
             #generate the negatives
-            if swap:
-                neg_sampled_element = [(drugid,elementid,0) for drugid in neg_sampled_element] #elementid is protid
-            else:
-                neg_sampled_element = [(elementid,protid,0) for protid in neg_sampled_element] #elementid is drugid
+            neg_sampled_element = [(elementid,protid,0) for protid in neg_sampled_element] #elementid is drugid
                 
             #append
             interactions_dd[elementid] += neg_sampled_element
+
             #shuffle
             prng.shuffle(interactions_dd[elementid])
 
@@ -209,28 +154,22 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 
         return train_names_matrix, test_names_matrix
 
-    def optimize_folds(cv_distribution, pos_neg_interactions, pos_neg_interactions_dd):
+    def optimize_folds(cv_distribution, pos_neg_interactions_dd):
         #here we will distribute drugs according to Sd
         #maximizing the number of different drugs we have in each fold
 
         #first we compute length of each drug
         drugs_L_tuple = sorted([(drug,len(pos_neg_interactions_dd[drug])) for drug in pos_neg_interactions_dd], key= lambda x: x[1], reverse=True)
 
-        #compute elements per fold
-        elements_per_fold = len(pos_neg_interactions)//foldnum
-
         i = 0
         while True:
             drugs_tuple = drugs_L_tuple.pop(0)
-            
+
             #elements to add
             elems = pos_neg_interactions_dd[drugs_tuple[0]]
 
-            #remaining length
-            remlen = len(cv_distribution[i%foldnum])
-
-            #check if its empty enough to include that drug
-            cv_distribution[i%foldnum] += elems[0:min(len(elems), remlen)]
+            #add to cv_distr
+            cv_distribution[i%foldnum] += elems
             
             if not len(drugs_L_tuple):
                 break
@@ -239,7 +178,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 
         return cv_distribution
 
-    def Sp_reorder(cv_distribution, pos_neg_interactions):
+    def Sp_reorder(cv_distribution):
 
         #We are going to divide DTIs in 2 groups, crucial and non-crucial
         #For a subsampling dataset to accomplish Sp requirement:
@@ -279,36 +218,41 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
                 protfold_dd = bfd_helper(mode='prot')
                 drugfold_dd = bfd_helper(mode='drug')
 
-                return drugfold_dd,protfold_dd
+                return drugfold_dd, protfold_dd
 
-            def cc_helper(cv_distribution, fold_dd):
+            def cc_helper(cv_distribution, fold_dd, elements):
 
                 #init crucial and non-crucial lists
                 crucial = []
                 non_crucial = []
 
-                for prot in prots:
+                for elm in elements:
 
-                    prot_trues = sum([1 if fold_dd[i][prot] >= 1 else 0 for i,_ in enumerate(cv_distribution)])
+                    prot_trues = sum([1 if fold_dd[i][elm] >= 1 else 0 for i,_ in enumerate(cv_distribution)])
 
                     if prot_trues >= 3:
-                        non_crucial.append(prot)
+                        non_crucial.append(elm)
                     elif prot_trues == 1:
-                        crucial.append(prot)
+                        crucial.append(elm)
+
+                    # debugging
+                    # if prot in [336, 682, 775, 1502]:
+                    #     print(prot_trues)
 
                 return crucial, non_crucial
 
             #get the proteins, as the drugs are well distributed by the way we have generated cv_distribution
             prots = set(list(map(lambda x: x[1], pos_neg_interactions)))
+            drugs = set(list(map(lambda x: x[0], pos_neg_interactions)))
 
             #retrieve prot fold dd
             drugfold_dd, protfold_dd = build_fold_dict(cv_distribution)
 
             #compute crucial and non crucial for drugs and proteins
-            crucial_prots, non_crucial_prots = cc_helper(cv_distribution, protfold_dd)
-            _, non_crucial_drugs = cc_helper(cv_distribution, drugfold_dd)
+            crucial_prots, non_crucial_prots = cc_helper(cv_distribution, protfold_dd, prots)
+            crucial_drugs, non_crucial_drugs = cc_helper(cv_distribution, drugfold_dd, drugs)
 
-            return crucial_prots, non_crucial_prots, non_crucial_drugs
+            return crucial_prots, non_crucial_prots, crucial_drugs, non_crucial_drugs
 
         def manage_cruciality(cvdist, crucial_prots, non_crucial_prots, non_crucial_drugs):
 
@@ -321,14 +265,12 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
                 print("ERROR: NOT FOUND")
                 raise Exception
 
-            def double_dti(foldi1, foldi2, dti1, dti2, cvdist):
+            def double_dti(foldi1, dti1, dti2, cvdist):
 
                 #get indexes
                 ind1 = cvdist[foldi1].index(dti1)
-                #ind2 = cvdist[foldi2].index(dti2)
 
                 #double
-                #cvdist[foldi1][ind1], cvdist[foldi2][ind2] = cvdist[foldi2][ind2], cvdist[foldi1][ind1]
                 cvdist[foldi1][ind1] = (dti1[0], dti2[1], 0)
 
                 return cvdist
@@ -358,7 +300,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 
                             if drug in non_crucial_drugs and prot in non_crucial_prots:
 
-                                cvdist = double_dti(foldi1 = foldi, foldi2 = fold_prot_i, 
+                                cvdist = double_dti(foldi1 = foldi, 
                                                     dti1 = dti, dti2 = crucial_dti, 
                                                     cvdist = cvdist)
                                 #print(f"Crucial prot {crucial_prot} doubled")
@@ -372,14 +314,19 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 
         while True:
 
+            #compute pos_neg_interactions
+            pos_neg_interactions = list(set(f.reduce(lambda a,b: a+b, cv_distribution)))
+
             #compute cruciality
-            crucial_prots, non_crucial_prots, non_crucial_drugs = compute_cruciality(cv_distribution, pos_neg_interactions)
+            crucial_prots, non_crucial_prots, crucial_drugs, non_crucial_drugs = compute_cruciality(cv_distribution, pos_neg_interactions)
+
+            #print(f"Crucial prots {len(crucial_prots)} - Crucial drugs {len(crucial_drugs)}")
 
             if not len(crucial_prots):
-                print(f"There are no crucial DTIs!\n")
+                #print(f"There are no crucial DTIs!\n")
                 return cv_distribution
             else:
-                print(f"There are some crucial DTIs ({len(crucial_prots)})!\n")
+                #print(f"There are some crucial DTIs ({len(crucial_prots)})!\n")
                 cv_distribution = manage_cruciality(cv_distribution, crucial_prots, non_crucial_prots, non_crucial_drugs)
  
     def Sd_St_reorder(cv_distribution, mode = 'Sd'):
@@ -556,25 +503,34 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
             #compute cruciality
             crucial_prots, non_crucial_prots, crucial_drugs, _ = compute_cruciality(cv_distribution, pos_neg_interactions, mode)
 
+            #print(f"Crucial prots {len(crucial_prots)} - Crucial drugs {len(crucial_drugs)}")
+
             if not len(crucial_prots):
-                print(f"There are no crucial DTIs!\n")
+                #print(f"There are no crucial DTIs!\n")
                 return cv_distribution
             else:
-                print(f"There are some crucial DTIs ({len(crucial_prots)})!\n")
+                #print(f"There are some crucial DTIs ({len(crucial_prots)})!\n")
                 cv_distribution = manage_cruciality(cv_distribution, crucial_prots, non_crucial_prots, crucial_drugs, mode)
                 
+    def Kfold_from_lists(cv_distribution):
+        for i in range(len(cv_distribution)):
+            train_edges = set_to_matrix(f.reduce(lambda a,b : a+b, cv_distribution[:i] + cv_distribution[i+1:]))
+            test_edges = set_to_matrix(cv_distribution[i])
+            yield train_edges, test_edges
+
     #init seed cv list
     seed_cv_list = []
 
     for seed in tqdm([7183, 556, 2, 81, 145], desc='Performing 10-CV fold for each seed'):
 
         drug_interactions_dd = get_interactions_dict(DTIs, seed, subsampling=subsampling)
+
         # append all interactions
-        pos_neg_interactions = list(set(f.reduce(lambda a,b: a+b, drug_interactions_dd.values())))
+        pos_neg_interactions = list(f.reduce(lambda a,b: a+b, drug_interactions_dd.values()))
         
         #check % of positives/negatives
         pos_percentage = sum(list(map(lambda x: x[2],pos_neg_interactions)))/len(pos_neg_interactions)
-        print(f"Positives -> {round(pos_percentage,2)*100}%, Negatives -> {round(1-pos_percentage,2)*100} %")
+        #print(f"Positives -> {round(pos_percentage,2)*100}%, Negatives -> {round(1-pos_percentage,2)*100} %")
 
         #init list to distribute edges in a Sp way.
         cv_distribution = [[] for _ in range(foldnum)]
@@ -582,12 +538,14 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
         if mode == 'Sp':
 
             #both targets and drugs have been already seen during the training, but this exact DTI is new.
-            for i,interaction in enumerate(tqdm(pos_neg_interactions,desc='Distributing interactions')):
+            for i,interaction in enumerate(pos_neg_interactions):
                 #get positives for that drug
                 cv_distribution[i%foldnum].append(interaction)
 
+            #print(f"Fold sizes {list(map(len,cv_distribution))}")
+
             if subsampling:
-                cv_distribution = Sp_reorder(cv_distribution, pos_neg_interactions)
+                cv_distribution = Sp_reorder(cv_distribution)
 
         elif mode == 'Sd':
 
@@ -596,7 +554,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
             for interaction in pos_neg_interactions:
                 pos_neg_interactions_dd[interaction[0]].append(interaction)
 
-            cv_distribution = optimize_folds(cv_distribution, pos_neg_interactions, pos_neg_interactions_dd)
+            cv_distribution = optimize_folds(cv_distribution, pos_neg_interactions_dd)
 
             if subsampling:
                 cv_distribution = Sd_St_reorder(cv_distribution, mode= 'Sd')
@@ -608,7 +566,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
             for interaction in pos_neg_interactions:
                 pos_neg_interactions_dd[interaction[1]].append(interaction)
 
-            cv_distribution = optimize_folds(cv_distribution, pos_neg_interactions, pos_neg_interactions_dd)
+            cv_distribution = optimize_folds(cv_distribution, pos_neg_interactions_dd)
 
             if subsampling:
                 cv_distribution = Sd_St_reorder(cv_distribution, mode = 'St')
@@ -633,21 +591,20 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 
         else:
 
-            #define both KFold to maintain proportions (positive and negatives)
-            KFoldobj = KFold(n_splits = foldnum)
-
             #init the cv list
             cv_list = []
 
-            for train_index, test_index in KFoldobj.split(pos_neg_matrix):
-            
-                #get train,test
-                train_edges, test_edges = pos_neg_matrix[train_index],pos_neg_matrix[test_index]
-                
+            for train_edges, test_edges in Kfold_from_lists(cv_distribution):
+            #for train_edges, test_edges in Kfold_from_lists([[1],[2],[3],[4],[5]]):
+                # print(train_edges)
+                # print(test_edges)
+                # print()
+                  
                 #--positives--
                 train_edges_pos, test_edges_pos = train_edges[train_edges[:,2] == 1,:-1], test_edges[test_edges[:,2] == 1,:-1]
+                
                 ##create names matrix from edges list
-                names_train_pos, names_test_pos = names_from_edges(train_edges_pos,test_edges_pos)
+                names_train_pos, names_test_pos = names_from_edges(train_edges_pos, test_edges_pos)
 
                 #--negatives--
                 train_edges_neg, test_edges_neg = train_edges[train_edges[:,2] == 0,:-1], test_edges[test_edges[:,2] == 0,:-1]
@@ -730,7 +687,6 @@ def check_splits(splits, verbose=False, foldnum=10):
                     if verbose:
                         print(f"Seed {seed}, Fold {fold} does not accomplish proteins")
 
-
             if drugs_counter > 0:
                 if drugs_counter == (foldnum):
                     print("Sd split configuration accomplished!")
@@ -739,7 +695,6 @@ def check_splits(splits, verbose=False, foldnum=10):
                     print(f"Sd split configuration not exactly accomplished! ({drugs_counter})")
 
             if prots_counter > 0:
-                
                 if prots_counter == (foldnum):
                     print("St split configuration accomplished!")
                 else:
@@ -802,17 +757,17 @@ RMSD_dict = genRMSDdict()
 
 # ------------------------------------------------------- Sp ------------------------------------------------------------------ #
 ##Get 5-seed 10-fold CV Sp (all nodes are seeing during the training)
-sp_splits = generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=10)
+sp_splits = generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=10, RMSD_dict=RMSD_dict)
 
 ##check sp split
-check_splits(sp_splits,verbose=False) 
+check_splits(sp_splits, verbose=False) 
 
 ##check distribution
 print_cv_distribution(DTIs, sp_splits[0])
 
 # ------------------------------------------------------- Sd ------------------------------------------------------------------- #
 ##Get 5-seed 10-fold CV Sd (some drugs are not seeing during the training)
-sd_splits = generate_splits(DTIs, mode= 'Sd', subsampling=True, foldnum=10)
+sd_splits = generate_splits(DTIs, mode= 'Sd', subsampling=True, foldnum=10, RMSD_dict=RMSD_dict)
 
 ##check splits
 check_splits(sd_splits,verbose=False) 
@@ -821,7 +776,7 @@ check_splits(sd_splits,verbose=False)
 #print_cv_distribution(DTIs,sd_splits)
 # ------------------------------------------------------- St ------------------------------------------------------------------- #
 ##Get 5-seed 10-fold CV Sd (some targets are not seeing during the training)
-st_splits = generate_splits(DTIs, mode= 'St', subsampling=True, foldnum=10)
+st_splits = generate_splits(DTIs, mode= 'St', subsampling=True, foldnum=10, RMSD_dict=RMSD_dict)
 
 ##check splits
 check_splits(st_splits,verbose=False) 
