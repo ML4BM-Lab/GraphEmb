@@ -1,12 +1,14 @@
 # Launching DTINet
 
-## Author's Model
+## Default Settings 
 
 #### Launch DTINet with Docker
 
-Matlab problems with x11, for that reason we give the .sh to be executed inside the docker. 
+Matla gives us problems with x11, 
+for that reason the .sh is written to be executed inside the docker. 
 
 The first, you should create a docker:
+
 ##### Create container from image (specifying name)
 ```
 docker run -dt --name dtinet_original -it dtinet_matlab bash
@@ -98,19 +100,14 @@ bash Launch_DTINet_splits_matlab.sh -b <dbname> -s <Sp/Sd/St> -u <true/false>
 
 
 
-
-
 # Preprocessing of Databases
 
-Run (file not available for all databases yet)
-'*' missing scripts
+This model needs different databases. 
+All data can be produced running each model independantly or sequentially with the script run_preprocesss_{DB}.py,
+where DB = {NR, E, IC, GPCR, DrugBank, BIOSNAP, Davis, BindingDB}.
 
 ```
-python3 run_preprocess_Yamanisihi.py 
-python3 run_preprocess_DrugBank.py *
-python3 run_preprocess_BIOSNAP.py *
-python3 run_preprocess_Davis.py 
-python3 run_preprocess_BindingDB.py 
+python3 run_preprocess.py <DB>
 ```
 
 Script that calls:
@@ -120,35 +117,16 @@ Script that calls:
       1. process_HPRD_DTINet.py
       2. process_SIDER_DTINet.py
       3. process_CTD_DTINet.py
-      4. process_DrugBank.py (for)
--- DTI tsv ! 
+      4. process_DrugBank.py 
+
 2. Get DTI (only for Yamanishi, BindingDB, Davis)
     - DTI_Yamanishi.py
     - DTI_BindingDB.py
     - DTI_Davis.py
 
-3. get_all_matrix_DrugBank.py
+3. get_all_matrix.py
     This script obtains the DTIs and uses the output from previous script to create the needed matrix. 
 
-
-## List of scripts in 'DTINet/Code/':
-
-- helper_functions_dtinet.py
-- get_coord.py 
-- process_SIDER_DTINet.py
-- process_HPRD_DTINet.py
-- process_Drugbank_DTINet.py
-- process_CTD_DTINet.py
-
-- DTI_BindingDB.py
-- DTI_Davis.py
-- DTI_Yamanishi.py
-
-- get_all_matrix_DrugBank.py 
-- get_all_matrix_Yamanishi.py
-- get_all_matrix_Davis.py
-- get_all_matrix_BindingDB.py
-- get_all_matrix_BIOSNAP.py
 
 ## What do we retrieve from each database? 
 * DrugBank database 
@@ -169,3 +147,7 @@ Script that calls:
     - Side-effect nodes
     - drug-side-effect associations 
 
+
+## List of scripts in 'DTINet/Code/':
+
+[]
