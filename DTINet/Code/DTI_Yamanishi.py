@@ -58,17 +58,9 @@ def main():
     df['Gene'] = df['Gene'].map(lambda x: x[:3] + ":" + x[3:])
     logging.debug(f'{(df.head(2))}')
 
-    # change from hsa: to Uniprot ---> wget 
+    #
     logging.info('Loading hsa2uni dictionary...')
     hsa2uni = hf.get_dict_hsa2uni()
-    ##
-    '''
-    path_data_uniprot = '../Data/Yamanashi_et_al_GoldStandard/uniprot.txt' # change this to obtain directly !! ---->>> **
-    colnames_uniprot = ['Uniprot','Gene']
-    df_uniprot = pd.read_csv(path_data_uniprot, header = None, names = colnames_uniprot, sep='\t')
-    df_uniprot['Uniprot'] = df_uniprot['Uniprot'].map(lambda x: x.lstrip('up:'))
-    hsa2uni = dict(zip(df_uniprot.Gene.tolist(), df_uniprot.Uniprot.tolist()))
-    '''
     # repeated entries, but diff uniprots have the same sequence (so it's safe)
     df['Uniprot'] = df['Gene'].map(hsa2uni)
     logging.debug(f'{(df.head(2))}')
@@ -78,7 +70,7 @@ def main():
     df['DrugBank_ID'] = df['Kegg_ID'].map(kegg2db)
     # Process df before saving
     logging.info("Processing & saving DTIs to file...")
-    df = df.drop(columns=['Gene', 'Kegg_ID']) # dejar al final cuando se caiga drug IDKegg
+    df = df.drop(columns=['Gene', 'Kegg_ID']) #
     df.columns = ['Protein', 'DrugBank_ID']
     DTI = df[['DrugBank_ID', 'Protein']] 
     # DTI.isna().sum()

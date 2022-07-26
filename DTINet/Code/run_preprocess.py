@@ -32,7 +32,7 @@ def main():
     args = parser.parse_args()
     DB_PATH = args.dbPath
     #
-    list_of_pys = ['get_coord.py']
+    list_of_pys = ['get_edgelists.py']
     if DB_PATH in ['E', 'GPCR', 'IC', 'NR']:
         list_of_pys.append(f'DTI_Yamanishi.py')
     elif DB_PATH == ['BindingDB', 'Davis_et_al']:
