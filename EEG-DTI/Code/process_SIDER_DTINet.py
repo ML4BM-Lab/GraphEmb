@@ -79,15 +79,12 @@ def main():
     df_drug_se.se = df_drug_se.iloc[:, 2:3].applymap(lambda s: s.lower() if type(s) == str else s)
     se_list = df_drug_se.se.unique().tolist()
     # save se.txt
-    #logging.debug(f'Writing se.txt...')
     #np.savetxt(os.path.join(output_path ,'se.txt'), se_list , newline='\n', fmt='%s')
 
     ####### COORDINATES DRUG - SE: Preproc
     logging.info(f'    Getting Drug-Se coordinates...')
     logging.debug('Processing data...')
     ## take both to get the max posible number of DBIDs
-    #df_drug_se['Pubchem_flat'] = df_drug_se['STITCH_flat'].apply(lambda x: x[4:]).astype(int)
-    #df_drug_se['Pubchem_stereo'] = df_drug_se['STITCH_stereo'].apply(lambda x: x[4:]).astype(int)
     regex = r'CID[\d]{1}'
     df_drug_se['Pubchem_flat'] = df_drug_se.STITCH_flat.replace(regex, '', regex=True).astype(int)
     df_drug_se['Pubchem_stereo'] = df_drug_se.STITCH_stereo.replace(regex, '', regex=True).astype(int)

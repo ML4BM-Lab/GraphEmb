@@ -72,7 +72,7 @@ def main():
     ## CTD DATA FOLDER
     data_path = '../../DB/Data/cross_side_information_DB/CTD'
     # remove info stat from pubchempy
-    logger = logging.getLogger('pubchempy') # works?
+    logger = logging.getLogger('pubchempy') #
     logger.setLevel(level = logging.DEBUG)
     logger.disabled = True
     # info 
@@ -92,9 +92,7 @@ def main():
 
     # In case we only want the number withouth MESH: or OMIM:
     # dis_dict.DiseaseID = dis_dict.iloc[:, 1:2].applymap(lambda s: s[5:] if type(s) == str else s)
-
     # export to files:::: diseases.txt is a list of diseases
-    #logging.debug(f'Writting disease.txt')
     #np.savetxt(os.path.join(output_path,'disease.txt') , dis_dict.DiseaseName.values, newline='\n', fmt='%s')
     # export to files:::: disease_dict_map.txt is a disctionary of diseases and identifiers
     logging.debug(f'Writting disease_dict_map.txt')
@@ -116,7 +114,6 @@ def main():
 
     gen_voc = gen_voc.dropna()
     gen_voc.shape 
-    # los uniprots se pueden separar por '|' y ver si estan en la lista set proteis.txt
     gen_voc.UniProtIDs = gen_voc.UniProtIDs.str.split("|")
     gen_voc = gen_voc.explode('UniProtIDs') # as different entry
 
@@ -161,7 +158,7 @@ def main():
     protein_disease.to_csv(os.path.join(output_path, 'edgelist_protein_disease.tsv'), index=False, header=True, sep="\t")
 
 
-    ####################### DRUG - DISEASE ASSOC ####################### ---------------------------------------->>> ******
+    ## DRUG - DISEASE ASSOC 
     logging.info(f'    Getting drug-disease coordinates...')
     logging.debug('Reading CTD_chemicals_diseases.csv ...')
     h_chem = ['ChemicalName', 'ChemicalID' ,'CasRN', 'DiseaseName', 'DiseaseID',
@@ -175,57 +172,7 @@ def main():
 
     ## remove NaN
     chem_dis = chem_dis.dropna()
-
-    # we need the DrugBankID, as is the identification that we use in DTINet
-    # Chemical ID is a MESH ID that appears in Pubchem, buy as synonym
-    # we cannot ask directly for a synonym to retrieve the CID
-    # then change from ChemicalName to PubchemCID using pubchempy
-    ############################################################################ ----->>>> ****
-    #PATH_dic_drugnames_cid = '../../../Data/cross_side_information_DB/dic_drugnames_cid.json'
-    # read the dictionary (slow; just read but make the script above available) 
-    # This fule can be obtained running: get_dic_names_to_CID.py
-    #with open(PATH_dic_drugnames_cid, 'r') as f:
-    #    dic_drugnames_cid = json.load(f)
-    '''
-    file_dic_drugnames = 'dic_drugnames_cid.json'
-    file_path_json_drugnames = os.path.join(output_path, file_dic_drugnames)
-    if (not os.path.exists(file_path_json_drugnames)):
-        logging.debug('Creating dic_drugnames_cid.json ...')
-        # creating a dic
-        drugnames = chem_dis.ChemicalName.values.tolist()
-        drugnames = list(set(drugnames))
-        # multiprocss
-        pool = mp.Pool(3)
-        #cid_keys = pool.map(hf.get_cid, drugnames[:10]) ##
-        ### probar con pmap
-        cid_keys = progress_map(hf.get_cid, drugnames, n_cpu=3, chunk_size=1, core_progress=True)
-        #print(cid_keys)
-        ### ?
-        dic_drugnames_cid = dict(zip(drugnames, cid_keys)) 
-        #save this dictionary in output path
-        with open(file_path_json_drugnames, 'w', encoding='utf-8') as f:
-            json.dump(dic_drugnames_cid, f, ensure_ascii=False, indent=4)
-    else:
-        logging.debug('Reading dic_drugnames_cid.json ...')
-        with open(file_path_json_drugnames, 'r') as f:
-            dic_drugnames_cid = json.load(f)
-    '''
-
-    # Then, we need to go back to DrugBank
-    # and make a relation between PubChem and DrugBank
-    ################## esto esta repetido en SIDER ######
-    '''
-    logging.debug('Reading DrugBank xml file...')
-    dic_cid_dbid = hf.pubchem_to_drugbankid()
-
-    ## apply two maps
-    chem_dis['PubChemID'] = chem_dis['ChemicalName'].map(dic_drugnames_cid)
-    chem_dis.shape
-    chem_dis = chem_dis.dropna()
-    chem_dis.shape # loosing 1158846 entries here
-    chem_dis['PubChemID'] = chem_dis['PubChemID'].astype(int).astype(str)
-    chem_dis['DrugBankID'] = chem_dis['PubChemID'].apply(lambda x: dic_cid_dbid[x] if x in dic_cid_dbid else np.nan)
-    '''
+    #
     logging.debug('Reading DrugBank xml file...')
     drugbank_dic = hf.drugname_drugbankid()
 

@@ -1,6 +1,15 @@
+import os, sys
 import argparse
 import logging
+import numpy as np
+import pandas as pd
+import json
+import requests
+from tqdm import tqdm
+from re import search
+import xml.etree.ElementTree as ET
 import subprocess as sp
+from rdkit import RDLogger                     
 
 
 
@@ -9,31 +18,30 @@ import subprocess as sp
 
 def main():
     '''
-    run get_coord
-    run DTI_{DB} if needed
-    run get_all matrix
+    This executes 4 complementary scripts
+    and writes 5 coordinate files:
+        - edgelist_PPI.tsv
+        - edgelist_drug_se.tsv
+        - edgelist_protein_disease.tsv
+        - edgelist_drug_disease.tsv
+        - edgelist_drug_drug.tsv
+
+    The only left is DTI, this changes for each model changes for each model
     '''
     parser = argparse.ArgumentParser() 
     parser.add_argument("-v", "--verbose", dest="verbosity", action="count", default=3,
                     help="Verbosity (between 1-4 occurrences with more leading to more "
                         "verbose logging). CRITICAL=0, ERROR=1, WARN=2, INFO=3, "
                         "DEBUG=4")
-    parser.add_argument("dbPath", help="Path to the database output", type=str)
+    parser.add_argument("dbPath", help="Path to the database output ('BIOSNAP', 'BindingDB', 'Davis_et_al', 'DrugBank_FDA', 'E', 'GPCR', 'IC', 'NR')", type=str)
     args = parser.parse_args()
+    RDLogger.DisableLog('rdApp.*')  # disable RDKit Log
     DB_PATH = args.dbPath
-    
-    #
-    list_of_pys = ['get_edgelists.py']
-    if DB_PATH in ['E', 'GPCR', 'IC', 'NR']:
-        list_of_pys.append(f'DTI_Yamanishi.py')
-    elif DB_PATH == ['BindingDB', 'Davis_et_al']:
-        list_of_pys.append(f'DTI_{DB_PATH}.py')
-    list_of_pys.append('get_all_matrix.py')
-    
-
+    list_of_pys = ['process_HPRD_DTINet.py', 'process_SIDER_DTINet.py', 'process_CTD_DTINet.py', 'process_DrugBank_DTINet.py']
+    # check that exception works; check other options
     for script in list_of_pys:
         try:
-            logging.info(f'Running {script}')
+            #logging.info(f'Running {script}')
             return_code = sp.check_call(['python3', script, DB_PATH])
             if return_code ==0: 
                 logging.info('EXIT CODE 0')
@@ -41,6 +49,11 @@ def main():
             logging.info(e.output)
             break
 
+    logging.info(
+        '''
+        ------------------- FINISHED: get_coord.py ---------------------
+        '''
+        )
 
 #####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

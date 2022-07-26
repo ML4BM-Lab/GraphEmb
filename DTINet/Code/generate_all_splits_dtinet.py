@@ -1,17 +1,6 @@
-import os, sys
 import argparse
 import logging
-import numpy as np
-import pandas as pd
-import json
-import requests
-from tqdm import tqdm
-from re import search
-import xml.etree.ElementTree as ET
 import subprocess as sp
-from rdkit import RDLogger          
-
-
 
 
 ######################################## START MAIN #########################################

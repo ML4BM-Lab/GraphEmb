@@ -65,12 +65,11 @@ def main():
     hf.check_and_create_folder(db_name)
     # Create relative output path
     output_path = os.path.join('../Data', db_name)
-    ## SIDER DATA FOLDER
-    #data_path = '../../../Data/cross_side_information_DB/SIDER'
+
     # info 
     logging.info(f'Processing DrugBank in {output_path}')
 
-    ### do stuff
+    #
     logging.debug('Reading DrugBank xml file...')
     tree = ET.parse('../../DB/Data/cross_side_information_DB/DrugBank/Data/full_database.xml')
     root = tree.getroot()
@@ -80,16 +79,16 @@ def main():
     drug_names = []
     for drug_entry in tqdm(root, desc='Retrieving Drug IDs from DrugBank', position=0, leave=True):
         drugbank_ID = drug_entry.find('{http://www.drugbank.ca}drugbank-id').text
-        name = drug_entry.find('{http://www.drugbank.ca}name').text # incluir aqui name sin check
+        name = drug_entry.find('{http://www.drugbank.ca}name').text 
         drug_names.append(name)
         drug_IDs.append(drugbank_ID)
 
     # Drug nodes (all_drugs.txt). All nodes in DB (w\o filter) 
     logging.debug(f'Writing all_drugs.txt...')
     with open(os.path.join(output_path, 'all_drugs.txt'), 'w') as f:
-        #_ = f.write('#DrugBankID\n')
         for item in drug_IDs:
             _ = f.write("%s\n" % item)
+    
     # Write dictionary (drugbank_ID and name)
     logging.debug(f'Writing all_drug_dic_map.txt...')
     with open(os.path.join(output_path,'all_drug_dic_map.txt'), 'w') as f:
@@ -108,6 +107,7 @@ def main():
     drug_drug_coodinates = []
     for drug_entry in tqdm(root, desc='Retrieving drug-drug interactions from DrugBank',  position=0, leave=True):
         drug_drug_coodinates = hf.get_drug_drug_coordinates(drug_entry, drug_drug_coodinates)
+    
     #coordinates df
     df_d = pd.DataFrame(drug_drug_coodinates, columns=['Drug_ID_A', 'Drug_ID_B']) 
     df_d = df_d.drop_duplicates()

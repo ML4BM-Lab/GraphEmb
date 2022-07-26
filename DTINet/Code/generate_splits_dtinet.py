@@ -21,7 +21,7 @@ from tqdm.contrib.itertools import product
 from sklearn.model_selection import train_test_split
 
 
-# change to generate splits dtinet 
+# CHANGE THIS FUNCTIONS ! OLD SPLIT SCRIPT !!!!! 
 
 def generate_splits(DTIs,mode='Sp',subsampling=True,foldnum=10,cvopt=True):
 
@@ -363,7 +363,6 @@ def print_cv_distribution(DTIs,cv_distribution):
     return 
 
 
-# the good one
 def get_idx_matlab(wdir, sp_splits):
     # for dtinet we need the tuple as (protein, drug)
     # make translation as function --> *
@@ -391,22 +390,6 @@ def get_idx_matlab(wdir, sp_splits):
             #sp_splits[nseed][nfold][set_type][pair] = (drug_coo+1, prot_coo+1)
     return sp_splits
 
-# then we need another function to save the splist in txt files
-# to load them as load('.txt) in matlab
-
-
-
-
-# https://es.mathworks.com/matlabcentral/answers/399063-how-can-i-use-an-array-of-coordinate-pairs-to-index-into-2d-array
-
-# other option would be to load them and in matlab
-#A = reshape([1:25],5,5)
-#B = [ 1 2; 2 4; 3 3]
-#I = sub2ind(size(A),B(:,1),B(:,2));
-#I
-
-###
-## starting with NR
 
 
 def main():
@@ -461,27 +444,23 @@ def main():
 	logging.info(f'Creating Split: {SPLIT_TYPE}')
 	logging.info(f'Subsampling: {SUBSAMPLING_TYPE}')
 
-
-
 	db_name = hf.get_DB_name(DB_PATH)
 	hf.check_and_create_folder(db_name)
-	# Create relative output path
 	wdir = os.path.join('../Data', db_name)
-	# wdir = '../Data/DrugBank'
 
 	##########################################
 	# create index folder if it does not exists
-	# type Sp first
-	#if SPLIT_TYPE == 'Sp':
+    # select mode
 	if SUBSAMPLING_TYPE:
 		sub = 'subsampl'
 	else:
 		sub = 'nosubsampl'
+    # create folders
 	path_folder = os.path.join(wdir, f'Index_{SPLIT_TYPE}_{sub}')
 	if not os.path.exists(path_folder):
 		os.makedirs(path_folder)
-
 	fpath = os.path.join(os.getcwd(), wdir, f'final_dtis_{DB_PATH}.tsv')
+    # load DTIs
 	DTIs = pd.read_csv(fpath,sep='\t',header=None)
 	DTIs.columns = ['Drug','Protein']
 	logging.debug(DTIs.head())
