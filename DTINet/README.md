@@ -34,7 +34,7 @@ for example, if we copy the data for DrugBank, we call it as bash Launch_DTINet_
 ### Stop docker
 If we want to stop our container:
 ```
-docker stop dtinet_drugbank
+docker stop <docker name/docker ID>
 ```
 
 
@@ -42,41 +42,34 @@ docker stop dtinet_drugbank
 
 ## Evaluation with new splits
 
-### Generating splits
-Genereating all splits for a folder can be done with:
-```
-pyhton3 generate_all_splits_dtinet.py <db name>
-```
 
-Splits can be generated individually with the script generate generate_splits_dtinet.py.
+The procedure is similar as before. 
+
+Still, splits can be generated individually with the script generate generate_splits_dtinet.py
+This is valid for rmsd as well! it only needs to be parsed
 
 ```
-python3 generate_splits_dtinet.py --dbPath <database name> --split_type <Sp/Sd/St>  -subsampling
+python3 generate_splits_dtinet.py --dbPath <database name> --split_type <Sp/Sd/St>  -subsampling -rmsd
 ```
 
+### Prepare Model 
+
+This split alreay enters in the docker but also saves the docker id.
+
+```
+bash prepare_launch_splits.sh -b <db_name> 
+```
 ### Launch Model in Docker
 
-Once all splits in folder, you can prepare your docking by runing the following script:
-
-```
-bash prepare_launch_splits.sh -b <db name> 
-```
-this will generate a dockerID were you should execute the folowing in script.
-This id is also saved in a logfile. This is because matlab cannot be execute from outside the docker for us.
-
-Then you can enter in the docker with
-
-```
-docker exec -it <generated DockerID> bash
-```
-
-once in the docker you only have to run the following shell script
-specifying the model you want.
 Remember that first time will ask for your matlab credentials!
 
 ```
-bash Launch_DTINet_splits_matlab.sh -b <dbname> -s <Sp/Sd/St> -u <true/false>
+bash Launch_DTINet_splits_matlab.sh -b <db_name> -s <Sp/Sd/St> -r
 ```
+-r is an optional argument, if selected the model is executed with rmsd
+if not, the normal subsampling is aplied. 
+
+A log file is saved wih a name that specifies the run settings. 
 
 
 

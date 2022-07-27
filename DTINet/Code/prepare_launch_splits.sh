@@ -13,20 +13,26 @@ if [ $# -eq 0 ]; then
     echo "No DB argument supplied"; exit
 fi
 
-echo "db: $db";
-# 1.Create the container with
 
+echo "db: $db";
+
+# 0. generate splits
+# no rmsd
+for spltype in Sp Sd St; do
+  python3 generate_splits_dtinet.py --dbPath $db --split_type $spltype -subsampling 
+  # rmsd
+  python3 generate_splits_dtinet.py --dbPath $db --split_type $spltype -subsampling -rmsd
+done
+
+# 1.Create the container 
 eval "DOCKER_ID=$(docker run -dt dtinet_matlab )";
 echo "DOCKER_ID: " $DOCKER_ID
-
-echo "DTINet $db : $DOCKER_ID  " > "log_docker$db.log"
-
-#docker cp  ../Data/$dbname $dockername:/DTINet
-#docker cp  Launch_DTINet_matlab.sh $dockername:/DTINet
-#docker cp DTINet.m $dockername:/DTINet/src
+echo "DTINet $db : $DOCKER_ID  " > "log_docker_$db.log"
 
 
-# creating wdir variable to copy data
+# 2. Copy files to docker:
+
+# Creating wdir variable to copy data
 yam='Yamanashi_et_al_GoldStandard'
 if  [[ "$db" == "NR" ]] || [[ "$db" == "E" ]] || [[ "$db" == "GPCR" ]] || [[ "$db" == "IC" ]]; then
     wdir=$yam/$db
@@ -34,15 +40,20 @@ else
     wdir=$db
 fi
 
-echo $wdir
+echo "wdir: " $wdir
 
+# Copy files
+echo "Copying files to docker..."
 
-# copy files
-echo "sending files to docker..."
+# Copying the full folder with all splits ! 
 docker cp  ../Data/$wdir $DOCKER_ID:/DTINet
+# Launcher and code
 docker cp  Launch_DTINet_splits_matlab.sh $DOCKER_ID:/DTINet
 docker cp DTINet.m $DOCKER_ID:/DTINet/src/DTINet.m
 
-echo "Done! run all in your docker!"
+echo "Done!"
+echo "Entering in your docker container..."
 
 echo "DOCKER_ID: " $DOCKER_ID
+
+docker exec -it $DOCKER_ID bash

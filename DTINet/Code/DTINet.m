@@ -1,3 +1,4 @@
+% this is script has been modified for instroducing splits
 function [roc_avg, pr_avg] = DTINet(seed, nFold, interaction, drug_feat, prot_feat, dim_imc)
 	% later change seed here
 	% auroc lits
