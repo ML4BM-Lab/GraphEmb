@@ -30,8 +30,7 @@ echo 'directory path: ' $folder_path
 
 # 1.Create the container from the matlab image
 eval "DOCKER_ID=$( docker run -d -t $dockerName )";
-#echo $DOCKER_ID > "ID_DOCKER_${db}.out"
-echo $DOCKER_ID > "ID_DOCKER.out"
+echo $DOCKER_ID > "ID_DOCKER_${db}.out"
 
 
 # 2. Create folders & copy data to execute the model

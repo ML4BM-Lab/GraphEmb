@@ -26,67 +26,12 @@ It may be needed to run first matlab to activate the software
 in the docker with account e-mail and pasword.
 
 ```
-nohup Launch_DTINet_matlab.sh <database name>
+nohup bash ./Launch_DTINet_matlab.sh <database name> &
 ```
 
 for example, if we copy the data for DrugBank, we call it as bash Launch_DTINet_matlab.sh DrugBank.
 
-
-................................................................................
-........................................
-........................................
-
-
-#### Launch DTINet with Docker
-
-Matla gives us problems with x11, 
-for that reason the .sh is written to be executed inside the docker. 
-
-The first, you should create a docker:
-
-Create container from image (specifying name)
-```
-docker run -dt --name dtinet_original -it dtinet_matlab bash
-```
-
-with dt keeping the docker up, other option is to do:
-
-```
-docker restart dtinet_original 
-```
-
-Copy files
-```
-docker cp  ../Data/DrugBank dtinet_drugbank:/DTINet
-docker cp  Launch_DTINet_matlab.sh dtinet_drugbank:/DTINet
-```
-
-Enter docker
-Enter in the docker interactively and execute the bash script
-
-```
-docker exec -it dtinet_original bash
-```
-
-##### Run DTINet Matlab Scripts
-
-First time in docker, Matlab will ask for a Email & Pasword
-
-Run specifiying the folder copied as path to copy files
-```
-bash Launch_DTINet_matlab.sh <DB_folder_name>
-```
-for example, if we copy the data for DrugBank, we call it as bash Launch_DTINet_matlab.sh DrugBank
-
-
-This will output a log file: log_DTINet.out
-that can be copied to our machine (from outside) as:
-```
-docker cp dtinet_drugbank:/DTINet/log_DTINet.out <desired_path/log_DTINet_DB.out>
-```
-
-
-### stop docker
+### Stop docker
 If we want to stop our container:
 ```
 docker stop dtinet_drugbank
@@ -100,7 +45,7 @@ docker stop dtinet_drugbank
 ### Generating splits
 Genereating all splits for a folder can be done with:
 ```
-pyhton3 generate_all_splits_dtine.py <db name>
+pyhton3 generate_all_splits_dtinet.py <db name>
 ```
 
 Splits can be generated individually with the script generate generate_splits_dtinet.py.
