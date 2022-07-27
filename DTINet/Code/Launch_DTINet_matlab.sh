@@ -1,6 +1,6 @@
 # !/bin/bash
 
-DIR_DB=/DTINet/$1
+DIR_DB=/DTINet/$1 # parse db name
 
 # check data folder
 DIR_DATA=/DTINet/data
@@ -31,5 +31,5 @@ matlab -nodisplay -nosplash -nodesktop -r "run('src/compute_similarity.m');exit;
 echo "Run DCA"
 matlab -nodisplay -nosplash -nodesktop -r "run('src/run_DCA.m');exit;"
 
-echo "Launching model with nohup, output in 'log_DTINet.out'"
-nohup  matlab -nodisplay -nosplash -nodesktop -r "run('src/run_DTINet.m');exit;" > log_DTINet.out 2>/dev/null &
+echo "Launching model with nohup, output in log_DTINet_$1.out"
+nohup  matlab -nodisplay -nosplash -nodesktop -r "tic;run('src/run_DTINet.m');toc;exit;" > "log_DTINet_$1.out" 2>/dev/null &

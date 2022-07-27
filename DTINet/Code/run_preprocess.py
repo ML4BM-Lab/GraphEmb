@@ -26,7 +26,7 @@ def main():
     list_of_pys = ['get_edgelists.py']
     if DB_PATH in ['E', 'GPCR', 'IC', 'NR']:
         list_of_pys.append(f'DTI_Yamanishi.py')
-    elif DB_PATH == ['BindingDB', 'Davis_et_al']:
+    elif DB_PATH in ['BindingDB', 'Davis_et_al']:
         list_of_pys.append(f'DTI_{DB_PATH}.py')
     list_of_pys.append('get_all_matrix.py')
     

@@ -54,7 +54,7 @@ This model needs the same preprocessing as for DTINet, indeed the  Luo Dataset.
 If you want to replicate this step, you can run one of the following scripts
 
 ```
-run_preprocess_<db_name>.py <db folder name>
+run_preprocess.py <db_name>
 ```
 
 This model needs 3 folders with specific data:
@@ -63,7 +63,7 @@ This model needs 3 folders with specific data:
     - oneTooneIndex 
 
 
-sim_network correspondons to the output of compute_similarity.m script from DTINet.
+sim_network corresponds to the output of compute_similarity.m script from DTINet.
 In order to retrieve these 3 folders, you should follow some steps, as matlab fails in execution form outside docker 
 in some machines. 
 

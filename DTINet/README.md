@@ -2,6 +2,41 @@
 
 ## Default Settings 
 
+### Launch DTINet with Docker
+
+Matlab problems with x11 for our workstation. 
+For that reason we use 2 .sh codes to prepare the docker and 
+to run it for a given dataset.
+
+#### Prepare docker
+
+This script will copy all files and run iteratively the docker.
+```
+bash ./prepare_dtinet_matlab.sh -b <database_name>  -d <docker_image>
+```
+in our case docker image is docker_image = dtinet_matlab.
+
+#### Launch model
+
+The first step already copied a .sh launcher, then we need to run it, 
+parsing again the db name. 
+With this, we could have copied all above instead of only one folder.
+
+It may be needed to run first matlab to activate the software 
+in the docker with account e-mail and pasword.
+
+```
+nohup Launch_DTINet_matlab.sh <database name>
+```
+
+for example, if we copy the data for DrugBank, we call it as bash Launch_DTINet_matlab.sh DrugBank.
+
+
+................................................................................
+........................................
+........................................
+
+
 #### Launch DTINet with Docker
 
 Matla gives us problems with x11, 
@@ -9,7 +44,7 @@ for that reason the .sh is written to be executed inside the docker.
 
 The first, you should create a docker:
 
-##### Create container from image (specifying name)
+Create container from image (specifying name)
 ```
 docker run -dt --name dtinet_original -it dtinet_matlab bash
 ```
@@ -20,13 +55,13 @@ with dt keeping the docker up, other option is to do:
 docker restart dtinet_original 
 ```
 
-#### Copy files
+Copy files
 ```
 docker cp  ../Data/DrugBank dtinet_drugbank:/DTINet
 docker cp  Launch_DTINet_matlab.sh dtinet_drugbank:/DTINet
 ```
 
-#### Enter docker
+Enter docker
 Enter in the docker interactively and execute the bash script
 
 ```
