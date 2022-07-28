@@ -15,6 +15,8 @@ from decagon.deep.minibatch_splits import EdgeMinibatchIterator # modified scrip
 from decagon.utility import rank_metrics, preprocessing
 from decagon.utility import loadData
 
+
+print('====== Executing Main -- SPLITS ! ======')
 # Train on CPU (hide GPU) due to memory constraints
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 import sys

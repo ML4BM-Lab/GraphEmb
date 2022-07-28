@@ -9,6 +9,12 @@ import argparse
 import helper_splits_eegdti as splits
 from tqdm.contrib.itertools import product
 
+#############
+############# !!!!!!!!
+##	MISSING RMSD option !!!!!! 
+#############
+#############
+
 def main():
 	'''
 	generate one to one index foldere & files

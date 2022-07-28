@@ -4,25 +4,43 @@
 This section assumes that the preprocessing of the data has been already made.
 This means that the Data folders have already been filled.
 
+The following script prepares the docker and launches the model inside the docker.
+The results are also writen in Results/ folder as an .out file. 
 
-All needed data should already be in data_dti
+```
+nohup bash ./launch_eegdti.sh -b <db name> -d <image_name> > launch_eegdti_nr.out &
+```
+
+***** Test with: 
+nohup bash ./launch_eegdti.sh -b NR -d ftest_eegdti > launch_eegdti_nr.out &
+
+
+
+All needed data should already be in data_dti. 
+The python script alone can be run as:
 ```
 python3 main_modified_eegdti.py <database name folder>
 ```
-
-or with docker with the script
-```
-nohup bash ./launch_eegdti.sh -b <db name> -d <image_name> > launch_eegdti_nr.out &
-nohup bash ./launch_eegdti.sh -b NR -d eeg_dti > launch_eegdti_nr.out &
-```
-
 
 
 
 # Launching the model with splits in Docker
 
+For this part, again splits shoudld be previously created and in Data/ folder.
+These can be created using:
 
+!!!! MODIFY FOR RMSD !!!!
+```
+python3 generate_onetooneindex_splits.py --dbPath <dbname> --split_type <Sp...> -subsampling -rmsd
+```
 
+For launching the model, execute the following shell script. 
+
+```
+bash launch_eegdti_splits.sh -b NR -d ftest_eegdti -s Sp (-r for rsmd)
+```
+
+nohup bash launch_eegdti_splits.sh -b NR -d ftest_eegdti -s Sp > log_splits_test.out &
 
 # Note
 
