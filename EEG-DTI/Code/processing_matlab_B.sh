@@ -1,16 +1,12 @@
 #!/bin/bash
 
 # to be executed in Code folder! 
-db=$1
-yam='Yamanashi_et_al_GoldStandard'
 
-if  [[ "$db" == "NR" ]]; then
-    wdir=$yam/$db
-elif [[ "$db" == "E" ]]; then
-    wdir=$yam/$db
-elif [[ "$db" == "GPCR" ]]; then
-    wdir=$yam/$db
-elif [[ "$db" == "IC" ]]; then
+db=$1
+
+# creating wdir variable to copy data
+yam='Yamanashi_et_al_GoldStandard'
+if  [[ "$db" == "NR" ]] || [[ "$db" == "E" ]] || [[ "$db" == "GPCR" ]] || [[ "$db" == "IC" ]]; then
     wdir=$yam/$db
 else
     wdir=$db

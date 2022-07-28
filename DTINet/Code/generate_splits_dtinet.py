@@ -21,9 +21,6 @@ from tqdm.contrib.itertools import product
 from sklearn.model_selection import train_test_split
 
 
-# CHANGE THIS FUNCTIONS ! OLD SPLIT SCRIPT !!!!! 
-
-# ADD RMSD OPTION TO THIS SAME SCRIPT 
 
 def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, RMSD_dict = None):
 
@@ -126,8 +123,10 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 			if subsampling:
 				#check if we can subsample all
 				if RMSD_dict is None:
+					logging.debug('rmsd none in script')
 					neg_sampled_element = r.sample(neg_element,min(len(neg_element),len(pos_element))) #50%-50% (modify if different proportions are desired)
 				else:
+					logging.debug('rmsd selected in script')
 					neg_sampled_element = get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict, Prot_inv_dd)
 			else:
 				neg_sampled_element = neg_element #get all negatives
@@ -525,7 +524,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 
 	for seed in tqdm([7183, 556, 2, 81, 145], desc='Performing 10-CV fold for each seed'):
 
-		drug_interactions_dd = get_interactions_dict(DTIs, seed, subsampling=subsampling)
+		drug_interactions_dd = get_interactions_dict(DTIs, seed, subsampling=subsampling, RMSD_dict=RMSD_dict)
 
 		# append all interactions
 		pos_neg_interactions = list(f.reduce(lambda a,b: a+b, drug_interactions_dd.values()))
@@ -642,7 +641,7 @@ def genRMSDdict():
 
 	#fill it
 
-	for i,gen in enumerate(tqdm(names)):
+	for i,gen in enumerate(tqdm(names, desc='rmsd dict')):
 
 		#get genes and names
 		rmsd_i = RMSD[i,0:i].tolist() + RMSD[i,i+1:].tolist()
@@ -653,8 +652,6 @@ def genRMSDdict():
 
 
 	return RMSDdict
-
-
 
 #check splits
 def check_splits(splits, verbose=False, foldnum=10):
@@ -787,7 +784,7 @@ def main():
 	considering splits and subsampling 
 	'''
 	parser = argparse.ArgumentParser() 
-	parser.add_argument("-v", "--verbose", dest="verbosity", action="count", default=3,
+	parser.add_argument("-v", "--verbose", dest="verbosity", action="count", default=4,
 					help="Verbosity (between 1-4 occurrences with more leading to more "
 						"verbose logging). CRITICAL=0, ERROR=1, WARN=2, INFO=3, "
 						"DEBUG=4")
@@ -852,9 +849,12 @@ def main():
 	if RMSD_SET:
 		RMSD_dict = genRMSDdict()
 		rmsd_name = '_rmsd'
+		logging.debug('Set rmsd')
 	else:
 		RMSD_dict = None
 		rmsd_name = ''
+		logging.debug('rmsd not set')
+
 
 	# create folders
 	path_folder = os.path.join(wdir, f'Index_{SPLIT_TYPE}_{sub}{rmsd_name}')
@@ -865,17 +865,17 @@ def main():
 	fpath = os.path.join(os.getcwd(), wdir, f'final_dtis_{DB_PATH}.tsv')
 	DTIs = pd.read_csv(fpath,sep='\t',header=None)
 	DTIs.columns = ['Drug','Protein']
-	logging.debug(DTIs.head())
+	#logging.debug(DTIs.head())
 
 
 	## GENERATE SPLITS
 	splits = generate_splits(DTIs, mode= SPLIT_TYPE, subsampling=SUBSAMPLING_TYPE, foldnum=10, RMSD_dict=RMSD_dict)
 	
-	logging.debug(splits[0][0][0][0])
+	#logging.debug(splits[0][0][0][0])
 	# Convert to Matlab index type
 	# this also changes (drug, protein) to (protein, drug)
 	splits_matlab = get_idx_matlab(wdir, splits)
-	logging.debug(splits_matlab[0][0][0][0])
+	#logging.debug(splits_matlab[0][0][0][0])
 	# Save splits as .txt
 	nseed, nfold = 0, 0 
 	for nseed, nfold in product(range(len(splits_matlab)), range(len(splits_matlab[nseed]))):

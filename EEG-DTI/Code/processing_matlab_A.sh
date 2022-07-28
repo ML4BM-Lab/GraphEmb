@@ -1,23 +1,11 @@
-#!/bin/bash          
-# to be executed in Code folder! 
+#!/bin/bash         
 
-# this XXX for XXX
-# change for your XXX
-# copy into your machine
-# docker cp /home/uveleiro/data/jfuente/DTI/Input4Models/EEG-DTI/Code/process_eegdti_matlab.sh matlab_env_t2:/DTINet
-
-
-#wdir=$1 # define for each database -> parse this information
+# parse dataset info
 db=$1
-yam='Yamanashi_et_al_GoldStandard'
 
-if  [[ "$db" == "NR" ]]; then
-    wdir=$yam/$db
-elif [[ "$db" == "E" ]]; then
-    wdir=$yam/$db
-elif [[ "$db" == "GPCR" ]]; then
-    wdir=$yam/$db
-elif [[ "$db" == "IC" ]]; then
+# Creating wdir variable to copy data
+yam='Yamanashi_et_al_GoldStandard'
+if  [[ "$db" == "NR" ]] || [[ "$db" == "E" ]] || [[ "$db" == "GPCR" ]] || [[ "$db" == "IC" ]]; then
     wdir=$yam/$db
 else
     wdir=$db
@@ -40,9 +28,9 @@ python3 generate_onetooneindex.py $db
 cp $folder_path/mat_*.txt $folder_path/tmp_data
 cp $folder_path/Similarity_Matrix_*.txt $folder_path/tmp_data
 
-# now we need to copy this to a docker
-# if this is not your case
-# execute matlab here
+
+# now we need to copy this to docker
+# if this is not your case execute matlab here
 
 # copy to docker
 container=matlab_env_t2 # change for your own container !
@@ -62,3 +50,6 @@ docker restart $container
 # once done is, follow the second step as in the readme
 echo "Done..."
 echo "now you should execute compute similarity script inside matlab docker"
+echo "with the following line: "
+echo "matlab -nodisplay -nosplash -nodesktop -r \"run('compute_similarity.m');exit;\" "
+docker exec -it $container bash

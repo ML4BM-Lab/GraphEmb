@@ -1,5 +1,6 @@
 # !/bin/bash
 
+RMSD=false
 
 while getopts "b:s:r" opt; do
   case $opt in
@@ -10,6 +11,7 @@ while getopts "b:s:r" opt; do
        exit 1
   esac
 done
+
 
 # Check Database Name
 echo "Database: $DB";
@@ -22,10 +24,8 @@ else
 fi
 
 if "$RMSD"; then
-    # do things for "foo -t blah blah"
     echo 'Using RMSD'
 else
-    # do things for "foo blah blah"
     echo 'Not using RMSD'
 fi
 

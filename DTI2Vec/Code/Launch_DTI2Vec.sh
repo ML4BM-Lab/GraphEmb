@@ -6,6 +6,7 @@
 # nohup bash Launch_DTI2Vec.sh -p ./../Data/BIOSNAP -d dti2vec:1.0 &
 # nohup bash Launch_DTI2Vec.sh -p ./../Data/DrugBank -d dti2vec:1.0 &
 # nohup bash Launch_DTI2Vec.sh -p ./../Data/BindingDB -d dti2vec:1.0 &
+# nohup bash Launch_DTI2Vec.sh -p ./../Data/Davis_et_al -d dti2vec:1.0 &
 
 while getopts "p:d:" opt; do
     case $opt in
@@ -107,7 +108,7 @@ fi
 echo 'Non Yamanishi-like'
 echo "GS: $GS"
 if $GS; then
-    if [[ $path_2_data =~ (Data\/)([A-Za-z]*) ]]; then
+    if [[ $path_2_data =~ (Data\/)([A-Za-z_]*) ]]; then
         DB=${BASH_REMATCH[2]}
         echo "DB :: $DB";
         else

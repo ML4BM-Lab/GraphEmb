@@ -148,7 +148,7 @@ def get_protein_sim_matrix(db_name, file_path_SW_pickle, file_path_SW_mat, list_
 			continue
 		tmp.extend(repeat(pair1, n_targets))
 		paths = repeat(tmp_path, n_targets)
-		with mp.Pool(processes=mp.cpu_count()-20) as pool: # change here for less cpu!
+		with mp.Pool(processes=25) as pool: # change here for less cpu! before: mp.cpu_count()-20
 			results = pool.starmap(hf.get_SW_score, zip(tmp, targets_seqs, paths))
 		all_SmithWaterman.append(results)
 	

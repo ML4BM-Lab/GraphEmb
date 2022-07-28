@@ -63,11 +63,14 @@ bash prepare_launch_splits.sh -b <db_name>
 
 Remember that first time will ask for your matlab credentials!
 
+It can be also launched with nohup ! 
+
 ```
 bash Launch_DTINet_splits_matlab.sh -b <db_name> -s <Sp/Sd/St> -r
 ```
 -r is an optional argument, if selected the model is executed with rmsd
 if not, the normal subsampling is aplied. 
+
 
 A log file is saved wih a name that specifies the run settings. 
 

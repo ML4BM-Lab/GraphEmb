@@ -121,7 +121,7 @@ for dataset in list(dict_data_dtinet.keys()):
 
 import json
 
-with open('../Results/statistics_extended_dtinet.json', 'w') as outfile:
+with open('..Results/statistics_extended_dtinet.json', 'w') as outfile:
     json.dump(dict_data_dtinet, outfile)
   
 

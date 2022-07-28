@@ -27,7 +27,7 @@ done
 # 1.Create the container 
 eval "DOCKER_ID=$(docker run -dt dtinet_matlab )";
 echo "DOCKER_ID: " $DOCKER_ID
-echo "DTINet $db : $DOCKER_ID  " > "log_docker_$db.log"
+echo "DTINet $db : $DOCKER_ID  " > "log_docker_$db.out"
 
 
 # 2. Copy files to docker:
@@ -56,4 +56,4 @@ echo "Entering in your docker container..."
 
 echo "DOCKER_ID: " $DOCKER_ID
 
-docker exec -it $DOCKER_ID bash
+#docker exec -it $DOCKER_ID bash

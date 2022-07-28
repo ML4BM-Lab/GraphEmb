@@ -1,52 +1,46 @@
 
-# Instructions for launching the model with docker
+#  Launching the model in Docker
 
 This section assumes that the preprocessing of the data has been already made.
-This means that the folders in ... are already present
+This means that the Data folders have already been filled.
 
-If not, read below.
 
-all needed data should already be in data_dti
-
+All needed data should already be in data_dti
 ```
 python3 main_modified_eegdti.py <database name folder>
 ```
 
 or with docker with the script
 ```
+nohup bash ./launch_eegdti.sh -b <db name> -d <image_name> > launch_eegdti_nr.out &
 nohup bash ./launch_eegdti.sh -b NR -d eeg_dti > launch_eegdti_nr.out &
-nohup bash ./launch_eegdti.sh -b <database name> -d eeg_dti > launch_eegdti_nr.out &
-launch_eegdti.sh <DB name>
-```
-
-how all executed:
-```
-nohup bash ./launch_eegdti.sh -b E -d eeg_dti > log_launch/launch_eegdti_E.out &
-nohup bash ./launch_eegdti.sh -b IC -d eeg_dti > log_launch/launch_eegdti_IC.out &
-nohup bash ./launch_eegdti.sh -b GPCR -d eeg_dti > log_launch/launch_eegdti_GPCR.out &
-nohup bash ./launch_eegdti.sh -b NR -d eeg_dti > log_launch/launch_eegdti_NR.out &
-
-nohup bash ./launch_eegdti.sh -b BindingDB -d eeg_dti > log_launch/launch_eegdti_BindingDB.out &
-nohup bash ./launch_eegdti.sh -b Davis_et_al -d eeg_dti > log_launch/launch_eegdti_Davis_et_al.out &
-nohup bash ./launch_eegdti.sh -b BIOSNAP -d eeg_dti > log_launch/launch_eegdti_BIOSNAP.out &
-nohup bash ./launch_eegdti.sh -b DrugBank -d eeg_dti > log_launch/launch_eegdti_DrugBank.out &
 ```
 
 
-Missing:
-DrugBank -> launched at  9:44
+
+
+# Launching the model with splits in Docker
 
 
 
 
-# Notes
+# Note
 
-we needed to modify the following .py
-    - main **
+The docker given includes the modified files in order to launch the model ! 
+
+We needed to modify the following in the default run:
+    - main .py
         because: 
             - batch size & number of epochs
     - minibatch.py
         because: folder changed for input new data
+
+We need to modify the following files in the splits run:
+    - main .py
+    - Minibatch
+    - Optimizer (0s)
+
+
 
 # Instructions for running the preprocesing of the data
 
@@ -72,7 +66,7 @@ in some machines.
 bash processing_matlab_A.sh <database name>
 ```
 
-2. Run compute_similarity.m in matlab docker
+2. Run compute_similarity.m in matlab docker.
 
 ```
 matlab -nodisplay -nosplash -nodesktop -r "run('compute_similarity.m');exit;"
@@ -90,9 +84,10 @@ bash processing_matlab_B.sh <database name>
 ```
 
 
+
 ## Data Information
 EEG-DTI uses the Luo Dataset (from DTINet).
- -> but including the compute_similarity.m script 
+ -> including the compute_similarity.m script 
  -> including now the transpose matrix of mat_drug_protein.txt (mat_protein_drug.txt)
 
 Folders/files that actually use:
