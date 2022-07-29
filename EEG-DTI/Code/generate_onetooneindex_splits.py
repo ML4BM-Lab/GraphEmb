@@ -28,6 +28,7 @@ def main():
 	parser.add_argument("-dbPath","--dbPath", help="Path to the database output ('BIOSNAP', 'BindingDB', 'Davis_et_al', 'DrugBank_FDA', 'E', 'GPCR', 'IC', 'NR')", type=str)
 	parser.add_argument("-split_type", "--split_type", help="Select the type of split ['Sp', 'Sd', 'St'] to generate oneTooneIndex folder", type=str)
 	parser.add_argument("-subsampling", help="Flag for subsampling True", action='store_true')
+	parser.add_argument("-rmsd", help="Flag for RSMD True", action='store_true')
 
 	args = parser.parse_args()
 
@@ -60,27 +61,38 @@ def main():
 		raise NameError('Need to specify a valid split type')
 
 	SUBSAMPLING_TYPE = args.subsampling
-	#if DB_PATH not in  [True, False] :
-	#	raise NameError('Need to specify a subsampling typre as True or False')
+
+	RMSD_SET = args.rmsd
 
 	logging.info(f'Working in output folder for: {DB_PATH}')
 	logging.info(f'Creating Split: {SPLIT_TYPE}')
 	logging.info(f'Subsampling: {SUBSAMPLING_TYPE}')
+	logging.info(f'RMSD: {RMSD_SET}')
 
 	db_name = hf.get_DB_name(DB_PATH)
 	hf.check_and_create_folder(db_name)
-	# Create relative output path
 	wdir = os.path.join('../Data', db_name)
-	# wdir = '../Data/DrugBank'
 
 	##########################################
 	# create oneTooneIndex folder if it does not exists
-	# type Sp first
-	#if SPLIT_TYPE == 'Sp':
+
+	# subsampling
 	if SUBSAMPLING_TYPE:
 		sub = 'subsampling'
 	else:
 		sub = 'nosubsampling'
+	
+	# generate RMSD dictionary
+	if RMSD_SET:
+		RMSD_dict = genRMSDdict() # need to add a new version
+		rmsd_name = '_rmsd'
+		logging.debug('Set rmsd')
+	else:
+		RMSD_dict = None
+		rmsd_name = ''
+		logging.debug('rmsd not set')
+
+
 	path_folder = os.path.join(wdir, f'oneTooneIndex_{SPLIT_TYPE}_{sub}')
 	if not os.path.exists(path_folder):
 		os.makedirs(path_folder)

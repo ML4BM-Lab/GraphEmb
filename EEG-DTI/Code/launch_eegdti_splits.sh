@@ -80,9 +80,9 @@ echo "copied in OneToOneIndex: $folder_index"
 
 # modify the log out
 if "$RMSD"; then
-    out_file=log_EEG-DTI_"$DB"_"$SPLIT"_"subsampling_rmsd.out"
+    out_file=log_EEG-DTI_"$db"_"$SPLIT"_"subsampling_rmsd.out"
 else
-    out_file=log_EEG-DTI_"$DB"_"$SPLIT"_"subsampling.out"
+    out_file=log_EEG-DTI_"$db"_"$SPLIT"_"subsampling.out"
 fi
 
 echo 'Launching eegdti on ' $db

@@ -39,7 +39,7 @@ For launching the model, execute the following shell script.
 ```
 bash launch_eegdti_splits.sh -b NR -d ftest_eegdti -s Sp (-r for rsmd)
 ```
-
+test with:
 nohup bash launch_eegdti_splits.sh -b NR -d ftest_eegdti -s Sp > log_splits_test.out &
 
 # Note
