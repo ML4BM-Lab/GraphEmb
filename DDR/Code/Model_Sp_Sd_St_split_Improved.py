@@ -74,6 +74,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
         return fDTIs
 
     if RMSD_dict:
+        print("Applying RMSD sim matrix to perform subsampling!")
         init_genes = set(DTIs['Protein'].values)
         RMSD_dict = genRMSDdict(init_genes)
         DTIs = FilterDTIs(DTIs, RMSD_dict)
@@ -94,7 +95,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
     Prot_dd = dict(zip(sorted(Prot_set),Prot_index))
     Prot_inv_dd = {v: k for k, v in Prot_dd.items()}
 
-    def get_interactions_dict(DTIs, seed, subsampling, RMSD_dict = None):
+    def get_interactions_dict(DTIs, seed, subsampling, RMSD_dict):
 
         def get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict, Prot_inv_dd):
 
@@ -151,7 +152,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 
             if subsampling:
                 #check if we can subsample all
-                if RMSD_dict is None:
+                if not RMSD_dict:
                     neg_sampled_element = r.sample(neg_element,min(len(neg_element),len(pos_element))) #50%-50% (modify if different proportions are desired)
                 else:
                     neg_sampled_element = get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict, Prot_inv_dd)

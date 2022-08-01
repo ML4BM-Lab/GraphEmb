@@ -17,7 +17,7 @@ fi
 echo "db: $db";
 
 # 0. generate splits
-# no rmsd
+# testing splits
 for spltype in Sp Sd St; do
   python3 generate_splits_dtinet.py --dbPath $db --split_type $spltype -subsampling 
   # rmsd
@@ -56,4 +56,4 @@ echo "Entering in your docker container..."
 
 echo "DOCKER_ID: " $DOCKER_ID
 
-#docker exec -it $DOCKER_ID bash
+docker exec -it $DOCKER_ID bash
