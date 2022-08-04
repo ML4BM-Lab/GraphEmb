@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # launch with nohup 
-# nohup bash ./launch_eegdti.sh -b NR -d eeg_dti -> launch_eegdti_nr.out &
+# bash launch_eegdti_splits.sh -b NR -d ftest_eegdti -s Sp (-r for rsmd)
+# ftest_eegdti for test
 # subsampling is as default
 
 RMSD=false # initialise
@@ -26,12 +27,6 @@ else
     echo "Split not specified"
     exit
 fi
-# say if rmsd
-if "$RMSD"; then
-    echo 'Using RMSD'
-else
-    echo 'Not using RMSD'
-fi
 
 
 # creating wdir variable to copy data
@@ -47,6 +42,19 @@ fi
 folder_path=../Data/$wdir
 echo 'directory path: ' $folder_path
  
+# 0. generate splits
+
+if "$RMSD"; then
+    echo 'Generating splits with RMSD'
+    python3 generate_onetooneindex_splits.py --dbPath $db --split_type $SPLIT -subsampling -rmsd
+else
+    echo 'Generating splits'
+    python3 generate_onetooneindex_splits.py --dbPath $db --split_type $SPLIT -subsampling
+
+fi
+
+
+
 
 # 1.Create the container from the selected image
 eval "DOCKER_ID=$( docker run -d -t $dockerName )";

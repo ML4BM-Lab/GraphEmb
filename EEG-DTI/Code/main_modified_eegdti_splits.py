@@ -69,7 +69,8 @@ if DATABASE in luolike:
 elif DATABASE in yamanishilike:
     n_epochs, batchsize = 100, 32
 elif DATABASE == 'IC': # IC faisl for two other options
-    n_epochs, batchsize = 10, 127 # 10
+    n_epochs, batchsize = 10, 92 # 10, test with 92 before was 127
+
 else:
     print('Dabase not available DBs')
 

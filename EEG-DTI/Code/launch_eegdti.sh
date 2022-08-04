@@ -2,6 +2,8 @@
 
 # launch with nohup 
 # nohup bash ./launch_eegdti.sh -b NR -d eeg_dti > launch_eegdti_nr.out &
+# nohup bash ./launch_eegdti.sh -b NR -d ftest_eegdti > launch_eegdti_nr.out &
+# ftest_eegdti for test 
 while getopts "b:d:" opt; do
   case $opt in
     b) db=$OPTARG   ;; # database name

@@ -36,6 +36,8 @@ cp $folder_path/Similarity_Matrix_*.txt $folder_path/tmp_data
 container=matlab_env_t2 # change for your own container !
 rootmodel=DTINet # change for your own container !
 
+docker restart $container
+
 # remove previous files just in case
 docker exec $container rm -rf /$rootmodel/compute_similarity.m 
 docker exec $container rm -rf /$rootmodel/sevenNets
@@ -46,7 +48,6 @@ docker exec $container rm -rf /$rootmodel/sim_network
 docker cp $folder_path/tmp_data $container:/$rootmodel/
 docker cp compute_similarity.m  $container:/$rootmodel/
 
-docker restart $container
 # once done is, follow the second step as in the readme
 echo "Done..."
 echo "now you should execute compute similarity script inside matlab docker"

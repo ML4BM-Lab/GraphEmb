@@ -21,8 +21,6 @@ from tqdm.contrib.itertools import product
 from sklearn.model_selection import train_test_split
 
 
-# changes in splits
-
 #not DTI in the training data for some proteins
 def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, RMSD_dict = False):
 
@@ -75,6 +73,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
         return fDTIs
 
     if RMSD_dict:
+        print("Applying RMSD sim matrix to perform subsampling!")
         init_genes = set(DTIs['Protein'].values)
         RMSD_dict = genRMSDdict(init_genes)
         DTIs = FilterDTIs(DTIs, RMSD_dict)
@@ -152,7 +151,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 
             if subsampling:
                 #check if we can subsample all
-                if RMSD_dict:
+                if not RMSD_dict:
                     neg_sampled_element = r.sample(neg_element,min(len(neg_element),len(pos_element))) #50%-50% (modify if different proportions are desired)
                 else:
                     neg_sampled_element = get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict, Prot_inv_dd)
@@ -645,7 +644,6 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
             #add each group of folds for each seed
             seed_cv_list.append(cv_list)
 
-        
 
     return seed_cv_list
 
@@ -843,11 +841,9 @@ def main():
 
 	# generate RMSD dictionary
 	if RMSD_SET:
-		logging.debug(f'RMSD_SET true?: {RMSD_SET}')
 		rmsd_name = '_rmsd'
 		logging.debug('Set rmsd')
 	else:
-		logging.debug(f'RMSD_SET false?: {RMSD_SET}')
 		rmsd_name = ''
 		logging.debug('rmsd not set')
 
@@ -859,7 +855,7 @@ def main():
 	
 	# LOAD DTIs
 	fpath = os.path.join(os.getcwd(), wdir, f'final_dtis_{DB_PATH}.tsv')
-	DTIs = pd.read_csv(fpath,sep='\t',header=None)
+	DTIs = pd.read_csv(fpath,sep='\t',header=None) # header none !!! 
 	DTIs.columns = ['Drug','Protein']
 
 

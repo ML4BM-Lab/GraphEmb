@@ -121,20 +121,20 @@ for dataset in list(dict_data_dtinet.keys()):
 
 import json
 
-with open('..Results/statistics_extended_dtinet.json', 'w') as outfile:
+with open('../../DTINet/Results/statistics_extended_dtinet.json', 'w') as outfile:
     json.dump(dict_data_dtinet, outfile)
   
 
-with open('../Results/statistics_extended_eegdti.json', 'w') as outfile:
+with open('../../EEG-DTI/Results/statistics_extended_eegdti.json', 'w') as outfile:
     json.dump(dict_data_eegdti, outfile)
   
 
 df_data_dtinet = pd.DataFrame.from_dict(dict_data_dtinet)
 df_only_data_dtinet = df_data_dtinet.iloc[:-2,:]
-df_only_data_dtinet.to_excel('../Results/statistics_extended_dtinet.xlsx')
+df_only_data_dtinet.to_excel('../../DTINet/Results/statistics_extended_dtinet.xlsx')
 
 
 df_data_eegdti = pd.DataFrame.from_dict(dict_data_eegdti)
 
 df_only_data_eegdti = df_data_eegdti.iloc[:-2,:]
-df_only_data_eegdti.to_excel('../Results/statistics_extended_eeg-dti.xlsx')
+df_only_data_eegdti.to_excel('../../EEG-DTI/Results/statistics_extended_eeg-dti.xlsx')
