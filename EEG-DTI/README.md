@@ -37,8 +37,9 @@ python3 generate_onetooneindex_splits.py --dbPath <dbname> --split_type <Sp...> 
 For launching the model, execute the following shell script. 
 
 ```
-bash launch_eegdti_splits.sh -b NR -d ftest_eegdti -s Sp (-r for rsmd)
+nohup bash launch_eegdti_splits.sh -b NR -d eegdti_mod -s Sp > log_splits_NR_Sp.out &
 ```
+old: (-r for rsmd) 
 test with:
 nohup bash launch_eegdti_splits.sh -b NR -d ftest_eegdti -s Sp > log_splits_test.out &
 

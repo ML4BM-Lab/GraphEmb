@@ -23,7 +23,7 @@ from collections import Counter
 #not DTI in the training data for some drugs
 ### St, corresponds to the situation when there are
 #not DTI in the training data for some proteins
-def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, RMSD_dict = False):
+def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, RMSD_dict = False, only_distribution = False):
 
     def genRMSDdict(genes):
 
@@ -601,6 +601,11 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
             if subsampling:
                 cv_distribution = Sd_St_reorder(cv_distribution, mode = 'St')
 
+
+        if only_distribution:
+            print("Only CV distribution has been generated!")
+            return cv_distribution, Drug_inv_dd, Prot_inv_dd
+
         #generate the interaction matrix
         pos_neg_matrix = set_to_matrix(f.reduce(lambda a,b: a+b, cv_distribution))
 
@@ -651,9 +656,9 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 
 #Lets use Yamanishi NR as an example
 ##Load dataset
-#fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','IC','interactions','ic_admat_dgc_mat_2_line.txt')
+fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','IC','interactions','ic_admat_dgc_mat_2_line.txt')
 #fpath = os.path.join(os.getcwd(),'DB','Data','Davis_et_al','tdc_package_preprocessing','DAVIS_et_al_2line.tsv')
-fpath = os.path.join(os.getcwd(), 'DB', 'Data', 'BIOSNAP', 'ChG-Miner_miner-chem-gene', 'ChG-Miner_miner-chem-gene.tsv')
+#fpath = os.path.join(os.getcwd(), 'DB', 'Data', 'BIOSNAP', 'ChG-Miner_miner-chem-gene', 'ChG-Miner_miner-chem-gene.tsv')
 DTIs = pd.read_csv(fpath, sep='\t')
 DTIs.columns = ['Drug', 'Protein']
 
@@ -752,7 +757,10 @@ def print_cv_distribution(DTIs, cv_distribution):
 
 # ------------------------------------------------------- Sp ------------------------------------------------------------------ #
 ##Get 5-seed 10-fold CV Sp (all nodes are seeing during the training)
-sp_splits = generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=10, RMSD_dict=True)
+sp_splits = generate_splits(DTIs, mode= 'Sp', subsampling=False, foldnum=10, RMSD_dict=False, only_distribution=True)
+
+#FOR GUILLE - LINE 86 (SP)
+#cv_distr, inv_drug_dd, inv_prot_dd = generate_splits(DTIs, mode= 'Sp', subsampling=False, foldnum=10, RMSD_dict=False, only_distribution=True)
 
 ##check sp split
 check_splits(sp_splits, verbose=False) 

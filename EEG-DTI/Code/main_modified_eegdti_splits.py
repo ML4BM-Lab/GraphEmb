@@ -62,17 +62,18 @@ args = parser.parse_args()
 DATABASE = args.DB
 #SPLIT_TYPE = args.split_type
 
-luolike = ['DrugBank', 'BIOSNAP', 'BindingDB', 'E']
-yamanishilike = ['NR', 'Davis_et_al' , 'GPCR'] 
-if DATABASE in luolike:
-    n_epochs, batchsize = 10, 128
-elif DATABASE in yamanishilike:
-    n_epochs, batchsize = 100, 32
-elif DATABASE == 'IC': # IC faisl for two other options
-    n_epochs, batchsize = 10, 92 # 10, test with 92 before was 127
+dict_hypar = {
+'E': [10, 128], # works
+'NR': [100, 32], # works
+'GPCR': [20, 64], # works 
+'Davis_et_al': [20, 64], # not work for 80 (Sd, St fail) ->> but for Sd, test 64, actualize docker !
+'BindingDB': [20, 64], # works for 64 ? 
+'IC': [20, 64], # works for 64 ? 
+'BIOSNAP': [10, 256],
+'DrugBank': [10, 256] # before was 128, test 
+}
 
-else:
-    print('Dabase not available DBs')
+n_epochs, batchsize = dict_hypar.get(DATABASE)
 
 print(f'n_epochs: {n_epochs}, and batchsize: {batchsize}')
 

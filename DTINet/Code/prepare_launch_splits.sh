@@ -21,13 +21,13 @@ echo "db: $db";
 for spltype in Sp Sd St; do
   python3 generate_splits_dtinet.py --dbPath $db --split_type $spltype -subsampling 
   # rmsd
-  python3 generate_splits_dtinet.py --dbPath $db --split_type $spltype -subsampling -rmsd
+  #python3 generate_splits_dtinet.py --dbPath $db --split_type $spltype -subsampling -rmsd
 done
 
 # 1.Create the container 
 eval "DOCKER_ID=$(docker run -dt dtinet_matlab )";
 echo "DOCKER_ID: " $DOCKER_ID
-echo "DTINet $db : $DOCKER_ID  " > "log_docker_$db.out"
+echo "DTINet $db : $DOCKER_ID  " > "log_docker_splits_$db.out"
 
 
 # 2. Copy files to docker:

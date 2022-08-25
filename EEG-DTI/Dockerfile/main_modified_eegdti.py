@@ -58,13 +58,13 @@ args = parser.parse_args()
 
 DATABASE = args.DB
 
-luolike = ['DrugBank', 'BIOSNAP', 'BindingDB', 'E']
+luolike = ['DrugBank', 'BIOSNAP', 'E']
 yamanishilike = ['NR', 'Davis_et_al' , 'GPCR'] 
 if DATABASE in luolike:
     n_epochs, batchsize = 10, 128
 elif DATABASE in yamanishilike:
     n_epochs, batchsize = 100, 32
-elif DATABASE == 'IC': # IC faisl for two other options
+elif DATABASE in ['IC','BindingDB' ]: # IC faisl for two other options
     n_epochs, batchsize = 10, 127 # 10
 else:
     print('Dabase not available DBs')
