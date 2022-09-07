@@ -1,12 +1,16 @@
 import pandas as pd
 import numpy as np
+import os
+from sklearn.model_selection import KFold
+from itertools import product
 from collections import defaultdict as dd
 import random as r
 import functools as f
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 from random import randint
-
+from functools import reduce as red
+from collections import Counter 
 
 #Here we will define the model splits.
 #We will have 4 type of splits, 3 of them have been already mentioned in the literature.
@@ -19,7 +23,59 @@ from random import randint
 #not DTI in the training data for some drugs
 ### St, corresponds to the situation when there are
 #not DTI in the training data for some proteins
-def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, RMSD_dict = None):
+def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, RMSD_dict = False, only_distribution = False):
+
+    def genRMSDdict(genes, fpath):
+
+        #load RMSD object
+        RMSD = pd.read_pickle(fpath)
+
+        #init dict and names
+        RMSDdict = dict()
+        names = RMSD.index.tolist()
+
+        # convert to numpy
+        RMSD = RMSD.to_numpy()
+
+        #fill it
+        for i,gen in enumerate(tqdm(names)):
+
+            if gen not in genes:
+                continue
+
+            #get genes and names
+            rmsd_i = RMSD[i,0:i].tolist() + RMSD[i,i+1:].tolist()
+            names_i = names[0:i] + names[i+1:]
+
+            #add the entry
+            RMSDdict[gen] = dict(zip(names_i,rmsd_i))
+
+
+        return RMSDdict
+
+    def FilterDTIs(DTIs,RMSD_dict):
+
+        print(f"Original shape: {len(set(DTIs['Drug']))} drugs x {len(set(DTIs['Protein']))} proteins")
+
+        fdrug = []
+        ftarget = []
+        for drug, target in zip(DTIs['Drug'], DTIs['Protein']):
+            if target in RMSD_dict:
+                fdrug.append(drug)
+                ftarget.append(target)
+
+        fDTIs = pd.DataFrame([fdrug,ftarget]).T
+        fDTIs.columns=['Drug','Protein']
+
+        print(f"Filtered shape: {len(set(fDTIs['Drug']))} drugs x {len(set(fDTIs['Protein']))} proteins")
+
+        return fDTIs
+
+    if RMSD_dict:
+        print("Applying RMSD sim matrix to perform subsampling!")
+        init_genes = set(DTIs['Protein'].values)
+        RMSD_dict = genRMSDdict(init_genes, '/mnt/md0/data/jfuente/DTI/Input4Models/Docking/Results/RMSD_full_matrix.pkl')
+        DTIs = FilterDTIs(DTIs, RMSD_dict)
 
     #For this split, we will use a regular Kfold split
     #Create Drug and Protein sets
@@ -37,47 +93,20 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
     Prot_dd = dict(zip(sorted(Prot_set),Prot_index))
     Prot_inv_dd = {v: k for k, v in Prot_dd.items()}
 
-    #Create Drug-to-Proteins dict
-    #DrugProteinDD, ProteinDrugDD = DrugToProteinDict(DTIs)
-    
-    def DrugToProteinDict(DTIs):
-
-        #init drug to protein dd
-        dpdd = dd(list)
-        pddd = dd(list)
-
-        #fill the dict
-        for pair in DTIs.values.tolist():
-            dpdd[pair[0]] += [pair[1]]
-
-        for pair in DTIs.values.tolist():
-            dpdd[pair[1]] += [pair[0]]
-
-        return dpdd, pddd
-
-    def get_interactions_dict(DTIs, seed, subsampling, RMSD_dict = None):
+    def get_interactions_dict(DTIs, seed, subsampling, RMSD_dict):
 
         def get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict, Prot_inv_dd):
 
-            def unify_genes(allItems, maxSample, negprots):
+            def unify_genes(allItems, negprots):
 
                 #first sort
-                sortAllItems= sorted(allItems, key = lambda x: x[1])
-
-                #init Max
-                uniqueSortedItems = []
-                ref = sortAllItems[0][0]
+                sortAllItems = sorted(allItems, key = lambda x: x[1])
 
                 #remove duplicities
                 for tupla in sortAllItems:
                     gen = tupla[0]
-
-                    if gen != ref:
-                        ref = gen
-                        if gen in negprots:
-                            uniqueSortedItems.append(gen)
-                            if len(uniqueSortedItems) >= maxSample:
-                                return uniqueSortedItems
+                    if gen in negprots:
+                        return gen
                     
             #define maximum amount of genes to be sampled 
             maxSample = min(len(neg_element),len(pos_element))
@@ -87,14 +116,16 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
             negprots =[Prot_inv_dd[protid] for protid in neg_element]
 
             #get all items
-            allItems = []
+            sampnegprots = []
 
             #concat
             for prot in prots:
-                if prot in RMSD_dict:
-                        allItems += RMSD_dict[prot].items()
+                if maxSample == 0:
+                    break
+                sampnegprots.append(Prot_dd[unify_genes(RMSD_dict[prot].items(),negprots)])
+                maxSample -= 1
 
-            return unify_genes(allItems, maxSample, negprots)
+            return sampnegprots
 
         #init default dict (list)
         interactions_dd = dd(list)
@@ -108,7 +139,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
                
         #add negatives (subsample to have 50%-50%)
         #go through all drugs/proteins
-        for i, elementid in enumerate(interactions_dd):
+        for i, elementid in enumerate(tqdm(interactions_dd)):
             
             #print(f"elementid {elementid} in i {i}")
             #subsample from the negatives and add it to interactions dictionary
@@ -119,7 +150,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 
             if subsampling:
                 #check if we can subsample all
-                if RMSD_dict is None:
+                if not RMSD_dict:
                     neg_sampled_element = r.sample(neg_element,min(len(neg_element),len(pos_element))) #50%-50% (modify if different proportions are desired)
                 else:
                     neg_sampled_element = get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict, Prot_inv_dd)
@@ -517,8 +548,9 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
     #init seed cv list
     seed_cv_list = []
 
-    for seed in tqdm([7183, 556, 2, 81, 145], desc='Performing 10-CV fold for each seed'):
-
+    print('Performing 10-CV fold for each seed')
+    for seed in [7183, 556, 2, 81, 145]:
+        print(f"seed {seed}")
         drug_interactions_dd = get_interactions_dict(DTIs, seed, subsampling=subsampling, RMSD_dict=RMSD_dict)
 
         # append all interactions
@@ -526,7 +558,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
         
         #check % of positives/negatives
         pos_percentage = sum(list(map(lambda x: x[2],pos_neg_interactions)))/len(pos_neg_interactions)
-        #print(f"Positives -> {round(pos_percentage,2)*100}%, Negatives -> {round(1-pos_percentage,2)*100} %")
+        print(f"Positives -> {round(pos_percentage,2)*100}%, Negatives -> {round(1-pos_percentage,2)*100} %")
 
         #init list to distribute edges in a Sp way.
         cv_distribution = [[] for _ in range(foldnum)]
@@ -567,6 +599,11 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
             if subsampling:
                 cv_distribution = Sd_St_reorder(cv_distribution, mode = 'St')
 
+
+        if only_distribution:
+            print("Only CV distribution has been generated!")
+            return cv_distribution, Drug_dd, Prot_dd
+
         #generate the interaction matrix
         pos_neg_matrix = set_to_matrix(f.reduce(lambda a,b: a+b, cv_distribution))
 
@@ -591,11 +628,6 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
             cv_list = []
 
             for train_edges, test_edges in Kfold_from_lists(cv_distribution):
-            #for train_edges, test_edges in Kfold_from_lists([[1],[2],[3],[4],[5]]):
-                # print(train_edges)
-                # print(test_edges)
-                # print()
-                  
                 #--positives--
                 train_edges_pos, test_edges_pos = train_edges[train_edges[:,2] == 1,:-1], test_edges[test_edges[:,2] == 1,:-1]
                 
@@ -620,144 +652,113 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 
     return seed_cv_list
 
-def genRMSDdict():
-
-    fpath = '/mnt/md0/data/jfuente/DTI/Input4Models/Docking/Results/RMSD_full_matrix.pkl'
-
-    #load RMSD object
-    RMSD = pd.read_pickle(fpath)
-
-    #init dict and names
-    RMSDdict = dict()
-    names = RMSD.index.tolist()
-
-    # convert to numpy
-    RMSD = RMSD.to_numpy()
-
-    #fill it
-
-    for i,gen in enumerate(tqdm(names)):
-
-        #get genes and names
-        rmsd_i = RMSD[i,0:i].tolist() + RMSD[i,i+1:].tolist()
-        names_i = names[0:i] + names[i+1:]
-
-        #add the entry
-        RMSDdict[gen] = dict(zip(names_i,rmsd_i))
-
-
-    return RMSDdict
-
-
-#check splits
-def check_splits(splits, verbose=False, foldnum=10):
-
-    def check_condition():
-        
-        for seed in range(len(splits)):
-            print(f"Seed {seed}")
-            drugs_counter, prots_counter = 0,0
-            #print(f"Seed {seed}")
-            for fold in range(len(splits[seed])):
-                #TRAIN
-                drugs_train = set(map(lambda x: x[0], splits[seed][fold][0])).union(map(lambda x: x[0], splits[seed][fold][1]))
-                prots_train = set(map(lambda x: x[1], splits[seed][fold][0])).union(map(lambda x: x[1], splits[seed][fold][1]))
-                #TEST
-                drugs_test = set(map(lambda x: x[0], splits[seed][fold][2])).union(map(lambda x: x[0], splits[seed][fold][3]))
-                prots_test = set(map(lambda x: x[1], splits[seed][fold][2])).union(map(lambda x: x[1], splits[seed][fold][3]))
-
-                if drugs_test.difference(drugs_train):
-                    drugs_counter +=1
-                    if verbose:
-                        print(f"Seed {seed}, Fold {fold} does not accomplish drugs")
-
-                if prots_test.difference(prots_train):
-                    prots_counter+=1
-                    if verbose:
-                        print(f"Seed {seed}, Fold {fold} does not accomplish proteins")
-
-            if drugs_counter > 0:
-                if drugs_counter == (foldnum):
-                    print("Sd split configuration accomplished!")
-
-                else:
-                    print(f"Sd split configuration not exactly accomplished! ({drugs_counter})")
-
-            if prots_counter > 0:
-                if prots_counter == (foldnum):
-                    print("St split configuration accomplished!")
-                else:
-                    print(f"St split configuration not exactly accomplished! ({prots_counter})")
-
-            if not prots_counter and not drugs_counter:
-                print('Sp split configuration accomplished!')
-
-    def print_proportions(verbose=True):
-        for seed in range(len(splits)):
-            if verbose:
-                print(f"Len is {len(splits[seed])}")
-            for fold in range(len(splits[seed])):
-                if verbose:
-                    print(f"Train positives len {len(splits[seed][fold][0])}")
-                    print(f"Train negatives len {len(splits[seed][fold][1])}")
-                    print(f"Test positives len {len(splits[seed][fold][2])}")
-                    print(f"Test negatives len {len(splits[seed][fold][3])}")
-                    print("--------------- END OF FOLD ---------------")
-            if verbose:
-                print("----------------- END OF SEED -----------------")
-
-    print('Checking conditions per fold')
-    #check condition
-    check_condition()
-
-    # if verbose:
-    #     print('Printing proportions')
-    # #print proportions
-    # print_proportions(verbose=verbose)
-
-    return 
-
-#check distribution
-def print_cv_distribution(DTIs, cv_distribution):
-
-    print(f'Number of drugs originally -> {len(set(DTIs.Drug.values))}')
-    print(f'Number of prots originally -> {len(set(DTIs.Protein.values))}')
-
-    element_distribution = f.reduce(lambda a,b: a+b, cv_distribution)
-    drugs = set(list(map(lambda x: x[0], element_distribution)))
-    prots = set(list(map(lambda x: x[1], element_distribution)))
-
-    print(f'Number of drugs in CV -> {len(drugs)}')
-    print(f'Number of prots in CV-> {len(prots)}')
-
-    for drug in drugs:
-        proteins_with_drugs = [element[1] for element in element_distribution if element[0] == drug]
-        print(f"Number of proteins per drug {drug} -> {len(proteins_with_drugs)}")
-
-    for prot in prots:
-        drugs_with_proteins = [element[0] for element in element_distribution if element[1] == prot]
-        print(f"Number of drugs per protein {prot} -> {len(drugs_with_proteins)}")
-
-    ##~
-    return 
-
-
-
 #Lets use Yamanishi NR as an example
 ##Load dataset
 # fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','IC','interactions','ic_admat_dgc_mat_2_line.txt')
-#fpath = os.path.join(os.getcwd(),'DB','Data','Davis_et_al','tdc_package_preprocessing','DAVIS_et_al_2line.tsv')
-# fpath = os.path.join(os.getcwd(), 'DB', 'Data', 'BIOSNAP', 'ChG-Miner_miner-chem-gene', 'ChG-Miner_miner-chem-gene.tsv')
+# #fpath = os.path.join(os.getcwd(),'DB','Data','Davis_et_al','tdc_package_preprocessing','DAVIS_et_al_2line.tsv')
+# #fpath = os.path.join(os.getcwd(), 'DB', 'Data', 'BIOSNAP', 'ChG-Miner_miner-chem-gene', 'ChG-Miner_miner-chem-gene.tsv')
 # DTIs = pd.read_csv(fpath, sep='\t')
 # DTIs.columns = ['Drug', 'Protein']
 
+# #check splits
+# def check_splits(splits, verbose=False, foldnum=10):
 
-# #generate RMSD dictionary
-# RMSD_dict = genRMSDdict()
+#     def check_condition():
+        
+#         for seed in range(len(splits)):
+#             print(f"Seed {seed}")
+#             drugs_counter, prots_counter = 0,0
+#             #print(f"Seed {seed}")
+#             for fold in range(len(splits[seed])):
+#                 #TRAIN
+#                 drugs_train = set(map(lambda x: x[0], splits[seed][fold][0])).union(map(lambda x: x[0], splits[seed][fold][1]))
+#                 prots_train = set(map(lambda x: x[1], splits[seed][fold][0])).union(map(lambda x: x[1], splits[seed][fold][1]))
+#                 #TEST
+#                 drugs_test = set(map(lambda x: x[0], splits[seed][fold][2])).union(map(lambda x: x[0], splits[seed][fold][3]))
+#                 prots_test = set(map(lambda x: x[1], splits[seed][fold][2])).union(map(lambda x: x[1], splits[seed][fold][3]))
+
+#                 if drugs_test.difference(drugs_train):
+#                     drugs_counter +=1
+#                     if verbose:
+#                         print(f"Seed {seed}, Fold {fold} does not accomplish drugs")
+
+#                 if prots_test.difference(prots_train):
+#                     prots_counter+=1
+#                     if verbose:
+#                         print(f"Seed {seed}, Fold {fold} does not accomplish proteins")
+
+#             if drugs_counter > 0:
+#                 if drugs_counter == (foldnum):
+#                     print("Sd split configuration accomplished!")
+
+#                 else:
+#                     print(f"Sd split configuration not exactly accomplished! ({drugs_counter})")
+
+#             if prots_counter > 0:
+#                 if prots_counter == (foldnum):
+#                     print("St split configuration accomplished!")
+#                 else:
+#                     print(f"St split configuration not exactly accomplished! ({prots_counter})")
+
+#             if not prots_counter and not drugs_counter:
+#                 print('Sp split configuration accomplished!')
+
+#     def print_proportions(verbose=True):
+#         for seed in range(len(splits)):
+#             if verbose:
+#                 print(f"Len is {len(splits[seed])}")
+#             for fold in range(len(splits[seed])):
+#                 if verbose:
+#                     print(f"Train positives len {len(splits[seed][fold][0])}")
+#                     print(f"Train negatives len {len(splits[seed][fold][1])}")
+#                     print(f"Test positives len {len(splits[seed][fold][2])}")
+#                     print(f"Test negatives len {len(splits[seed][fold][3])}")
+#                     print("--------------- END OF FOLD ---------------")
+#             if verbose:
+#                 print("----------------- END OF SEED -----------------")
+
+#     print('Checking conditions per fold')
+#     #check condition
+#     check_condition()
+
+#     # if verbose:
+#     #     print('Printing proportions')
+#     # #print proportions
+#     # print_proportions(verbose=verbose)
+
+#     return 
+
+# #check distribution
+# def print_cv_distribution(DTIs, cv_distribution):
+
+#     print(f'Number of drugs originally -> {len(set(DTIs.Drug.values))}')
+#     print(f'Number of prots originally -> {len(set(DTIs.Protein.values))}')
+
+#     element_distribution = f.reduce(lambda a,b: a+b, cv_distribution)
+#     drugs = set(list(map(lambda x: x[0], element_distribution)))
+#     prots = set(list(map(lambda x: x[1], element_distribution)))
+
+#     print(f'Number of drugs in CV -> {len(drugs)}')
+#     print(f'Number of prots in CV-> {len(prots)}')
+
+#     for drug in drugs:
+#         proteins_with_drugs = [element[1] for element in element_distribution if element[0] == drug]
+#         print(f"Number of proteins per drug {drug} -> {len(proteins_with_drugs)}")
+
+#     for prot in prots:
+#         drugs_with_proteins = [element[0] for element in element_distribution if element[1] == prot]
+#         print(f"Number of drugs per protein {prot} -> {len(drugs_with_proteins)}")
+
+#     ##~
+#     return 
+
 
 # # ------------------------------------------------------- Sp ------------------------------------------------------------------ #
 # ##Get 5-seed 10-fold CV Sp (all nodes are seeing during the training)
-# sp_splits = generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=10, RMSD_dict=RMSD_dict)
+# sp_splits = generate_splits(DTIs, mode= 'Sp', subsampling=False, foldnum=10, RMSD_dict=False, only_distribution=True)
+
+# #FOR GUILLE - LINE 86 (SP)
+# #cv_distr, inv_drug_dd, inv_prot_dd = generate_splits(DTIs, mode= 'Sp', subsampling=False, foldnum=10, RMSD_dict=False, only_distribution=True)
 
 # ##check sp split
 # check_splits(sp_splits, verbose=False) 
@@ -767,7 +768,7 @@ def print_cv_distribution(DTIs, cv_distribution):
 
 # # ------------------------------------------------------- Sd ------------------------------------------------------------------- #
 # ##Get 5-seed 10-fold CV Sd (some drugs are not seeing during the training)
-# sd_splits = generate_splits(DTIs, mode= 'Sd', subsampling=True, foldnum=10, RMSD_dict=RMSD_dict)
+# sd_splits = generate_splits(DTIs, mode= 'Sd', subsampling=True, foldnum=10, RMSD_dict=True)
 
 # ##check splits
 # check_splits(sd_splits,verbose=False) 
@@ -776,7 +777,7 @@ def print_cv_distribution(DTIs, cv_distribution):
 # #print_cv_distribution(DTIs,sd_splits)
 # # ------------------------------------------------------- St ------------------------------------------------------------------- #
 # ##Get 5-seed 10-fold CV Sd (some targets are not seeing during the training)
-# st_splits = generate_splits(DTIs, mode= 'St', subsampling=True, foldnum=10, RMSD_dict=RMSD_dict)
+# st_splits = generate_splits(DTIs, mode= 'St', subsampling=True, foldnum=10, RMSD_dict=True)
 
 # ##check splits
 # check_splits(st_splits,verbose=False) 

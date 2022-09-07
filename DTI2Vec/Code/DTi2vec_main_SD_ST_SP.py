@@ -16,9 +16,10 @@ from sklearn.preprocessing import MaxAbsScaler, MinMaxScaler
 import Model_Sp_Sd_St_split_Improved as splitter
 from xgboost import XGBClassifier
 import xgboost as xgb
+import random
 
 # Import my files
-from load_datasets import *
+from load_datasets_SD_ST_SP import *
 ######################################## START MAIN #########################################
 #############################################################################################
 def main():
@@ -36,10 +37,10 @@ def main():
 	allD, allT, DrTr, R, X, Y = load_datasets(args.data)
 	
 	print('Splitting data')
-	DTIs = pd.read_csv(args.dti_path, sep='\t')
+	DTIs = pd.read_csv('/DTi2Vec/Input/Custom/R_Custom.txt', sep='\t')
 	DTIs.columns = ['Protein', 'Drug']
-	sp_splits = splitter.generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=10)
-
+	sp_splits = splitter.generate_splits(DTIs, mode= args.mode, subsampling=True, foldnum=10, only_distribution=True)
+	print(args.mode)
 	# create 2 dictionaries for drugs. the keys are their order numbers
 	drugID = dict([(d, i) for i, d in enumerate(allD)])
 	targetID = dict([(t, i) for i, t in enumerate(allT)])
@@ -89,8 +90,17 @@ def main():
 	novel_DT_file = 'Novel_Interactions/'+str(args.data)+'/novel_dt_pairs.csv'
 
 	# Start training and testing
-	for train_index, test_index in  skf.split(X,Y):
-
+	# for train_index, test_index in  skf.split(X,Y):
+	prot_ind_dict = sp_splits[1]
+	drug_ind_dict = sp_splits[2]
+	# if allT[0].startswith('hsa'):
+	# 	prot_ind_dict = sp_splits[2]
+	# 	drug_ind_dict = sp_splits[1]
+	
+	for split in sp_splits[0]:
+		split = np.split(np.array(split), [int(len(split)*0.8)])
+		train_split_index = split[0]
+		test_split_index = split[1]
 		print("*** Working with Fold %i :***" %foldCounter)
 
 		##^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -216,41 +226,49 @@ def main():
 		XX = np.asarray(XX)
 		YY = np.array(Y)
 
-		#Apply normalization using MaxAbsolute normlization
+		# ORIGINAL #Apply normalization using MaxAbsolute normlization
+		# max_abs_scaler = MinMaxScaler()
+		# X_train_transform = max_abs_scaler.fit(XX[train_index])
+		# X_train_transform = max_abs_scaler.transform(XX[train_index])
+
+		# X_test_transform = max_abs_scaler.transform(XX[test_index])
+		
+		# MINE #Apply normalization using MaxAbsolute normlization
+		def train_or_test_discriminator(feature_vector):
+			# get the FV and separates from test and train with their labels
+			train_index = []
+			test_index = []
+			# dict_key_type1 = set([type(k) for k in prot_ind_dict.keys()])
+			# dict_key_type2 = set([type(k) for k in drug_ind_dict.keys()])
+			# we may add the casting int to the vector
+			for vector in feature_vector:
+				pair = [prot_ind_dict.get(vector[0]), drug_ind_dict.get(vector[1])]
+				pair.append(0)
+				if pair in train_split_index.tolist():
+					train_index.append(feature_vector.index(vector))
+				if pair in test_split_index.tolist():
+					test_index.append(feature_vector.index(vector))
+				pair[-1] = 1
+				if pair in train_split_index.tolist():
+					train_index.append(feature_vector.index(vector))
+				if pair in test_split_index.tolist():
+					test_index.append(feature_vector.index(vector))
+			return train_index, test_index
+		
+		train_index, test_index = train_or_test_discriminator(FV_C)
 		max_abs_scaler = MinMaxScaler()
 		X_train_transform = max_abs_scaler.fit(XX[train_index])
 		X_train_transform = max_abs_scaler.transform(XX[train_index])
 
 		X_test_transform = max_abs_scaler.transform(XX[test_index])
 
-		# mine
-		all_transform = MinMaxScaler().fit(XX).transform(XX)
-		# split the features in train and test
-		pairs, nfeatures = all_transform.shape
-		train_1 = []
-		train_0 = []
-		test_1 = []
-		test_0 = []
-		for i in range(pairs):
-			drug, target, features_c = FV_C[i]
-			if (drug, target) in sp_splits[0][foldCounter-1][0]:
-				train_1.append(XX)
-			if (drug, target) in sp_splits[0][foldCounter-1][1]:
-				train_0.append(XX)
-			if (drug, target) in sp_splits[0][foldCounter-1][2]:
-				test_1.append(XX)
-			if (drug, target) in sp_splits[0][foldCounter-1][3]:
-				test_0.append(XX)
-		
-
-
 		# Apply sampling techniques for the trainnig data
 		ros = RandomOverSampler(random_state= 10)
 		X_res, y_res= ros.fit_resample(X_train_transform, YY[train_index])
 		
-		features_labels = list(zip(all_train_features, all_train_labels))
-		random.shuffle(features_labels)
-		all_train_features, all_train_labels = zip(*features_labels)
+		# features_labels = list(zip(all_train_features, all_train_labels))
+		# random.shuffle(features_labels)
+		# all_train_features, all_train_labels = zip(*features_labels)
 
 		##---------------------- Write the FV & class labels into files -----------------------
 		# # write test feature vector with their labels

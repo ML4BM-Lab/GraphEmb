@@ -66,11 +66,11 @@ dict_hypar = {
 'E': [10, 128], # works
 'NR': [100, 32], # works
 'GPCR': [20, 64], # works 
-'Davis_et_al': [20, 64], # not work for 80 (Sd, St fail) ->> but for Sd, test 64, actualize docker !
-'BindingDB': [20, 64], # works for 64 ? 
-'IC': [20, 64], # works for 64 ? 
-'BIOSNAP': [10, 256],
-'DrugBank': [10, 256] # before was 128, test 
+'Davis_et_al': [10, 128], # works
+'BindingDB': [5, 256], # works
+'IC': [8, 256], # works
+'BIOSNAP': [5, 512], # worked, 5 for time issues 
+'DrugBank': [4, 512] # worked,  4 for time issues
 }
 
 n_epochs, batchsize = dict_hypar.get(DATABASE)
