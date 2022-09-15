@@ -8,6 +8,7 @@
 # nohup bash Launch_DTI2Vec.sh -p ./../Data/BindingDB -d dti2vec:1.0 &
 # nohup bash Launch_DTI2Vec.sh -p ./../Data/Davis_et_al -d dti2vec:1.0 -m Sp &
 # nohup bash Launch_DTI2Vec.sh -p ./../Data/Yamanashi_et_al_GoldStandard/NR -d dti2vec:1.0 -m Sp &
+# nohup bash Launch_DTI2Vec.sh -p ./../Data/BindingDB -d dti2vec:1.0 -m Sp &
 
 mode='DEFAULT'
 while getopts "p:d:m:" opt; do

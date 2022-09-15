@@ -238,11 +238,16 @@ def main():
 			# get the FV and separates from test and train with their labels
 			train_index = []
 			test_index = []
-			# dict_key_type1 = set([type(k) for k in prot_ind_dict.keys()])
-			# dict_key_type2 = set([type(k) for k in drug_ind_dict.keys()])
-			# we may add the casting int to the vector
+			
+			# check dict order
+			if feature_vector[0][0] in drug_ind_dict.keys():
+				dict_0=drug_ind_dict
+				dict_1=prot_ind_dict
+			else:
+				dict_0=prot_ind_dict
+				dict_1=drug_ind_dict
 			for vector in feature_vector:
-				pair = [prot_ind_dict.get(vector[0]), drug_ind_dict.get(vector[1])]
+				pair = [dict_0.get(vector[0]), dict_1.get(vector[1])]
 				pair.append(0)
 				if pair in train_split_index.tolist():
 					train_index.append(feature_vector.index(vector))
