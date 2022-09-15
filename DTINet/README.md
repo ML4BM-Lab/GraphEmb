@@ -75,6 +75,30 @@ if not, the normal subsampling is aplied.
 A log file is saved wih a name that specifies the run settings. 
 
 
+## Testing RMSD
+
+created new code for splits in
+```
+generate_splits_dtinet.py
+```
+
+Then, create a prepare_launch_rmsd.sh
+similar to prepare_launch_rmsd.sh
+but only call rmsd 
+
+inside this script it will copy the launcher, that also needs to be modify
+to copy only the RMSD folder into the splits folder!
+
+then run:
+```
+bash prepare_launch_rmsd.sh -b BIOSNAP
+```
+That copy the file Launch_DTINet_RMSD_matlab.sh
+
+```
+bash Launch_DTINet_RMSD_matlab.sh
+```
+
 
 # Preprocessing of Databases
 

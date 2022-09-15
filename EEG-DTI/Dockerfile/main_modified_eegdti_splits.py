@@ -70,7 +70,7 @@ dict_hypar = {
 'BindingDB': [5, 256], # works
 'IC': [8, 256], # works
 'BIOSNAP': [5, 512], # worked, 5 for time issues 
-'DrugBank': [4, 256] # worked,  4 for time issues, 512 for all exept St... test 256
+'DrugBank': [4, 250] # worked,  4 for time issues, 512 for all exept St... 256 doesnt work
 }
 
 n_epochs, batchsize = dict_hypar.get(DATABASE)
