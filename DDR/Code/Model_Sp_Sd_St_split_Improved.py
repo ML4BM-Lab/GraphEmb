@@ -11,6 +11,8 @@ from sklearn.model_selection import train_test_split
 from random import randint
 from functools import reduce as red
 from collections import Counter 
+import itertools
+import math as m
 
 #Here we will define the model splits.
 #We will have 4 type of splits, 3 of them have been already mentioned in the literature.
@@ -23,7 +25,7 @@ from collections import Counter
 #not DTI in the training data for some drugs
 ### St, corresponds to the situation when there are
 #not DTI in the training data for some proteins
-def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, RMSD_dict_opt = False, only_distribution = False, include_diagonal_RMSD = False):
+def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, train_val_test_percentage = (0.7, 0.1, 0.2), RMSD_dict_opt = False, only_distribution = False, include_diagonal_RMSD = False):
 
     def genRMSDdict(genes):
 
@@ -35,7 +37,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
             #get the index
             ind = [i for i,x in enumerate(names) if x in DTIsprots]
 
-            return RMSD[ind, :][:,ind], np.array(names)[ind]
+            return RMSD[ind, :][:,ind], list(np.array(names)[ind])
 
 
         fpath = '/mnt/md0/data/jfuente/DTI/Input4Models/Docking/Results/RMSD_full_matrix.pkl'
@@ -97,6 +99,12 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
         init_genes = set(DTIs['Protein'].values)
         RMSD_dict = genRMSDdict(init_genes)
         DTIs = FilterDTIs(DTIs, RMSD_dict)
+
+    if not cvopt:
+        train_ratio = train_val_test_percentage[0]
+        validation_ratio = train_val_test_percentage[1]
+        test_ratio = train_val_test_percentage[2]
+        foldnum = m.ceil(1/test_ratio)
 
     #For this split, we will use a regular Kfold split
     #Create Drug and Protein sets
@@ -201,11 +209,16 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 
     def names_from_edges(train_edges,test_edges):
 
-        #generate names matrix from positive edges
-        train_names_matrix = [(Drug_inv_dd[d], Prot_inv_dd[p]) for d,p in train_edges]
-
-        #same with negatives
-        test_names_matrix = [(Drug_inv_dd[d], Prot_inv_dd[p]) for d,p in test_edges]
+        if cvopt:
+            #generate names matrix from positive edges
+            train_names_matrix = [(Drug_inv_dd[d], Prot_inv_dd[p]) for d,p in train_edges]
+            #same with negatives
+            test_names_matrix = [(Drug_inv_dd[d], Prot_inv_dd[p]) for d,p in test_edges]
+        else:
+            #generate names matrix from positive edges
+            train_names_matrix = [(Drug_inv_dd[d], Prot_inv_dd[p], label) for d,p,label in train_edges]
+            #same with negatives
+            test_names_matrix = [(Drug_inv_dd[d], Prot_inv_dd[p], label) for d,p,label in test_edges]
 
         return train_names_matrix, test_names_matrix
 
@@ -638,17 +651,20 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
         ## MIKEL OPTION
         if not cvopt:
 
-            X_train, X_val_test = train_test_split(pos_neg_matrix, test_size=0.3, random_state=None)
-            X_val, X_test = train_test_split(X_val_test, test_size=0.66, random_state=None)
+            cv_list = []
 
-            def get_arkar():
-                train_edges_pos, test_edges_pos = X_train[X_train[:,2] == 1,:-1], X_train[X_train[:,2] == 1,:-1]   
-                names_train_pos, names_test_pos = names_from_edges(train_edges_pos,test_edges_pos)
+            test_df = cv_distribution[0]
+            df_train, df_val = train_test_split(list(itertools.chain.from_iterable(cv_distribution[1:])), 
+                                                test_size = validation_ratio/(train_ratio + validation_ratio),
+                                                random_state = None, shuffle = False )
 
-            #1 seed -> [[pos_train,neg_train],[pos_val,neg_val],[pos_test,neg_test]]
-            #2 seed -> ...
-            #..
-            #5 seed -> ...
+            total_len = len(df_train) + len(df_val) + len(test_df)
+            print(f"Initial split dimensions {train_ratio}, {validation_ratio}, {test_ratio}")
+            print(f"Final split dimensions {len(df_train)/total_len}, {len(df_val)/total_len}, {len(test_df)/total_len}")
+            
+            cv_list = [df_train , df_val, test_df]
+
+            seed_cv_list.append(cv_list)
 
         else:
 
@@ -781,7 +797,7 @@ def print_cv_distribution(DTIs, cv_distribution):
 
 # ------------------------------------------------------- Sp ------------------------------------------------------------------ #
 ##Get 5-seed 10-fold CV Sp (all nodes are seeing during the training)
-sp_splits = generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=10, RMSD_dict_opt=True, include_diagonal_RMSD=True)
+sp_splits = generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=10, cvopt=False,  RMSD_dict_opt=True, include_diagonal_RMSD=False)
 
 #FOR GUILLE - LINE 86 (SP)
 #cv_distr, inv_drug_dd, inv_prot_dd = generate_splits(DTIs, mode= 'Sp', subsampling=False, foldnum=10, RMSD_dict_opt=False, only_distribution=True)

@@ -17,7 +17,7 @@ import Model_Sp_Sd_St_split_Improved as splitter
 from xgboost import XGBClassifier
 import xgboost as xgb
 import random
-
+from tqdm import tqdm
 # Import my files
 from load_datasets_SD_ST_SP import *
 ######################################## START MAIN #########################################
@@ -39,8 +39,8 @@ def main():
 	print('Splitting data')
 	DTIs = pd.read_csv('/DTi2Vec/Input/Custom/R_Custom.txt', sep='\t')
 	DTIs.columns = ['Protein', 'Drug']
-	sp_splits = splitter.generate_splits(DTIs, mode= args.mode, subsampling=True, foldnum=10, only_distribution=True)
 	print(args.mode)
+	sp_splits = splitter.generate_splits(DTIs, mode= args.mode, subsampling=True, foldnum=10, only_distribution=True)
 	# create 2 dictionaries for drugs. the keys are their order numbers
 	drugID = dict([(d, i) for i, d in enumerate(allD)])
 	targetID = dict([(t, i) for i, t in enumerate(allT)])
@@ -240,14 +240,14 @@ def main():
 			test_index = []
 			
 			# check dict order
-			if feature_vector[0][0] in drug_ind_dict.keys():
+			if float(feature_vector[0][0]) in drug_ind_dict.keys():
 				dict_0=drug_ind_dict
 				dict_1=prot_ind_dict
 			else:
 				dict_0=prot_ind_dict
 				dict_1=drug_ind_dict
-			for vector in feature_vector:
-				pair = [dict_0.get(vector[0]), dict_1.get(vector[1])]
+			for vector in tqdm(feature_vector):
+				pair = [dict_0.get(float(vector[0])), dict_1.get(vector[1])]
 				pair.append(0)
 				if pair in train_split_index.tolist():
 					train_index.append(feature_vector.index(vector))

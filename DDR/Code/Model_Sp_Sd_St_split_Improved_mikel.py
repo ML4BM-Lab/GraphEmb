@@ -2,31 +2,26 @@ import pandas as pd
 import numpy as np
 import os
 from sklearn.model_selection import KFold
+from itertools import product
 from collections import defaultdict as dd
 import random as r
 import functools as f
 from tqdm import tqdm
-import itertools
-from tqdm.contrib.itertools import product
-import argparse
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import KFold
-from tqdm import tqdm
-import logging
-import os
-import helper_functions_dtinet as hf
-import argparse
-from tqdm.contrib.itertools import product
 from sklearn.model_selection import train_test_split
+from random import randint
+from functools import reduce as red
+from collections import Counter 
 
+#Here we will define the model splits.
+#We will have 4 type of splits, 3 of them have been already mentioned in the literature.
+#We will be following DDR comparison scheme:
+    # 5-repeats of 90%-10% 10-fold CV
 
-####################
-#### subsampling with RMSD
-
-## version code rmsd 15SEPT.
-#not DTI in the training data for some proteins
-
+### Sp, corresponds to the situation when there are
+#DTI in the training data for such drugs or target proteins 
+### Sd, corresponds to the situation when there are
+#not DTI in the training data for some drugs
+### St, corresponds to the situation when there are
 #not DTI in the training data for some proteins
 def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, RMSD_dict_opt = False, only_distribution = False, include_diagonal_RMSD = False):
 
@@ -207,10 +202,12 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
     def names_from_edges(train_edges,test_edges):
 
         #generate names matrix from positive edges
-        train_names_matrix = [(Drug_inv_dd[d], Prot_inv_dd[p]) for d,p in train_edges]
+        #train_names_matrix = [(Drug_inv_dd[d], Prot_inv_dd[p]) for d,p in train_edges]
+        train_names_matrix = [(Drug_inv_dd[d], Prot_inv_dd[p],label) for d,p,label in train_edges]
 
         #same with negatives
-        test_names_matrix = [(Drug_inv_dd[d], Prot_inv_dd[p]) for d,p in test_edges]
+        #test_names_matrix = [(Drug_inv_dd[d], Prot_inv_dd[p]) for d,p in test_edges]
+        test_names_matrix = [(Drug_inv_dd[d], Prot_inv_dd[p], label) for d,p,label in test_edges]
 
         return train_names_matrix, test_names_matrix
 
@@ -662,137 +659,210 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, R
 
             for train_edges, test_edges in Kfold_from_lists(cv_distribution):
                 #--positives--
-                train_edges_pos, test_edges_pos = train_edges[train_edges[:,2] == 1,:-1], test_edges[test_edges[:,2] == 1,:-1]
+                #train_edges_pos, test_edges_pos = train_edges[train_edges[:,2] == 1,:-1], test_edges[test_edges[:,2] == 1,:-1]
                 
                 ##create names matrix from edges list
-                names_train_pos, names_test_pos = names_from_edges(train_edges_pos, test_edges_pos)
+                #names_train_pos, names_test_pos = names_from_edges(train_edges_pos, test_edges_pos)
 
                 #--negatives--
-                train_edges_neg, test_edges_neg = train_edges[train_edges[:,2] == 0,:-1], test_edges[test_edges[:,2] == 0,:-1]
+                #train_edges_neg, test_edges_neg = train_edges[train_edges[:,2] == 0,:-1], test_edges[test_edges[:,2] == 0,:-1]
                 
                 ##create names matrix from edges list
-                names_train_neg, names_test_neg = names_from_edges(train_edges_neg,test_edges_neg)
+                #names_train_neg, names_test_neg = names_from_edges(train_edges_neg,test_edges_neg)
 
                 #print(f"Train pos {len(names_train_pos)}, Train neg {len(names_train_neg)}, Test pos {len(names_test_pos)}, Test neg {len(names_test_neg)}")
 
                 #add each fold
-                cv_list.append((names_train_pos,names_train_neg,names_test_pos,names_test_neg))
+                #cv_list.append((names_train_pos,names_train_neg,names_test_pos,names_test_neg))
 
+                names_train, names_test = names_from_edges(train_edges, test_edges)
+                cv_list.append((names_train, names_test))
             #add each group of folds for each seed
             seed_cv_list.append(cv_list)
 
     return seed_cv_list
 
+#Lets use Yamanishi NR as an example
+##Load dataset
+#fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','IC','interactions','ic_admat_dgc_mat_2_line.txt')
+#fpath = os.path.join(os.getcwd(),'DB','Data','Davis_et_al','tdc_package_preprocessing','DAVIS_et_al_2line.tsv')
+#fpath = os.path.join(os.getcwd(),'BIOSNAP','ChG-Miner_miner-chem-gene', 'ChG-Miner_miner-chem-gene.tsv')
+fpath = os.getcwd() + "/Data/" + "BIOSNAP" + "/" + "BIOSNAP" + "_pairs.txt"
+DTIs = pd.read_csv(fpath, sep=',', usecols=[1,2]) ## MAKE SURE THE HEADER OPTION IS ON/OFF DEPENDING ON THE DATASET!
+DTIs.columns = ['Drug', 'Protein']
 
-## INDEX FOR MATLAB MODEL
+#check splits
+def check_splits(splits, verbose=False, foldnum=10):
 
-def get_idx_matlab(wdir, sp_splits):
-    # for dtinet we need the tuple as (protein, drug)
-    # make translation as function --> *
-    index_protein_file = 'protein.txt'
-    index_drug_file = 'drug.txt'
-    # def translate_index():
-    drugs_list = np.loadtxt(os.path.join(wdir, index_drug_file), dtype=str).tolist()
-    proteins_list = np.loadtxt(os.path.join(wdir, index_protein_file), dtype=str).tolist()
-    # build dics
-    drug_pos_d = dict(zip(drugs_list,list(range(len(drugs_list)))))
-    protein_pos_d = dict(zip(proteins_list,list(range(len(proteins_list)))))
-    # loop over seeds, folds, set_type 
-    # shows total of the tqdm object 
-    nseed, nfold, set_type = 0,0,0 # init
-    for nseed, nfold, set_type in product(range(len(sp_splits)), range(len(sp_splits[nseed])), range(len(sp_splits[nseed][nfold])),
-                                        desc='changing ID for matrix index'): 
-        # iteration over pairs to change tuples in list
-        for pair in range(len(sp_splits[nseed][nfold][set_type])): # translate pairs
-            # this is  drug_protein
-            drug_coo = drug_pos_d[sp_splits[nseed][nfold][set_type][pair][0]]  
-            prot_coo = protein_pos_d[sp_splits[nseed][nfold][set_type][pair][1]] 
-            idx_matlab = np.ravel_multi_index((drug_coo,prot_coo), (len(drugs_list), len(proteins_list)), order='F') + 1 # matlab +1
-            # add here to change between drug index target index to matlab intex
-            sp_splits[nseed][nfold][set_type][pair] = (idx_matlab) # uncoment
-            #sp_splits[nseed][nfold][set_type][pair] = (drug_coo+1, prot_coo+1)
-    return sp_splits
+    def check_condition():
+        
+        for seed in range(len(splits)):
+            print(f"Seed {seed}")
+            drugs_counter, prots_counter = 0,0
+            #print(f"Seed {seed}")
+            for fold in range(len(splits[seed])):
+                #TRAIN
+                drugs_train = set(map(lambda x: x[0], splits[seed][fold][0])).union(map(lambda x: x[0], splits[seed][fold][0]))
+                prots_train = set(map(lambda x: x[1], splits[seed][fold][0])).union(map(lambda x: x[1], splits[seed][fold][0]))
+                #TEST
+                drugs_test = set(map(lambda x: x[0], splits[seed][fold][1])).union(map(lambda x: x[0], splits[seed][fold][1]))
+                prots_test = set(map(lambda x: x[1], splits[seed][fold][1])).union(map(lambda x: x[1], splits[seed][fold][1]))
+
+                if drugs_test.difference(drugs_train):
+                    drugs_counter +=1
+                    if verbose:
+                        print(f"Seed {seed}, Fold {fold} does not accomplish drugs")
+
+                if prots_test.difference(prots_train):
+                    prots_counter+=1
+                    if verbose:
+                        print(f"Seed {seed}, Fold {fold} does not accomplish proteins")
+
+            if drugs_counter > 0:
+                if drugs_counter == (foldnum):
+                    print("Sd split configuration accomplished!")
+
+                else:
+                    print(f"Sd split configuration not exactly accomplished! ({drugs_counter})")
+
+            if prots_counter > 0:
+                if prots_counter == (foldnum):
+                    print("St split configuration accomplished!")
+                else:
+                    print(f"St split configuration not exactly accomplished! ({prots_counter})")
+
+            if not prots_counter and not drugs_counter:
+                print('Sp split configuration accomplished!')
+
+    def print_proportions(verbose=True):
+        for seed in range(len(splits)):
+            if verbose:
+                print(f"Len is {len(splits[seed])}")
+            for fold in range(len(splits[seed])):
+                if verbose:
+                    print(f"Train positives len {len(splits[seed][fold][0])}")
+                    print(f"Train negatives len {len(splits[seed][fold][1])}")
+                    print(f"Test positives len {len(splits[seed][fold][2])}")
+                    print(f"Test negatives len {len(splits[seed][fold][3])}")
+                    print("--------------- END OF FOLD ---------------")
+            if verbose:
+                print("----------------- END OF SEED -----------------")
+
+    print('Checking conditions per fold')
+    #check condition
+    check_condition()
+
+    # if verbose:
+    #     print('Printing proportions')
+    # #print proportions
+    # print_proportions(verbose=verbose)
+
+    return 
+
+#check distribution
+def print_cv_distribution(DTIs, cv_distribution):
+
+    print(f'Number of drugs originally -> {len(set(DTIs.Drug.values))}')
+    print(f'Number of prots originally -> {len(set(DTIs.Protein.values))}')
+
+    element_distribution = f.reduce(lambda a,b: a+b, cv_distribution)
+    drugs = set(list(map(lambda x: x[0], element_distribution)))
+    prots = set(list(map(lambda x: x[1], element_distribution)))
+
+    print(f'Number of drugs in CV -> {len(drugs)}')
+    print(f'Number of prots in CV-> {len(prots)}')
+
+    for drug in drugs:
+        proteins_with_drugs = [element[1] for element in element_distribution if element[0] == drug]
+        print(f"Number of proteins per drug {drug} -> {len(proteins_with_drugs)}")
+
+    for prot in prots:
+        drugs_with_proteins = [element[0] for element in element_distribution if element[1] == prot]
+        print(f"Number of drugs per protein {prot} -> {len(drugs_with_proteins)}")
+
+    ##~
+    return 
 
 
+# ------------------------------------------------------- Sp ------------------------------------------------------------------ #
+##Get 5-seed 10-fold CV Sp (all nodes are seeing during the training)
+sp_splits = generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=5, RMSD_dict_opt=True, include_diagonal_RMSD=False)
 
-def main():
-    '''
-    generate one to one index foldere & files
-    considering splits and subsampling 
-    '''
-    parser = argparse.ArgumentParser() 
-    parser.add_argument("-v", "--verbose", dest="verbosity", action="count", default=4,
-                    help="Verbosity (between 1-4 occurrences with more leading to more "
-                        "verbose logging). CRITICAL=0, ERROR=1, WARN=2, INFO=3, "
-                        "DEBUG=4")
-    parser.add_argument("-dbPath","--dbPath", help="Path to the database output ('BIOSNAP', 'BindingDB', 'Davis_et_al', 'DrugBank_FDA', 'E', 'GPCR', 'IC', 'NR')", type=str)
+#FOR GUILLE - LINE 86 (SP)
+#cv_distr, inv_drug_dd, inv_prot_dd = generate_splits(DTIs, mode= 'Sp', subsampling=False, foldnum=10, RMSD_dict_opt=False, only_distribution=True)
 
-    args = parser.parse_args()
+##check sp split
+check_splits(sp_splits, verbose=False) 
 
-    # -) log info; 
-    # define logging level
-    log_levels = {
-        0: logging.CRITICAL,
-        1: logging.ERROR,
-        2: logging.WARN,
-        3: logging.INFO,
-        4: logging.DEBUG,
-    }
-    # set the logging info
-    level= log_levels[args.verbosity]
-    fmt = '[%(levelname)s] %(message)s'
-    logging.basicConfig(format=fmt, level=level)
+##check distribution
+print_cv_distribution(DTIs, sp_splits[0])
 
-    #######
-    ### log output detals
-    logging.info(
-        '''
-        This script generates data for input model RSMD 
-        '''
-        )
-    # OUTPUT DIRECTORY
-    # sanity check
-    DB_PATH = args.dbPath
-    logging.info(f'Working in output folder for: {DB_PATH}')
-    # PATH
-    db_name = hf.get_DB_name(DB_PATH)
-    hf.check_and_create_folder(db_name)
-    wdir = os.path.join('../Data', db_name)
+print(len(sp_splits))
+print(len(sp_splits[0]))
+print(len(sp_splits[0][0]))
+#print(len(sp_splits[0][0][0]))
+#print(len(sp_splits[0][0][1]))
 
-    ##########################################
+##Load dataset
+dataset = "BIOSNAP"
+path = os.getcwd() + "/Data_RMSD/"+ dataset + "/" + "Sp" + "/"
 
+path_smiles = os.getcwd() + '/Data/' + dataset + '/drugs_smiles_' + dataset +'.txt'
+drugs_smiles = pd.read_csv(path_smiles, delimiter=" ", header = None)
+drugs_smiles = dict(zip(drugs_smiles[0], drugs_smiles[1]))
 
-    # create folders
-    path_folder = os.path.join(wdir, f'Index_RMSD')
-    if not os.path.exists(path_folder):
-        os.makedirs(path_folder)
+path_targetsequences = os.getcwd() + '/Data/' + dataset + '/genes_targetsequences_' + dataset + '.txt' 
+genes_targetsequences = pd.read_csv(path_targetsequences, delimiter=" ", header = None)
+genes_targetsequences = dict(zip(genes_targetsequences[0], genes_targetsequences[1]))
+
+seed_num = 0
+for seed in sp_splits:
+    print(seed[0])
+    print(seed[1])
+    df_train_val = pd.DataFrame(seed[0][0],columns = ['Drug ID', 'Gene', 'Label'] )
+    df_test = pd.DataFrame(seed[0][1],columns = ['Drug ID', 'Gene', 'Label'])
+    df_train, df_val = train_test_split(df_train_val, test_size=0.125,random_state = None, shuffle = False )
     
-    # LOAD DTIs
-    fpath = os.path.join(os.getcwd(), wdir, f'final_dtis_{DB_PATH}.tsv')
-    DTIs = pd.read_csv(fpath,sep='\t',header=None) # header none !!! 
-    DTIs.columns = ['Drug','Protein']
+
+    df_train['SMILES'] = df_train['Drug ID'].map(drugs_smiles)
+    df_val['SMILES'] = df_val['Drug ID'].map(drugs_smiles)
+    df_test['SMILES'] = df_test['Drug ID'].map(drugs_smiles)
+
+    df_train['Target Sequence'] = df_train['Gene'].map(genes_targetsequences)
+    df_val['Target Sequence'] = df_val['Gene'].map(genes_targetsequences)
+    df_test['Target Sequence'] = df_test['Gene'].map(genes_targetsequences)
+
+    df_train.dropna()
+    df_val.dropna()
+    df_test.dropna()
+    base_path = os.getcwd() + '/Data_RMSD/' + dataset + '/' + "Sp" + '/seed' + str(seed_num)
+
+    if not os.path.exists(base_path):
+        os.makedirs(base_path)
+
+    output_path = base_path + "/train.csv"
+    df_train.to_csv(output_path)
+    output_path = base_path + "/val.csv"
+    df_val.to_csv(output_path)
+    output_path = base_path + "/test.csv"
+    df_test.to_csv(output_path)
+
+    seed_num += 1
 
 
-    ## GENERATE SPLITS
-    #splits = generate_splits() # change for new script
 
-    splits = generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=10, RMSD_dict_opt=True, include_diagonal_RMSD=False)
+# ------------------------------------------------------- Sd ------------------------------------------------------------------- #
+##Get 5-seed 10-fold CV Sd (some drugs are not seeing during the training)
+#sd_splits = generate_splits(DTIs, mode= 'Sd', subsampling=True, foldnum=10, RMSD_dict_opt=True)
 
-    # Convert to Matlab index type
-    # this also changes (drug, protein) to (protein, drug)
-    splits_matlab = get_idx_matlab(wdir, splits)
-    
-    ## Save splits as .txt
-    nseed, nfold = 0, 0 
-    for nseed, nfold in product(range(len(splits_matlab)), range(len(splits_matlab[nseed]))):
-        np.savetxt(os.path.join(path_folder, f'train_pos_{nseed+1}_{nfold+1}.txt'), splits_matlab[nseed][nfold][0], fmt='%i', delimiter=" ")
-        np.savetxt(os.path.join(path_folder, f'train_neg_{nseed+1}_{nfold+1}.txt'), splits_matlab[nseed][nfold][1], fmt='%i', delimiter=" ")
-        np.savetxt(os.path.join(path_folder, f'test_pos_{nseed+1}_{nfold+1}.txt'), splits_matlab[nseed][nfold][2], fmt='%i', delimiter=" ")
-        np.savetxt(os.path.join(path_folder, f'test_neg_{nseed+1}_{nfold+1}.txt'), splits_matlab[nseed][nfold][3], fmt='%i', delimiter=" ")
-    
-#####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+##check splits
+#check_splits(sd_splits,verbose=False) 
 
-if __name__ == "__main__":
-    main()
-#####-------------------------------------------------------------------------------------------------------------
-####################### END OF THE CODE ##########################################################################
+##check distributions
+#print_cv_distribution(DTIs,sd_splits)
+# ------------------------------------------------------- St ------------------------------------------------------------------- #
+##Get 5-seed 10-fold CV Sd (some targets are not seeing during the training)
+#st_splits = generate_splits(DTIs, mode= 'St', subsampling=True, foldnum=10, RMSD_dict_opt=True)
+
+##check splits
+#check_splits(st_splits,verbose=False) 
