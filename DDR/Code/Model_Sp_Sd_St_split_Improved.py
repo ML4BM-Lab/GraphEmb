@@ -25,7 +25,7 @@ import math as m
 #not DTI in the training data for some drugs
 ### St, corresponds to the situation when there are
 #not DTI in the training data for some proteins
-def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, train_val_test_percentage = (0.7, 0.1, 0.2), RMSD_dict_opt = False, only_distribution = False, include_diagonal_RMSD = False):
+def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_positive_ratio = 1,  cvopt=True, train_val_test_percentage = (0.7, 0.1, 0.2), RMSD_dict_opt = False, only_distribution = False, include_diagonal_RMSD = False):
 
     def genRMSDdict(genes):
 
@@ -122,7 +122,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, t
     Prot_dd = dict(zip(sorted(Prot_set),Prot_index))
     Prot_inv_dd = {v: k for k, v in Prot_dd.items()}
 
-    def get_interactions_dict(DTIs, seed, subsampling, RMSD_dict):
+    def get_interactions_dict(DTIs, seed, subsampling):
 
         def get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict, Prot_inv_dd):
 
@@ -187,7 +187,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, t
             if subsampling:
                 #check if we can subsample all
                 if not RMSD_dict_opt:
-                    neg_sampled_element = r.sample(neg_element,min(len(neg_element),len(pos_element))) #50%-50% (modify if different proportions are desired)
+                    neg_sampled_element = r.sample(neg_element, min(len(neg_element), negative_to_positive_ratio * len(pos_element))) #50%-50% (modify if different proportions are desired)
                 else:
                     neg_sampled_element = get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict, Prot_inv_dd)
             else:
@@ -592,7 +592,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, t
     print('Performing 10-CV fold for each seed')
     for seed in [7183, 556, 2, 81, 145]:
         print(f"seed {seed}")
-        drug_interactions_dd = get_interactions_dict(DTIs, seed, subsampling=subsampling, RMSD_dict=RMSD_dict)
+        drug_interactions_dd = get_interactions_dict(DTIs, seed, subsampling=subsampling)
 
         # append all interactions
         pos_neg_interactions = list(f.reduce(lambda a,b: a+b, drug_interactions_dd.values()))
@@ -696,10 +696,11 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, cvopt=True, t
 
 #Lets use Yamanishi NR as an example
 ##Load dataset
-#fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','IC','interactions','ic_admat_dgc_mat_2_line.txt')
+fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','IC','interactions','ic_admat_dgc_mat_2_line.txt')
+fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','NR','interactions','nr_admat_dgc_mat_2_line.txt')
 #fpath = os.path.join(os.getcwd(),'DB','Data','Davis_et_al','tdc_package_preprocessing','DAVIS_et_al_2line.tsv')
-fpath = os.path.join(os.getcwd(), 'DB', 'Data', 'BIOSNAP', 'ChG-Miner_miner-chem-gene', 'ChG-Miner_miner-chem-gene.tsv')
-DTIs = pd.read_csv(fpath, sep='\t') ## MAKE SURE THE HEADER OPTION IS ON/OFF DEPENDING ON THE DATASET!
+#fpath = os.path.join(os.getcwd(), 'DB', 'Data', 'BIOSNAP', 'ChG-Miner_miner-chem-gene', 'ChG-Miner_miner-chem-gene.tsv')
+DTIs = pd.read_csv(fpath, sep='\t',header = None) ## MAKE SURE THE HEADER OPTION IS ON/OFF DEPENDING ON THE DATASET!
 DTIs.columns = ['Drug', 'Protein']
 
 #check splits
@@ -797,7 +798,7 @@ def print_cv_distribution(DTIs, cv_distribution):
 
 # ------------------------------------------------------- Sp ------------------------------------------------------------------ #
 ##Get 5-seed 10-fold CV Sp (all nodes are seeing during the training)
-sp_splits = generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=10, cvopt=False,  RMSD_dict_opt=True, include_diagonal_RMSD=False)
+sp_splits = generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=10, negative_to_positive_ratio = 10, cvopt=True,  RMSD_dict_opt=False, include_diagonal_RMSD=False)
 
 #FOR GUILLE - LINE 86 (SP)
 #cv_distr, inv_drug_dd, inv_prot_dd = generate_splits(DTIs, mode= 'Sp', subsampling=False, foldnum=10, RMSD_dict_opt=False, only_distribution=True)

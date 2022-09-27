@@ -6,10 +6,13 @@
 
 ## DRUGS <---#
 
+Side Effect /*
 #    #AERSBIT ^^ FDA, for those not found -> 0 (Weighted cosine correlation coefficient) ✓✓ (IN MARGARET)
 
 #    #AERSFREQ ^^ FDA, for those not found -> 0 (Weighted cosine correlation coefficient) ✓✓ (IN MARGARET)
+*/
 
+Drug Properties /*
 #    #LAMBDA ^^ RchemCPP --> WORKING ON IT (sd2gramSpectrum) ✓✓
 
 #    #MARGINALIZED ^^ RchemCPP --> WORKING ON IT (sd2gram or sd2gramSpectrum) ✓✓
@@ -19,10 +22,15 @@
 #    #SPECTRUM ^^ RchemCPP --> WORKING ON IT (sd2gramSpectrum) ✓✓
 
 #    #TANIMOTO ^^ RchemCPP --> WORKING ON IT (sd2gramSpectrum) ✓✓
- 
+*/
+
+Side Effect
 #    #SIDER ^^ Presence or abscence 1 or 0, not found -> 0 (Weighted cosine correlation coefficient) ✓✓/2 (IN MARGARET)
 
+Drug Properties
 #    #SIMCOMP ^^ (Yamanishi et al) --> ✓ (IN MARGARET)
+
+SMILES ARE NOT USED EXPLICITLY
 
 ## PROTEINS <--#
 
