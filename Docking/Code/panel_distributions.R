@@ -32,20 +32,19 @@ get_data_rmsd <- function(database_name){
     ggplot(data_hist, aes(hits_prot)) +
     ggtitle(tit)+
     labs(x = "RMSD (Å)") +             
-    geom_histogram(bins=60, colour="#0c0f0a", fill="#E03B29")+
+    geom_histogram(bins=60, colour="gray", fill="#E03B29", alpha=0.95, size=0.01)+
     #geom_density()+
     theme_classic()+
-    theme(plot.title = element_text(hjust = 0.5, size=8), 
-          axis.title = element_text(size=5),
+    theme(plot.title = element_text(hjust = 0.5, size=8, face="bold"), 
+          axis.title = element_text(size=6),
           axis.text = element_text(size=5))   
 }
 
-#data_hist <- data.frame(hits_prot)
 #
-list_datasets = c('NR', 'IC', 'GPCR', 'E', 'DrugBank', 'Davis_et_al', 'BindingDB', 'BIOSNAP')
 
-#ht <- get_data('DrugBank')
+#list_datasets = c('NR', 'IC', 'GPCR', 'E', 'DrugBank', 'Davis_et_al', 'BindingDB', 'BIOSNAP')
 
+# load 
 htnr <- get_data_rmsd('NR')
 htic <- get_data_rmsd('IC')
 htec <- get_data_rmsd('E')
@@ -57,20 +56,17 @@ htbiosnap <- get_data_rmsd('BIOSNAP')
 
 
 require(gridExtra)
-
 file_fig_hist <- 'rmsd_panel.pdf'
+
+# render
 pdf(file = file_fig_hist,  width=10, height=6)
-  # ggdraw() +
-  # draw_plot(htnr, x = 0, y = .5, width = .5, height = .5) +
-  # draw_plot(htic, x = .5, y = .5, width = .5, height = .5)
-  #ggarrange(htnr, htic, htec, htgpcr,htdrugbank, htdavis, htbindingdb, htbiosnap,
-  #           common.legend = FALSE, legend = "bottom")
   grid.arrange(htnr, htic, htec, htgpcr, htdrugbank, htdavis, htbindingdb, htbiosnap,
                nrow=2, ncol=4)
 dev.off()
 
 
 
+### DRUGS
 ## panel for drug tanimotos
 
 
@@ -95,17 +91,16 @@ get_data_tanimotos <- function(database_name){
   ggplot(data_hist, aes(hits_drug)) +
     ggtitle(tit)+
     labs(x =  "Drug Similarity (Tanimoto score)") +             
-    geom_histogram(bins=60, colour="#0c0f0a", fill="#4472C4")+
+    geom_histogram(bins=60, colour="gray", fill="#4472C4", alpha=0.95, size=0.05)+
     #geom_density()+
     theme_classic()+
-    theme(plot.title = element_text(hjust = 0.5, size=8), 
-          axis.title = element_text(size=5),
-          axis.text = element_text(size=5))   
+    theme(plot.title = element_text(hjust = 0.5, size=8, face="bold"), 
+          axis.title = element_text(size=6),
+          axis.text = element_text(size=5)) 
 }
 
 
-#  c('NR', 'IC', 'GPCR', 'E', 'DrugBank', 'Davis_et_al', 'BindingDB', 'BIOSNAP')
-
+# Load Plots
 dnr <- get_data_tanimotos('NR')
 dic <-  get_data_tanimotos('IC')
 dgpcr <-  get_data_tanimotos('GPCR')
