@@ -43,12 +43,17 @@ def main():
     # DB_PATH = './../../DB/Data/Davis_et_al/tdc_package_preprocessing/DAVIS_et_al.tsv'
     DB_PATH = args.dbPath
     db_name = hf.get_DB_name(DB_PATH)
-    for K_neigh in [2, 5, 10, 20]:
+    for K_neigh in [5, 2,10, 20]:
         dtis, node_index_dict = hf.read_dtis_DAVIS(DB_PATH)
         new_drug_edges = hf.get_k_neighbors(f'./../Data/{db_name}/Drug_simmatrix/simmatrix/TFIDF__media_scratch_ssd_tmp_Davis_et_al_simmat_dc.txt', top_k=K_neigh)
         dtis.extend(hf.create_edges(new_drug_edges))
         new_prot_edges = hf.get_k_neighbors(f'./../Data/{db_name}/Proteins_SmithWaterman_scores_MinMax.tsv', top_k=K_neigh)
         dtis.extend(hf.create_edges(new_prot_edges, replace_dots=False))
+        admat = hf.get_admat_from_dti(dtis)
+        file_path = os.path.join('./../Data',db_name , db_name + '_' +str(K_neigh) )
+        logging.debug(f"Output files at : {file_path}")
+        admat.to_csv(file_path +'_admat.tsv', sep='\t')
+        hf.write_edges(dtis, file_path +'_dti.tsv')
         # encode the DTIs
         logging.info("Encoding the DTIs")
         encoded_dtis = [

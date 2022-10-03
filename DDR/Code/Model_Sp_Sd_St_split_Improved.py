@@ -25,7 +25,11 @@ import math as m
 #not DTI in the training data for some drugs
 ### St, corresponds to the situation when there are
 #not DTI in the training data for some proteins
-def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_positive_ratio = 1,  cvopt=True, train_val_test_percentage = (0.7, 0.1, 0.2), RMSD_dict_opt = False, RMSD_threshold = 1, only_distribution = False, include_diagonal_RMSD = False):
+def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_positive_ratio = 1,  
+                    cvopt=True, cvopt_no_names = False, ttv_names = True, 
+                    train_val_test_percentage = (0.7, 0.1, 0.2), 
+                    RMSD_dict_opt = False, RMSD_threshold = 1, only_distribution = False, 
+                    include_diagonal_RMSD = False, n_seeds = 5):
 
     def genRMSDdict(genes):
 
@@ -93,11 +97,47 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
         return fDTIs
 
     if RMSD_dict_opt:
+
+        def get_positives_for_final_fold(DTIs):
+
+            #Build dict drug-to-proteins
+            drug_to_prots = dd(list)
+            tupla_index = {}
+            final_pos_edges = []
+            drop_prots = []
+            
+            for i,tupla in enumerate(zip(DTIs['Drug'], DTIs['Protein'])):
+                drug_to_prots[tupla[0]].append(tupla[1])
+                tupla_index[tupla] = i
+
+            for drug in drug_to_prots:
+
+                if len(drug_to_prots[drug]) > 2: 
+                    final_pos_edges.append((drug,r.sample(drug_to_prots[drug],1)[0],1))
+                    drop_prots.append(tupla_index[final_pos_edges[-1][:-1]])
+
+            #Define the kept edges 
+            kept_edges = list(set(range(DTIs.shape[0])).difference(drop_prots))
+
+            DTIs_kept = DTIs.loc[kept_edges,:]
+            DTIs_kept.reset_index(drop=True,inplace=True)
+            DTIs_kept_l = list(zip(DTIs_kept['Drug'], DTIs_kept['Protein']))
+
+            # Check there is no DTI 
+            assert all([out_of_sample_edge[1] not in DTIs_kept_l for out_of_sample_edge in final_pos_edges])
+
+            return final_pos_edges, DTIs_kept
+
+        ## Define a final fold to test the RMSD
+        positive_final_fold, DTIs = get_positives_for_final_fold(DTIs)
+        negative_final_fold = []
+
         print("Applying RMSD sim matrix to perform subsampling!")
         init_genes = set(DTIs['Protein'].values)
         RMSD_dict = genRMSDdict(init_genes)
         DTIs = FilterDTIs(DTIs, RMSD_dict)
 
+        
     if not cvopt:
         train_ratio = train_val_test_percentage[0]
         validation_ratio = train_val_test_percentage[1]
@@ -122,13 +162,18 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
 
     def get_interactions_dict(DTIs, seed, subsampling):
 
-        def get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict, Prot_inv_dd):
+        def get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict):
 
             def unify_genes(allItems, negprots, sampnegprots):
 
                 #first sort
                 sortAllItems = sorted(allItems, key = lambda x: x[1])
                 sortAllItems_thresholded = [prot_rmsd_tuple for prot_rmsd_tuple in sortAllItems if prot_rmsd_tuple[1] > RMSD_threshold]
+
+                #Get the kept out items and select the last one (closest to the threshold)
+                keptOutItems = sorted(set(sortAllItems).difference(sortAllItems_thresholded), key = lambda x: x[1])
+                
+                negative_final_fold.append((Drug_inv_dd[elementid], keptOutItems[-1][0],0))
 
                 #remove duplicities
                 for tupla in sortAllItems_thresholded:
@@ -180,7 +225,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
         #add negatives (subsample to have 50%-50%)
         #go through all drugs/proteins
         for i, elementid in enumerate(tqdm(interactions_dd)):
-            
+
             #print(f"elementid {elementid} in i {i}")
             #subsample from the negatives and add it to interactions dictionary
             #drugs if swap = False | proteins if swap = True
@@ -193,7 +238,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
                 if not RMSD_dict_opt:
                     neg_sampled_element = r.sample(neg_element, min(len(neg_element), negative_to_positive_ratio * len(pos_element))) #50%-50% (modify if different proportions are desired)
                 else:
-                    neg_sampled_element = get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict, Prot_inv_dd)
+                    neg_sampled_element = get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict)
                     # if include_diagonal_RMSD:
                     #     print(f"Positives: {elementid}, Negatives: {neg_sampled_element}")
             else:
@@ -595,8 +640,15 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
     #init seed cv list
     seed_cv_list = []
 
+    #fix seed
+    r.seed(0)
+    if RMSD_dict_opt:
+        n_seeds = 1
+        print("Using only 1 seed for RMSD option!")
+    seeds = [r.randint(1,10000) for _ in range(n_seeds)]
+
     print('Performing 10-CV fold for each seed')
-    for seed in [7183, 556, 2, 81, 145]:
+    for seed in seeds:
         print(f"seed {seed}")
         drug_interactions_dd = get_interactions_dict(DTIs, seed, subsampling=subsampling)
 
@@ -668,13 +720,18 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
             
             print(f"Initial split dimensions {train_ratio}, {validation_ratio}, {test_ratio}")
             print(f"Final split dimensions {len(df_train)/total_len}, {len(df_val)/total_len}, {len(test_df)/total_len}")
+
+            if ttv_names:
+
+                names_train, names_val = names_from_edges(df_train, df_val)
+                names_train, names_test = names_from_edges(df_train, test_df)
+
+                cv_list = [names_train, names_val, names_test]
             
-            #cv_list = [df_train , df_val, test_df]
+            else:
 
-            names_train, names_val = names_from_edges(df_train, df_val)
-            names_train, names_test = names_from_edges(df_train, test_df)
+                cv_list = [df_train , df_val, test_df]
 
-            cv_list = [names_train, names_val, names_test]
 
             seed_cv_list.append(cv_list)
 
@@ -684,32 +741,54 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
             cv_list = []
 
             for train_edges, test_edges in Kfold_from_lists(cv_distribution):
-                #--positives--
-                train_edges_pos, test_edges_pos = train_edges[train_edges[:,2] == 1,:-1], test_edges[test_edges[:,2] == 1,:-1]
-                
-                ##create names matrix from edges list
-                names_train_pos, names_test_pos = names_from_edges(train_edges_pos, test_edges_pos)
 
-                #--negatives--
-                train_edges_neg, test_edges_neg = train_edges[train_edges[:,2] == 0,:-1], test_edges[test_edges[:,2] == 0,:-1]
-                
-                ##create names matrix from edges list
-                names_train_neg, names_test_neg = names_from_edges(train_edges_neg,test_edges_neg)
+                if not cvopt_no_names:
 
-                #print(f"Train pos {len(names_train_pos)}, Train neg {len(names_train_neg)}, Test pos {len(names_test_pos)}, Test neg {len(names_test_neg)}")
+                    #--positives--
+                    train_edges_pos, test_edges_pos = train_edges[train_edges[:,2] == 1,:-1], test_edges[test_edges[:,2] == 1,:-1]
+                    
+                    ##create names matrix from edges list
+                    names_train_pos, names_test_pos = names_from_edges(train_edges_pos, test_edges_pos)
 
-                #add each fold
-                cv_list.append((names_train_pos,names_train_neg,names_test_pos,names_test_neg))
+                    #--negatives--
+                    train_edges_neg, test_edges_neg = train_edges[train_edges[:,2] == 0,:-1], test_edges[test_edges[:,2] == 0,:-1]
+                    
+                    ##create names matrix from edges list
+                    names_train_neg, names_test_neg = names_from_edges(train_edges_neg,test_edges_neg)
+
+                    #print(f"Train pos {len(names_train_pos)}, Train neg {len(names_train_neg)}, Test pos {len(names_test_pos)}, Test neg {len(names_test_neg)}")
+
+                    #add each fold
+                    cv_list.append((names_train_pos,names_train_neg,names_test_pos,names_test_neg))
+
+                else:
+
+                    cv_list.append((train_edges,test_edges))
 
             #add each group of folds for each seed
             seed_cv_list.append(cv_list)
 
-    return seed_cv_list
+
+    if RMSD_dict_opt:
+
+        #Get negative proteins
+        neg_prots = list(map(lambda x: x[1], filter(lambda x: x[2] == 0, cv_distribution[0])))
+        final_fold = positive_final_fold + negative_final_fold
+        prot_info_dict = {'neg_prot_dict': Counter(neg_prots),
+                          'neg_percentage': round(len(neg_prots) / Prot_L * 100,2),
+                          'final_fold' : final_fold}
+        print(f"{len(positive_final_fold)} positives and {len(negative_final_fold)} negatives selected for final fold")
+
+        return seed_cv_list, prot_info_dict
+
+    else:
+
+        return seed_cv_list
 
 #Lets use Yamanishi NR as an example
 ##Load dataset
-fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','IC','interactions','ic_admat_dgc_mat_2_line.txt')
-fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','NR','interactions','nr_admat_dgc_mat_2_line.txt')
+#fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','IC','interactions','ic_admat_dgc_mat_2_line.txt')
+#fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','NR','interactions','nr_admat_dgc_mat_2_line.txt')
 #fpath = os.path.join(os.getcwd(),'DB','Data','Davis_et_al','tdc_package_preprocessing','DAVIS_et_al_2line.tsv')
 fpath = os.path.join(os.getcwd(), 'DB', 'Data', 'BIOSNAP', 'ChG-Miner_miner-chem-gene', 'ChG-Miner_miner-chem-gene.tsv')
 DTIs = pd.read_csv(fpath, sep='\t') ## MAKE SURE THE HEADER OPTION IS ON/OFF DEPENDING ON THE DATASET!
@@ -810,29 +889,31 @@ def print_cv_distribution(DTIs, cv_distribution):
 
 # ------------------------------------------------------- Sp ------------------------------------------------------------------ #
 ##Get 5-seed 10-fold CV Sp (all nodes are seeing during the training)
-sp_splits = generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=10, negative_to_positive_ratio = 1, cvopt=True,  RMSD_dict_opt=True, include_diagonal_RMSD=True)
+sp_splits, prot_info_dict = generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=10, 
+                            negative_to_positive_ratio = 1, cvopt=True,  
+                            RMSD_dict_opt=True, include_diagonal_RMSD=False)
 
 #FOR GUILLE - LINE 86 (SP)
 #cv_distr, inv_drug_dd, inv_prot_dd = generate_splits(DTIs, mode= 'Sp', subsampling=False, foldnum=10, RMSD_dict_opt=False, only_distribution=True)
 
 ##check sp split
-check_splits(sp_splits, verbose=False) 
+#check_splits(sp_splits, verbose=False) 
 
 ##check distribution
-print_cv_distribution(DTIs, sp_splits[0])
+#print_cv_distribution(DTIs, sp_splits[0])
 
 # ------------------------------------------------------- Sd ------------------------------------------------------------------- #
 ##Get 5-seed 10-fold CV Sd (some drugs are not seeing during the training)
-sd_splits = generate_splits(DTIs, mode= 'Sd', subsampling=True, foldnum=10, RMSD_dict_opt=True)
+#sd_splits = generate_splits(DTIs, mode= 'Sd', subsampling=True, foldnum=10, RMSD_dict_opt=True)
 
 ##check splits
-check_splits(sd_splits,verbose=False) 
+#check_splits(sd_splits,verbose=False) 
 
 ##check distributions
 #print_cv_distribution(DTIs,sd_splits)
 # ------------------------------------------------------- St ------------------------------------------------------------------- #
 ##Get 5-seed 10-fold CV Sd (some targets are not seeing during the training)
-st_splits = generate_splits(DTIs, mode= 'St', subsampling=True, foldnum=10, RMSD_dict_opt=True)
+#st_splits = generate_splits(DTIs, mode= 'St', subsampling=True, foldnum=10, RMSD_dict_opt=True)
 
 ##check splits
-check_splits(st_splits,verbose=False) 
+#check_splits(st_splits,verbose=False) 

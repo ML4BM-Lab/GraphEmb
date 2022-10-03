@@ -93,11 +93,15 @@ then run:
 ```
 bash prepare_launch_rmsd.sh -b BIOSNAP
 ```
+bash prepare_launch_rmsd.sh -b BindingDB
+
+
 That copy the file Launch_DTINet_RMSD_matlab.sh
 
 ```
-bash Launch_DTINet_RMSD_matlab.sh
+bash Launch_DTINet_RMSD_matlab.sh -b BIOSNAP
 ```
+bash Launch_DTINet_RMSD_matlab.sh -b BindingDB
 
 
 # Preprocessing of Databases

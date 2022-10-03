@@ -11,6 +11,10 @@ df2line = df2line[df2line.Label == 1].loc[:,['Drug_ID','Target_ID']]
 
 df2line.to_csv(os.path.join('.','tdc_package_preprocessing','DAVIS_et_al_2line.tsv'),sep='\t',header=False,index=False)
 
+## GET ALSO NEGATIVES
+df2line_also_negatives = df2line.loc[:,['Drug_ID','Target_ID','Label']]
+df2line_also_negatives.to_csv(os.path.join('.','tdc_package_preprocessing','DAVIS_et_al_2line.tsv'),sep='\t',header=False,index=False)
+
 
 # drugs = pd.read_csv(os.path.join('../../../','DDR/Data/Davis_et_al/Formatted/PreSNF/symmat','Form_symmat_preSNF_Davis_et_al_drug_adjmat_FDA_aers_bit.tsv'),sep='\t',index_col=0)
 # drug_names = list(map(str,drugs.index))

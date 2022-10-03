@@ -45,7 +45,7 @@ def main():
     logging.info(f"Reading database from: {DB_PATH}")
     db_name = hf.get_DB_name(DB_PATH)
 
-    for K_neigh in [2, 5, 10, 20]:
+    for K_neigh in [5, 2, 10, 20]:
         dtis, node_index_dict = hf.read_dtis_Binding(DB_PATH)
         new_drug_edges = hf.get_k_neighbors(f'./../Data/{db_name}/Drug_simmatrix/simmatrix/TFIDF__media_scratch_ssd_tmp_BindingDB_simmat_dc.txt', top_k=K_neigh)
         dtis.extend(hf.create_edges(new_drug_edges))
@@ -59,6 +59,8 @@ def main():
         ]
         TMP_PATH = hf.create_remove_tmp_folder(os.path.join("/tmp/N2V", db_name))
         dti_coded_path = hf.write_dtis(encoded_dtis, TMP_PATH)
+        file_path = os.path.join('./../Data',db_name , db_name + '_' +str(K_neigh) )
+        hf.write_edges(dtis, file_path +'_dti.tsv')
         dict_path = os.path.splitext(dti_coded_path)[0] + "_node_index_dict.txt"
         hf.write_dict(node_index_dict, dict_path)
         PATH_N2V = "/home/margaret/data/gserranos/SNAP/examples/node2vec/node2vec"

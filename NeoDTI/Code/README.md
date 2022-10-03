@@ -19,7 +19,10 @@
 # -t: Test scenario. The DTI matrix to be tested. Choices are: o, mat_drug_protein.txt will be tested; homo, mat_drug_protein_homo_protein_drug.txt will be tested; drug, mat_drug_protein_drug.txt will be tested; disease, mat_drug_protein_disease.txt will be tested; sideeffect, mat_drug_protein_sideeffect.txt will be tested; unique, mat_drug_protein_drug_unique.txt will be tested. Default: o.
 
 # This is the modified NeoDTI
-nohup python -u src/NeoDTI_cv_mod.py -m Yamanishi_et_al_GoldStandard/GPCR > logs/GPCR.out &
+nohup python -u src/NeoDTI_cv_mod.py -m Yamanishi_et_al_GoldStandard/NR > logs/NR_default.out &
+
+docker cp nr_splits.pickle sad_hodgkin:/NeoDTI/data/Yamanishi_et_al_GoldStandard/NR/.
+
 
 # -- EXTRA
 dic_smiles.json

@@ -60,7 +60,7 @@ def main():
         encoded_dtis = [
             (node_index_dict.get(node1), node_index_dict.get(node2))
             for node1, node2 in dtis
-        ]
+        ] 
         TMP_PATH = hf.create_remove_tmp_folder(os.path.join("/tmp/N2V", db_name))
 
         dti_coded_path = hf.write_dtis(encoded_dtis, TMP_PATH)
