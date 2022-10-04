@@ -1,5 +1,3 @@
-
-from turtle import pos
 import pandas as pd
 
 db_file_path = '../../DB/Data/BindingDB/tdc_package_preprocessing/BindingDB_max_affinity.tsv'
@@ -101,10 +99,11 @@ vals_pos = [i for _, values in multiple_targets_pos for i in values]
 len(vals_neg), len(vals_pos)
 
 plt.clf()
-plt.hist(vals_neg, bins = 500, color = "skyblue", label='negatives')
-plt.hist(vals_pos, bins = 500, color = "lightsalmon", label='positives')
+plt.hist(vals_neg, bins = 500, color = "skyblue", label='negatives', density=True)
+plt.hist(vals_pos, bins = 500, color = "lightsalmon", label='positives', density=True)
+plt.xlabel(('')
 #plt.yscale('log')
-plt.legend()
+#plt.legend()
 plt.savefig('test_rmsd_bindings_2.png')
 
 

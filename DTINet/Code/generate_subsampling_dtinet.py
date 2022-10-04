@@ -21,14 +21,19 @@ from tqdm.contrib.itertools import product
 from sklearn.model_selection import train_test_split
 import math as m
 
+from collections import Counter 
 
 ####################
 #### subsampling with RMSD
 
-## version code rmsd 29SEPT !
+## version code rmsd 4OCT !
 # testing not with different thresholds
 #not DTI in the training data for some proteins
-def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_positive_ratio = 1,  cvopt=True, cvopt_no_names = False, ttv_names = True, train_val_test_percentage = (0.7, 0.1, 0.2), RMSD_dict_opt = False, RMSD_threshold = 1, only_distribution = False, include_diagonal_RMSD = False):
+def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_positive_ratio = 1,  
+                    cvopt=True, cvopt_no_names = False, ttv_names = True, 
+                    train_val_test_percentage = (0.7, 0.1, 0.2), 
+                    RMSD_dict_opt = False, RMSD_threshold = 1, only_distribution = False, 
+                    include_diagonal_RMSD = False, n_seeds = 5):
 
     def genRMSDdict(genes):
 
@@ -96,11 +101,47 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
         return fDTIs
 
     if RMSD_dict_opt:
+
+        def get_positives_for_final_fold(DTIs):
+
+            #Build dict drug-to-proteins
+            drug_to_prots = dd(list)
+            tupla_index = {}
+            final_pos_edges = []
+            drop_prots = []
+            
+            for i,tupla in enumerate(zip(DTIs['Drug'], DTIs['Protein'])):
+                drug_to_prots[tupla[0]].append(tupla[1])
+                tupla_index[tupla] = i
+
+            for drug in drug_to_prots:
+
+                if len(drug_to_prots[drug]) > 2: 
+                    final_pos_edges.append((drug,r.sample(drug_to_prots[drug],1)[0],1))
+                    drop_prots.append(tupla_index[final_pos_edges[-1][:-1]])
+
+            #Define the kept edges 
+            kept_edges = list(set(range(DTIs.shape[0])).difference(drop_prots))
+
+            DTIs_kept = DTIs.loc[kept_edges,:]
+            DTIs_kept.reset_index(drop=True,inplace=True)
+            DTIs_kept_l = list(zip(DTIs_kept['Drug'], DTIs_kept['Protein']))
+
+            # Check there is no DTI 
+            assert all([out_of_sample_edge[1] not in DTIs_kept_l for out_of_sample_edge in final_pos_edges])
+
+            return final_pos_edges, DTIs_kept
+
+        ## Define a final fold to test the RMSD
+        positive_final_fold, DTIs = get_positives_for_final_fold(DTIs)
+        negative_final_fold = []
+
         print("Applying RMSD sim matrix to perform subsampling!")
         init_genes = set(DTIs['Protein'].values)
         RMSD_dict = genRMSDdict(init_genes)
         DTIs = FilterDTIs(DTIs, RMSD_dict)
 
+        
     if not cvopt:
         train_ratio = train_val_test_percentage[0]
         validation_ratio = train_val_test_percentage[1]
@@ -125,13 +166,18 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
 
     def get_interactions_dict(DTIs, seed, subsampling):
 
-        def get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict, Prot_inv_dd):
+        def get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict):
 
             def unify_genes(allItems, negprots, sampnegprots):
 
                 #first sort
                 sortAllItems = sorted(allItems, key = lambda x: x[1])
                 sortAllItems_thresholded = [prot_rmsd_tuple for prot_rmsd_tuple in sortAllItems if prot_rmsd_tuple[1] > RMSD_threshold]
+
+                #Get the kept out items and select the last one (closest to the threshold)
+                keptOutItems = sorted(set(sortAllItems).difference(sortAllItems_thresholded), key = lambda x: x[1])
+                
+                negative_final_fold.append((Drug_inv_dd[elementid], keptOutItems[-1][0],0))
 
                 #remove duplicities
                 for tupla in sortAllItems_thresholded:
@@ -183,7 +229,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
         #add negatives (subsample to have 50%-50%)
         #go through all drugs/proteins
         for i, elementid in enumerate(tqdm(interactions_dd)):
-            
+
             #print(f"elementid {elementid} in i {i}")
             #subsample from the negatives and add it to interactions dictionary
             #drugs if swap = False | proteins if swap = True
@@ -196,7 +242,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
                 if not RMSD_dict_opt:
                     neg_sampled_element = r.sample(neg_element, min(len(neg_element), negative_to_positive_ratio * len(pos_element))) #50%-50% (modify if different proportions are desired)
                 else:
-                    neg_sampled_element = get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict, Prot_inv_dd)
+                    neg_sampled_element = get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict)
                     # if include_diagonal_RMSD:
                     #     print(f"Positives: {elementid}, Negatives: {neg_sampled_element}")
             else:
@@ -598,8 +644,15 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
     #init seed cv list
     seed_cv_list = []
 
+    #fix seed
+    r.seed(0)
+    if RMSD_dict_opt:
+        n_seeds = 1
+        print("Using only 1 seed for RMSD option!")
+    seeds = [r.randint(1,10000) for _ in range(n_seeds)]
+
     print('Performing 10-CV fold for each seed')
-    for seed in [7183, 556, 2, 81, 145]: # seed may be changed here # cut: 
+    for seed in seeds:
         print(f"seed {seed}")
         drug_interactions_dd = get_interactions_dict(DTIs, seed, subsampling=subsampling)
 
@@ -719,8 +772,22 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
             #add each group of folds for each seed
             seed_cv_list.append(cv_list)
 
-    return seed_cv_list
 
+    if RMSD_dict_opt:
+
+        #Get negative proteins
+        neg_prots = list(map(lambda x: x[1], filter(lambda x: x[2] == 0, cv_distribution[0])))
+        final_fold = positive_final_fold + negative_final_fold
+        prot_info_dict = {'neg_prot_dict': Counter(neg_prots),
+                          'neg_percentage': round(len(neg_prots) / Prot_L * 100,2),
+                          'final_fold' : final_fold}
+        print(f"{len(positive_final_fold)} positives and {len(negative_final_fold)} negatives selected for final fold")
+
+        return seed_cv_list, prot_info_dict
+
+    else:
+
+        return seed_cv_list
 
 #Lets use Yamanishi NR as an example
 ##Load dataset
@@ -820,7 +887,14 @@ def main():
     # running refault and changing only threshold !! 
     threshold = 40
     logging.info(f'Selected threshold: {threshold}')
-    splits = generate_splits(DTIs, RMSD_dict_opt = True, RMSD_threshold = threshold)
+    #splits = generate_splits(DTIs, RMSD_dict_opt = True, RMSD_threshold = threshold)
+    splits, prot_info_dict = generate_splits(DTIs, 
+                                                mode= 'Sp',
+                                                negative_to_positive_ratio = 1, 
+                                                RMSD_dict_opt=True, 
+                                                include_diagonal_RMSD=False,
+                                                RMSD_threshold=threshold)
+
 
 
     # Convert to Matlab index type
@@ -835,6 +909,11 @@ def main():
         np.savetxt(os.path.join(path_folder, f'test_pos_{nseed+1}_{nfold+1}.txt'), splits_matlab[nseed][nfold][2], fmt='%i', delimiter=" ")
         np.savetxt(os.path.join(path_folder, f'test_neg_{nseed+1}_{nfold+1}.txt'), splits_matlab[nseed][nfold][3], fmt='%i', delimiter=" ")
     
+    # save final fold
+    final_fold = prot_info_dict.get('final_fold')
+    final_fold_positives = [(drug, protein) for drug, protein, label in final_fold if label == 1]
+    final_fold_negatives = [(drug, protein) for drug, protein, label in final_fold if label == 0]
+    # continue here 
 
     
 #####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

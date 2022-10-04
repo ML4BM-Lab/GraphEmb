@@ -20,7 +20,7 @@ def evaluate_dataset(dataset, dir):
 
         return drugs, proteins, edges, list(map(str,set(df.iloc[:,0].values))), list(map(str,set(df.iloc[:,1].values)))
 
-    def get_info_from_adjmat(files, dataset_matrices, reference):
+    def get_info_from_adjmat(files, dataset_matrices, reference, count_zero = False):
 
         #get adjmats
         adjmats = [matrices for f in files for matrices in dataset_matrices if f in matrices]
@@ -28,6 +28,7 @@ def evaluate_dataset(dataset, dir):
         tot_rows = []
         tot_columns = []
         tot_edges = 0
+        zero_rows = 0
 
         for adjmat in tqdm(adjmats, 'Loading adjacency matrices'):
 
@@ -47,9 +48,14 @@ def evaluate_dataset(dataset, dir):
 
             tot_rows += df_columnfilter.index.tolist()
             tot_columns += df_columnfilter.columns.tolist()
+
+            if count_zero:
+                zero_rows = ((df_columnfilter != 0).sum() == 0).sum() # side effects with all 0s should not be counted as nodes
+                tot_edges -= (df_columnfilter == 0).sum().sum()
+            
             tot_edges += (df_columnfilter.shape[0] * df_columnfilter.shape[1])
 
-        return len(set(tot_rows)),  len(set(tot_columns)), tot_edges
+        return len(set(tot_rows)),  len(set(tot_columns)) - zero_rows, tot_edges
 
     #Get all matrices
     dataset_matrices = os.listdir(dir)
@@ -59,11 +65,11 @@ def evaluate_dataset(dataset, dir):
     dti_drug, dti_prots, dti_edges, dti_drug_names, dti_prots_names = get_info_from_twoline(DTIs_words, dataset_matrices)
 
     if dataset in ['NR','IC','E','GPCR']:
-        dti_prots_names_properties = [x[0:3]+':'+x[3:] for x in dti_prots_names]
+        dti_prots_names = [x[0:3]+':'+x[3:] for x in dti_prots_names]
 
     ## SIDE EFFECTS 
     side_effects_words = ['_drug_FDA_aers_bit.tsv', '_drug_FDA_aers_freq.tsv']
-    side_effects_drugs, side_effects_se , side_effects_edges = get_info_from_adjmat(side_effects_words, dataset_matrices, dti_drug_names)
+    side_effects_drugs, side_effects_se , side_effects_edges = get_info_from_adjmat(side_effects_words, dataset_matrices, dti_drug_names, count_zero = True)
     #only edges
     side_effect_only_edges_words = ['_drug_SIDER_SideEffect.tsv']
     _, _ , side_effects_only_edges = get_info_from_adjmat(side_effect_only_edges_words, dataset_matrices, dti_drug_names)
@@ -74,7 +80,7 @@ def evaluate_dataset(dataset, dir):
 
     ## PROTEIN PROPERTIES
     protein_properties_words = ['_prot_mismatch', '_prot_SmithWaterman', '_prot_spectrum', '_prot_BioGrid']
-    protein_properties_prots, _ , protein_properties_edges = get_info_from_adjmat(protein_properties_words, dataset_matrices, dti_prots_names_properties)
+    protein_properties_prots, _ , protein_properties_edges = get_info_from_adjmat(protein_properties_words, dataset_matrices, dti_prots_names)
 
     #GO
     go_words = ['GO']
