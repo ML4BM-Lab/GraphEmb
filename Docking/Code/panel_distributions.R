@@ -9,9 +9,12 @@ library(magick)
 library(ggplot2)
 library(RColorBrewer)
 
+
+
 ##################
 ##################
 # LOAD FILES
+
 
 scaler <- function(x){(x-min(x))/(max(x)-min(x))}
 
@@ -32,8 +35,9 @@ get_data_rmsd <- function(database_name){
     ggplot(data_hist, aes(hits_prot)) +
     ggtitle(tit)+
     labs(x = "RMSD (Å)") +             
-    geom_histogram(bins=60, colour="gray", fill="#E03B29", alpha=0.95, size=0.01)+
+    geom_histogram(bins=50, colour="gray", fill="#E03B29", alpha=0.95, size=0.01)+
     #geom_density()+
+    #xlim(0, 135) +
     theme_classic()+
     theme(plot.title = element_text(hjust = 0.5, size=8, face="bold"), 
           axis.title = element_text(size=6),
