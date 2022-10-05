@@ -1,5 +1,5 @@
 % this is script has been modified for instroducing splits
-function [roc_avg, pr_avg] = DTINet(seed, nFold, interaction, drug_feat, prot_feat, dim_imc)
+function [roc_avg, pr_avg, final_roc_avg, final_pr_av] = DTINet(seed, nFold, interaction, drug_feat, prot_feat, dim_imc)
 	% later change seed here
 	% auroc lits
 	AUROC_test = zeros(nFold, 1);
@@ -7,12 +7,12 @@ function [roc_avg, pr_avg] = DTINet(seed, nFold, interaction, drug_feat, prot_fe
 	
 	% Final Fold
 	AUROC_final = zeros(nFold, 1);
-	AUPRC_final = zerps(nFold, 1)
+	AUPRC_final = zeros(nFold, 1);
 
 	% anhadir cargar el final fold que es el mismo para todos los folds
-	% seed ? o la dejo con el mismo archivo y ya
-	finalfold_posIdx = load(append('../splits/finalfold_pos_', int2str(seed),'_', int2str(foldID), '.txt'));
-	finalfold_negIdx = load(append('../splits/finalfold_neg_', int2str(seed),'_', int2str(foldID), '.txt'));
+	% seed queda de momento porque va a ser solo 1
+	finalfold_posIdx = load(append('../splits/finalfold_pos_', int2str(seed), '.txt'));
+	finalfold_negIdx = load(append('../splits/finalfold_neg_', int2str(seed), '.txt'));
 	final_idx = [finalfold_posIdx; finalfold_negIdx];
 	Yfinal = [ones(length(finalfold_posIdx), 1); zeros(length(finalfold_negIdx), 1)];
 	fprintf('Final Fold data: %d positives, %d negatives\n', sum(Yfinal == 1), sum(Yfinal == 0));
@@ -43,14 +43,14 @@ function [roc_avg, pr_avg] = DTINet(seed, nFold, interaction, drug_feat, prot_fe
 		AUROC_test(foldID) = testroc;
 		AUPRC_test(foldID) = testpr;
 
-		% Final Fold, need to define Yfinal
+		% Final Fold
 		Ypredfinal = Zscore(final_idx);
 		[finalroc, finaltestpr] = auc(Yfinal, Ypredfinal, 1e-6);
 		AUROC_final(foldID) = testroc;
 		AUPRC_final(foldID) = testpr;
 		
 		% añadir aqui final fold
-		fprintf('Fold %d, Train: AUROC=%f AUPR=%f; Test: AUROC=%f, AUPR=%f\n', foldID, trainroc, trainpr, testroc, testpr);
+		fprintf('Fold %d, Train: AUROC=%f AUPR=%f; Test: AUROC=%f, AUPR=%f, FFold: AUROC=%f, AUPR=%f\n', foldID, trainroc, trainpr, testroc, testpr, finalroc, finaltestpr);
 	end
 	roc_avg = mean(AUROC_test);
     pr_avg = mean(AUPRC_test);

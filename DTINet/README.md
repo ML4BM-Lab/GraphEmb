@@ -79,7 +79,7 @@ A log file is saved wih a name that specifies the run settings.
 
 created new code for splits in
 ```
-generate_splits_dtinet.py
+python3 generate_subsampling_dtinet.py --dbPath BIOSNAP -th 3 -p2n 1
 ```
 
 Then, create a prepare_launch_rmsd.sh
@@ -91,7 +91,7 @@ to copy only the RMSD folder into the splits folder!
 
 then run:
 ```
-bash prepare_launch_rmsd.sh -b BIOSNAP
+bash prepare_launch_rmsd.sh -b BIOSNAP -t 3 -p 1
 ```
 bash prepare_launch_rmsd.sh -b BindingDB
 

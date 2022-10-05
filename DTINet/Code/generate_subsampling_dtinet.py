@@ -795,7 +795,7 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
 
 ## INDEX FOR MATLAB MODEL
 
-def get_idx_matlab(wdir, sp_splits):
+def get_idx_matlab_splits(wdir, sp_splits):
     # for dtinet we need the tuple as (protein, drug)
     # make translation as function --> *
     index_protein_file = 'protein.txt'
@@ -824,6 +824,32 @@ def get_idx_matlab(wdir, sp_splits):
 
 
 
+
+
+def get_idx_matlab_final_fold(wdir, final_fold_positives):
+    # can be used as well for negatives
+    # for dtinet we need the tuple as (protein, drug)
+    index_protein_file = 'protein.txt'
+    index_drug_file = 'drug.txt'
+    # 
+    drugs_list = np.loadtxt(os.path.join(wdir, index_drug_file), dtype=str).tolist()
+    proteins_list = np.loadtxt(os.path.join(wdir, index_protein_file), dtype=str).tolist()
+    # 
+    drug_pos_d = dict(zip(drugs_list,list(range(len(drugs_list)))))
+    protein_pos_d = dict(zip(proteins_list,list(range(len(proteins_list)))))
+    # translate for final fold postives and negatives
+
+    final_fold_positives_matlab = []
+    # iteration over pairs to change tuples in list
+    for drug, protein in final_fold_positives: # translate pairs
+        # this is  drug_protein
+        drug_coo = drug_pos_d[drug]  
+        prot_coo = protein_pos_d[protein] 
+        idx_matlab = np.ravel_multi_index((drug_coo,prot_coo), (len(drugs_list), len(proteins_list)), order='F') + 1 # matlab + 1 and F
+        final_fold_positives_matlab.append(idx_matlab)
+    return final_fold_positives_matlab
+
+
 def main():
     '''
     generate one to one index foldere & files
@@ -835,6 +861,9 @@ def main():
                         "verbose logging). CRITICAL=0, ERROR=1, WARN=2, INFO=3, "
                         "DEBUG=4")
     parser.add_argument("-dbPath","--dbPath", help="Path to the database output ('BIOSNAP', 'BindingDB', 'Davis_et_al', 'DrugBank_FDA', 'E', 'GPCR', 'IC', 'NR')", type=str)
+
+    parser.add_argument("-t", type=int)
+    parser.add_argument("-p", type=int)
 
     args = parser.parse_args()
 
@@ -885,21 +914,28 @@ def main():
     ## GENERATE SPLITS
     #splits = generate_splits() # change for new script
     # running refault and changing only threshold !! 
-    threshold = 40
-    logging.info(f'Selected threshold: {threshold}')
+    THRESHOLD = args.t
+    POS2NEG = args.p
+
+    #threshold = 40
+    logging.info(f'Selected threshold: {THRESHOLD}')
+    print(f'Selected threshold: {THRESHOLD}')
+
+    #neg2pos = 1
+    print(f'neg2pos ratio: {POS2NEG}')
     #splits = generate_splits(DTIs, RMSD_dict_opt = True, RMSD_threshold = threshold)
     splits, prot_info_dict = generate_splits(DTIs, 
-                                                mode= 'Sp',
-                                                negative_to_positive_ratio = 1, 
-                                                RMSD_dict_opt=True, 
-                                                include_diagonal_RMSD=False,
-                                                RMSD_threshold=threshold)
+                                            mode= 'Sp',
+                                            negative_to_positive_ratio = POS2NEG, 
+                                            RMSD_dict_opt=True, 
+                                            include_diagonal_RMSD=False,
+                                            RMSD_threshold=THRESHOLD)
 
-
+    print(f"final fold: prot_info_dict['neg_percentage']: {prot_info_dict['neg_percentage']}")
 
     # Convert to Matlab index type
     # this also changes (drug, protein) to (protein, drug)
-    splits_matlab = get_idx_matlab(wdir, splits)
+    splits_matlab = get_idx_matlab_splits(wdir, splits)
     
     ## Save splits as .txt
     nseed, nfold = 0, 0 
@@ -913,6 +949,14 @@ def main():
     final_fold = prot_info_dict.get('final_fold')
     final_fold_positives = [(drug, protein) for drug, protein, label in final_fold if label == 1]
     final_fold_negatives = [(drug, protein) for drug, protein, label in final_fold if label == 0]
+    # change to matlab
+    final_fold_positives = get_idx_matlab_final_fold(wdir, final_fold_positives)
+    final_fold_negatives = get_idx_matlab_final_fold(wdir, final_fold_negatives)
+    # save
+    nseed = 0
+    # nfold es el mismo siempre
+    np.savetxt(os.path.join(path_folder, f'finalfold_pos_{nseed+1}.txt'), final_fold_positives, fmt='%i', delimiter=" ")
+    np.savetxt(os.path.join(path_folder, f'finalfold_neg_{nseed+1}.txt'), final_fold_negatives, fmt='%i', delimiter=" ")
     # continue here 
 
     
