@@ -35,9 +35,11 @@ function [roc_avg, pr_avg, final_roc_avg, final_pr_av] = DTINet(seed, nFold, int
 
 		[W, H, ~] = train_mf(Xtrain, sparse(drug_feat), sparse(prot_feat), ...
 						[' -l ' num2str(1) ' -k ' num2str(dim_imc) ' -t 10' ' -s ' num2str(10)]); 
+		%
 		Zscore = drug_feat * W' * H * prot_feat';
+		% prediciones en Y para test
 		Ypred = Zscore(test_idx);
-
+		% calcula AUROC /AUPR 
 		[trainroc, trainpr] = auc(Ytrain, Zscore(train_idx), 1e-6);
 		[testroc, testpr] = auc(Ytest, Ypred, 1e-6);
 		AUROC_test(foldID) = testroc;
@@ -46,8 +48,8 @@ function [roc_avg, pr_avg, final_roc_avg, final_pr_av] = DTINet(seed, nFold, int
 		% Final Fold
 		Ypredfinal = Zscore(final_idx);
 		[finalroc, finaltestpr] = auc(Yfinal, Ypredfinal, 1e-6);
-		AUROC_final(foldID) = testroc;
-		AUPRC_final(foldID) = testpr;
+		AUROC_final(foldID) = finalroc;
+		AUPRC_final(foldID) = finaltestpr;
 		
 		% añadir aqui final fold
 		fprintf('Fold %d, Train: AUROC=%f AUPR=%f; Test: AUROC=%f, AUPR=%f, FFold: AUROC=%f, AUPR=%f\n', foldID, trainroc, trainpr, testroc, testpr, finalroc, finaltestpr);

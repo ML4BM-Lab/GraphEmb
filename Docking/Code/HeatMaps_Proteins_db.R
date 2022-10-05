@@ -11,7 +11,7 @@ library(RColorBrewer)
 
 ##################
 # LOAD FILES
-database_name <- 'DrugBank'
+database_name <- 'BIOSNAP'
 
 print(database_name)
 folder_path <- '../Results/data_per_dataset'
@@ -38,12 +38,15 @@ data_hist <- data.frame(hits_prot)
 
 file_fig_hist <- paste0(folder_db_path, '/hist_prot_', database_name, '.pdf')
 
+file_fig_hist <- paste0('0_test_hist_prot_', database_name, '.pdf')
+
 pdf(file = file_fig_hist)
 ggplot(data_hist, aes(hits_prot)) +
   ggtitle("Histogram of RMSD distribution")+
   labs(x = "RMSD (Å)") +             
-  geom_histogram(aes(y = ..density..), bins=60, colour="#0c0f0a", fill="#f18f01")+
-  geom_density()+
+  geom_histogram(bins=160, colour="#0c0f0a", fill="#f18f01")+
+#  geom_density()+
+    xlim(0,40)+
   theme_classic()+
   theme(plot.title = element_text(hjust = 0.5))   
 dev.off()

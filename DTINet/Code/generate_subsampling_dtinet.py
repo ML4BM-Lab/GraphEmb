@@ -794,7 +794,6 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
 
 
 ## INDEX FOR MATLAB MODEL
-
 def get_idx_matlab_splits(wdir, sp_splits):
     # for dtinet we need the tuple as (protein, drug)
     # make translation as function --> *
@@ -821,8 +820,6 @@ def get_idx_matlab_splits(wdir, sp_splits):
             sp_splits[nseed][nfold][set_type][pair] = (idx_matlab) # uncoment
             #sp_splits[nseed][nfold][set_type][pair] = (drug_coo+1, prot_coo+1)
     return sp_splits
-
-
 
 
 
@@ -862,8 +859,8 @@ def main():
                         "DEBUG=4")
     parser.add_argument("-dbPath","--dbPath", help="Path to the database output ('BIOSNAP', 'BindingDB', 'Davis_et_al', 'DrugBank_FDA', 'E', 'GPCR', 'IC', 'NR')", type=str)
 
-    parser.add_argument("-t", type=int)
-    parser.add_argument("-p", type=int)
+    parser.add_argument("-t", type=float)
+    parser.add_argument("-p", type=float, default=1)
 
     args = parser.parse_args()
 
@@ -936,7 +933,6 @@ def main():
     # Convert to Matlab index type
     # this also changes (drug, protein) to (protein, drug)
     splits_matlab = get_idx_matlab_splits(wdir, splits)
-    
     ## Save splits as .txt
     nseed, nfold = 0, 0 
     for nseed, nfold in product(range(len(splits_matlab)), range(len(splits_matlab[nseed]))):
@@ -945,6 +941,7 @@ def main():
         np.savetxt(os.path.join(path_folder, f'test_pos_{nseed+1}_{nfold+1}.txt'), splits_matlab[nseed][nfold][2], fmt='%i', delimiter=" ")
         np.savetxt(os.path.join(path_folder, f'test_neg_{nseed+1}_{nfold+1}.txt'), splits_matlab[nseed][nfold][3], fmt='%i', delimiter=" ")
     
+
     # save final fold
     final_fold = prot_info_dict.get('final_fold')
     final_fold_positives = [(drug, protein) for drug, protein, label in final_fold if label == 1]
