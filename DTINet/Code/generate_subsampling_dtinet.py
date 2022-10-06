@@ -26,8 +26,9 @@ from collections import Counter
 ####################
 #### subsampling with RMSD
 
-## version code rmsd 4OCT !
+## version code rmsd 6-OCT !
 # testing not with different thresholds
+
 #not DTI in the training data for some proteins
 def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_positive_ratio = 1,  
                     cvopt=True, cvopt_no_names = False, ttv_names = True, 
@@ -104,6 +105,9 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
 
         def get_positives_for_final_fold(DTIs):
 
+            #Reset index just in case
+            DTIs.reset_index(drop=True,inplace=True)
+
             #Build dict drug-to-proteins
             drug_to_prots = dd(list)
             tupla_index = {}
@@ -114,11 +118,20 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
                 drug_to_prots[tupla[0]].append(tupla[1])
                 tupla_index[tupla] = i
 
+            #Build also a protein counter, so when we move edges tp the final fold we are not dropping out the protein within that edge
+            protein_d = dict(Counter(DTIs['Protein']))
+
             for drug in drug_to_prots:
 
                 if len(drug_to_prots[drug]) > 2: 
-                    final_pos_edges.append((drug,r.sample(drug_to_prots[drug],1)[0],1))
-                    drop_prots.append(tupla_index[final_pos_edges[-1][:-1]])
+                    
+                    #compute protein multiplicity for the evaluated drug
+                    protein_multiplicity = list(map(lambda x: protein_d[x], drug_to_prots[drug]))
+                    if np.max(protein_multiplicity) > 5:
+                        #choose the protein with the most multiplicity
+                        chosen_protein = drug_to_prots[drug][np.argmax(list(map(lambda x: protein_d[x], drug_to_prots[drug])))]
+                        final_pos_edges.append((drug,chosen_protein,1))
+                        drop_prots.append(tupla_index[final_pos_edges[-1][:-1]])
 
             #Define the kept edges 
             kept_edges = list(set(range(DTIs.shape[0])).difference(drop_prots))
@@ -130,16 +143,18 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
             # Check there is no DTI 
             assert all([out_of_sample_edge[1] not in DTIs_kept_l for out_of_sample_edge in final_pos_edges])
 
-            return final_pos_edges, DTIs_kept
+            print(f"Shape after dropping out some positive proteins {len(set(DTIs_kept['Drug'].values))} x {len(set(DTIs_kept['Protein'].values))}")
 
-        ## Define a final fold to test the RMSD
-        positive_final_fold, DTIs = get_positives_for_final_fold(DTIs)
-        negative_final_fold = []
+            return final_pos_edges, DTIs_kept
 
         print("Applying RMSD sim matrix to perform subsampling!")
         init_genes = set(DTIs['Protein'].values)
         RMSD_dict = genRMSDdict(init_genes)
         DTIs = FilterDTIs(DTIs, RMSD_dict)
+
+        ## Define a final fold to test the RMSD
+        positive_final_fold, DTIs = get_positives_for_final_fold(DTIs)
+        negative_final_fold = []
 
         
     if not cvopt:
@@ -776,18 +791,27 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
     if RMSD_dict_opt:
 
         #Get negative proteins
-        neg_prots = list(map(lambda x: x[1], filter(lambda x: x[2] == 0, cv_distribution[0])))
+        neg_prots = list(set(map(lambda x: x[1], filter(lambda x: x[2] == 0, pos_neg_interactions))))
+
+        #Get positive interactions from the pos_neg_interactions and positive proteins for the final fold, make sure they are not new
+        pos_prots = list(set(map(lambda x: Prot_inv_dd[x[1]], filter(lambda x: x[2] == 1, pos_neg_interactions))))
+        pos_prots_final = list(set(map(lambda x: x[1], filter(lambda x: x[2] == 1, positive_final_fold))))
+
+        assert not set(pos_prots_final).difference(set(pos_prots))
+
+        negative_final_fold = r.sample(negative_final_fold, len(positive_final_fold))
         final_fold = positive_final_fold + negative_final_fold
         prot_info_dict = {'neg_prot_dict': Counter(neg_prots),
                           'neg_percentage': round(len(neg_prots) / Prot_L * 100,2),
                           'final_fold' : final_fold}
-        print(f"{len(positive_final_fold)} positives and {len(negative_final_fold)} negatives selected for final fold")
+        print(f"{len(positive_final_fold)} positives and {len(negative_final_fold)} negatives selected for final fold, negative is using a {prot_info_dict['neg_percentage']}% of total proteins")
 
         return seed_cv_list, prot_info_dict
 
     else:
 
         return seed_cv_list
+
 
 #Lets use Yamanishi NR as an example
 ##Load dataset
