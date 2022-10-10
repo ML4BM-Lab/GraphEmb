@@ -31,7 +31,7 @@ echo "DOCKER_ID: " $DOCKER_ID
 # testing splits
 
 # generate_subsampling_dtinet.pt
-python3 -u generate_subsampling_dtinet.py --dbPath $db -t $th -p $pn  > log_biosnap_"$th"_"$pn"_"$DOCKER_ID".out
+python3 -u generate_subsampling_dtinet.py --dbPath $db -t $th -p $pn  > log_"$db"_"$th"_"$pn"_"$DOCKER_ID".out
 
 
 

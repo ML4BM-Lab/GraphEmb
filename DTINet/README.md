@@ -79,7 +79,7 @@ A log file is saved wih a name that specifies the run settings.
 
 created new code for splits in
 ```
-python3 generate_subsampling_dtinet.py --dbPath BIOSNAP -th 3 -p2n 1
+python3 generate_subsampling_dtinet.py --dbPath BIOSNAP -t 3 -p 1
 ```
 
 Then, create a prepare_launch_rmsd.sh
