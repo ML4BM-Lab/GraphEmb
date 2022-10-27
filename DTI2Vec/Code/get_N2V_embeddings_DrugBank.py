@@ -50,14 +50,17 @@ def main():
         dtis.extend(hf.create_edges(new_drug_edges))
         new_prot_edges = hf.get_k_neighbors(f'./../Data/{db_name}/Proteins_SmithWaterman_scores_MinMax.tsv', top_k=K_neigh)
         dtis.extend(hf.create_edges(new_prot_edges, replace_dots=False))
-        # encode the DTIs
+        admat = hf.get_admat_from_dti(dtis)
+        file_path = os.path.join('./../Data',db_name , db_name + '_' +str(K_neigh) )
+        logging.debug(f"Output files at : {file_path}")
+        admat.to_csv(file_path +'_admat.tsv', sep='\t')
+        hf.write_edges(dtis, file_path +'_dti.tsv')
         logging.info("Encoding the DTIs")
         encoded_dtis = [
             (node_index_dict.get(node1), node_index_dict.get(node2))
             for node1, node2 in dtis
         ]
         TMP_PATH = hf.create_remove_tmp_folder(os.path.join("/tmp/N2V", db_name))
-
         dti_coded_path = hf.write_dtis(encoded_dtis, TMP_PATH)
         dict_path = os.path.splitext(dti_coded_path)[0] + "_node_index_dict.txt"
         hf.write_dict(node_index_dict, dict_path)

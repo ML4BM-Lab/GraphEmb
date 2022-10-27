@@ -20,6 +20,7 @@
 
 # This is the modified NeoDTI
 nohup python -u src/NeoDTI_cv_mod.py -m Yamanishi_et_al_GoldStandard/NR > logs/NR_default.out &
+nohup python -u src/NeoDTI_cv_mod.py -m Yamanishi_et_al_GoldStandard/NR > logs/NR_splits.out &
 
 docker cp nr_splits.pickle sad_hodgkin:/NeoDTI/data/Yamanishi_et_al_GoldStandard/NR/.
 
@@ -32,16 +33,21 @@ DTI_*.txt
 protein.txt
 
 # -- DRUG MATRICES
-## mat_drug_drug
-## Similarity_Matrix_Drugs
-## mat_drug_disease
-## mat_drug_se
+## mat_drug_drug (DDI)
+## Similarity_Matrix_Drugs (Drug Properties)
+## mat_drug_disease (diseases)
+## mat_drug_se (side effects)
 
 # -- DTI matrices
-## mat_drug_protein.txt
+## mat_drug_protein.txt (dti)
 
 # -- PROTEIN MATRICES
-## mat_protein_protein
-## Similarity_Matrix_Proteins
-## mat_protein_disease
+## mat_protein_protein (PPI)
+## Similarity_Matrix_Proteins (Protein Properties)
+## mat_protein_disease # (diseases)
+
+
+
+
+
 

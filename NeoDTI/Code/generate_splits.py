@@ -37,5 +37,17 @@ sp_splits = generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=10,
                             negative_to_positive_ratio = 10, cvopt=True, cvopt_no_names=True,
                             RMSD_dict_opt=False, include_diagonal_RMSD=False)
 
+from collections import Counter
+
+for seed in sp_splits:
+    for fold in seed:
+        for split in fold:
+            a = Counter(list(map(lambda x: x[-1], split)))
+            if a[0] == 0 or a[1] == 0:
+                print("Imbalanced!")
+            
+        
+    
+
 with open('/mnt/md0/data/jfuente/DTI/Input4Models/NeoDTI/Data/Yamanashi_et_al_GoldStandard/NR/nr_splits.pickle', 'wb') as handle:
     pickle.dump(sp_splits, handle, protocol=2)

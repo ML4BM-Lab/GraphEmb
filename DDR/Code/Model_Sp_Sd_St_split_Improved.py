@@ -28,7 +28,7 @@ import math as m
 def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_positive_ratio = 1,  
                     cvopt=True, cvopt_no_names = False, ttv_names = True, 
                     train_val_test_percentage = (0.7, 0.1, 0.2), 
-                    RMSD_dict_opt = False, RMSD_threshold = 1, only_distribution = False, 
+                    RMSD_dict_opt = False, RMSD_threshold = 6, only_distribution = False, 
                     include_diagonal_RMSD = False, n_seeds = 5):
 
     def genRMSDdict(genes):
@@ -123,8 +123,14 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
                     #compute protein multiplicity for the evaluated drug
                     protein_multiplicity = list(map(lambda x: protein_d[x], drug_to_prots[drug]))
                     if np.max(protein_multiplicity) > 5:
+                        
                         #choose the protein with the most multiplicity
                         chosen_protein = drug_to_prots[drug][np.argmax(list(map(lambda x: protein_d[x], drug_to_prots[drug])))]
+
+                        #update the multiplicity of that protein
+                        protein_d[chosen_protein] -= 1
+
+                        #append the chosen edge to drop it
                         final_pos_edges.append((drug,chosen_protein,1))
                         drop_prots.append(tupla_index[final_pos_edges[-1][:-1]])
 
@@ -182,12 +188,41 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
 
                 #first sort
                 sortAllItems = sorted(allItems, key = lambda x: x[1])
+
+                """
+                Before applying the boxes' method
+                ---------------------------------
+                
+
                 sortAllItems_thresholded = [prot_rmsd_tuple for prot_rmsd_tuple in sortAllItems if prot_rmsd_tuple[1] > RMSD_threshold]
 
                 #Get the kept out items and select the last one (closest to the threshold)
                 keptOutItems = sorted(set(sortAllItems).difference(sortAllItems_thresholded), key = lambda x: x[1])
-                
                 negative_final_fold.append((Drug_inv_dd[elementid], keptOutItems[-1][0],0))
+
+                """
+                """
+                After applying the boxe's method
+                """
+
+                train_val_lth = 5
+                train_val_uth = RMSD_threshold
+
+                sortAllItems_thresholded = [prot_rmsd_tuple for prot_rmsd_tuple in sortAllItems if prot_rmsd_tuple[1] > train_val_lth and prot_rmsd_tuple[1] < train_val_uth]
+                
+                if not len(sortAllItems_thresholded):
+                    return
+
+                r.shuffle(sortAllItems_thresholded)
+
+                ## final fold
+                final_fold_lth = 2.5
+                final_fold_uth = 5
+                #Get the kept out items and select the last one (closest to the threshold)
+                keptOutItems = [prot_rmsd_tuple for prot_rmsd_tuple in sortAllItems if prot_rmsd_tuple[1] > final_fold_lth and prot_rmsd_tuple[1] < final_fold_uth]
+                if len(keptOutItems):
+                    negative_final_fold.append((Drug_inv_dd[elementid], r.sample(keptOutItems,1)[0][0],0))
+                
 
                 #remove duplicities
                 for tupla in sortAllItems_thresholded:
@@ -239,7 +274,6 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
         #add negatives (subsample to have 50%-50%)
         #go through all drugs/proteins
         for i, elementid in enumerate(tqdm(interactions_dd)):
-
             #print(f"elementid {elementid} in i {i}")
             #subsample from the negatives and add it to interactions dictionary
             #drugs if swap = False | proteins if swap = True
@@ -253,8 +287,6 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
                     neg_sampled_element = r.sample(neg_element, min(len(neg_element), negative_to_positive_ratio * len(pos_element))) #50%-50% (modify if different proportions are desired)
                 else:
                     neg_sampled_element = get_targets_for_drugs_RMSD(pos_element, neg_element, RMSD_dict)
-                    # if include_diagonal_RMSD:
-                    #     print(f"Positives: {elementid}, Negatives: {neg_sampled_element}")
             else:
                 neg_sampled_element = neg_element #get all negatives
 
@@ -812,9 +844,10 @@ def generate_splits(DTIs, mode='Sp', subsampling=True, foldnum=10, negative_to_p
 #fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','IC','interactions','ic_admat_dgc_mat_2_line.txt')
 #fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','NR','interactions','nr_admat_dgc_mat_2_line.txt')
 #fpath = os.path.join(os.getcwd(),'DB','Data','Davis_et_al','tdc_package_preprocessing','DAVIS_et_al_2line.tsv')
-fpath = os.path.join(os.getcwd(), 'DB', 'Data', 'BIOSNAP', 'ChG-Miner_miner-chem-gene', 'ChG-Miner_miner-chem-gene.tsv')
-DTIs = pd.read_csv(fpath, sep='\t') ## MAKE SURE THE HEADER OPTION IS ON/OFF DEPENDING ON THE DATASET!
-DTIs.columns = ['Drug', 'Protein']
+#fpath = os.path.join(os.getcwd(), 'DB', 'Data', 'BIOSNAP', 'ChG-Miner_miner-chem-gene', 'ChG-Miner_miner-chem-gene.tsv')
+#fpath = os.path.join(os.getcwd(), 'DTINet', 'Data', 'BindingDB', 'final_dtis_BindingDB.tsv')
+#DTIs = pd.read_csv(fpath, sep='\t') ## MAKE SURE THE HEADER OPTION IS ON/OFF DEPENDING ON THE DATASET!
+#DTIs.columns = ['Drug', 'Protein']
 
 #check splits
 def check_splits(splits, verbose=False, foldnum=10):
@@ -911,9 +944,9 @@ def print_cv_distribution(DTIs, cv_distribution):
 
 # ------------------------------------------------------- Sp ------------------------------------------------------------------ #
 ##Get 5-seed 10-fold CV Sp (all nodes are seeing during the training)
-sp_splits, prot_info_dict = generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=10, 
-                            negative_to_positive_ratio = 1, cvopt=True,  
-                            RMSD_dict_opt=True, include_diagonal_RMSD=False)
+# sp_splits, prot_info_dict = generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=10, 
+#                             negative_to_positive_ratio = 1, cvopt=True, RMSD_threshold = 10,
+#                             RMSD_dict_opt=True, include_diagonal_RMSD=False)
 
 #FOR GUILLE - LINE 86 (SP)
 #cv_distr, inv_drug_dd, inv_prot_dd = generate_splits(DTIs, mode= 'Sp', subsampling=False, foldnum=10, RMSD_dict_opt=False, only_distribution=True)
