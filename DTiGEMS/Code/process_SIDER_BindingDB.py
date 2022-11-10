@@ -104,8 +104,8 @@ def main():
     np.fill_diagonal(sider_bit.values, 1)
 
     path = hf.check_and_create_folder(db_name)
-    sider_bit.to_csv(os.path.join(path, "Binding_Drug_SIDER_SideEffect.tsv"), sep="\t")
-    sider_bit.to_pickle(os.path.join(path, "Binding_Drug_SIDER_SideEffect.pickle"))
+    sider_bit.to_csv(os.path.join(path, "BindingDB_Drug_SIDER_SideEffect.tsv"), sep="\t")
+    sider_bit.to_pickle(os.path.join(path, "BindingDB_Drug_SIDER_SideEffect.pickle"))
 
 
 #####+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

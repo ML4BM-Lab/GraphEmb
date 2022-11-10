@@ -381,9 +381,14 @@ def write_all_fastas(fastas, path):
 def get_dti(path):
     with open(path, 'r') as f:
         dtis = f.readlines()
+    if path.endswith('DAVIS_et_al_w_labels.tsv'):
+        dtis = dtis[1:]
+        dtis = [line.strip().split('\t') for line in dtis]
+        dtis = [edge for edge in dtis if edge[-1]==1]
+    else:
         dtis = [edge for edge in dtis if not edge.startswith('#')]
         dtis = [line.strip().split('\t') for line in dtis]
-    return dtis
+        return dtis
 
 def get_admat_from_dti(edges):
     horizontal_nodes = list(set([edge[0] for edge in edges]))
@@ -398,6 +403,7 @@ def get_admat_from_dti(edges):
     adjacency = [[0]*horizontal_length for _ in range(vertical_length)]
     for orig, dest in edges:
         adjacency[vertical_node_position.get(dest)][horizontal_node_position.get(orig)] = 1
+   
     adjacency  = pd.DataFrame(adjacency, columns=horizontal_nodes, index=vertical_nodes)
     return adjacency
 

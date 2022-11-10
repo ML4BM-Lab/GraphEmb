@@ -31,15 +31,15 @@ def get_drugs_targets_names(DT):
 def built_multiple_similarity_matrix(sim_files,dtype, length ):
 	SimF = np.loadtxt(sim_files, delimiter='\n',dtype=str ,skiprows=0)
 	Sim = []
-	if dtype == 'T':
-		length = length -2
 	for i in range(0,len(SimF)):
 		print(SimF[i])
 		simMat = '/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Input/Custom/'+dtype+'sim/'+str(SimF[i])
 		try:
-			Sim.append(np.loadtxt(simMat, delimiter='\t',dtype=np.float64,skiprows=1,usecols=range(1,length+1)))
+			tmp_file = np.loadtxt(simMat, delimiter='\t',dtype=np.float64,skiprows=1,usecols=range(1,length+1))
 		except IndexError:
-			Sim.append(np.loadtxt(simMat, delimiter=' ',dtype=np.float64,skiprows=1,usecols=range(1,length+1)))
+			tmp_file = np.loadtxt(simMat, delimiter=' ',dtype=np.float64,skiprows=1,usecols=range(1,length+1))
+		print(tmp_file.shape)
+		Sim.append(tmp_file)
 	return Sim
 #------------------------------------------------------
 
