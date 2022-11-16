@@ -2,18 +2,77 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+from collections import Counter
+import random
 
 
 import pandas as pd
 
+#bindingdb[bindingdb.UniprotID == 'P34976'].Label.sum() #shape
 
+##### FIRST VERSION
+# protein = selected_prot[1]
+# bindingdb[bindingdb.UniprotID == protein] #shape
+# #for protein in selected_prot:
+# #bindingdb[bindingdb.UniprotID == protein]
+# possible_drugs_df = bindingdb[(bindingdb['UniprotID'] == protein) & (bindingdb['Label'] == 1)]
+# check_most_connect_drug = []
+# for drug in possible_drugs_df.PubChemID.tolist():
+#     total = bindingdb_positives[bindingdb_positives.PubChemID == drug].Label.sum()
+#     check_most_connect_drug.append((drug, total))
+# #drug = possible_drugs_df.PubChemID.tolist()[random.randint(0, possible_drugs_df.shape[0]-1)]
+# drug = max(check_most_connect_drug)[0]
+#####
+
+def vis_distr(drug, protein, RMSD, df_pairs):
+    rmsd_distr = RMSD.loc[protein].drop(index=protein).values.tolist()
+    #len(rmsd_distr)
+
+    # plot stuff
+    plt.clf()
+    #plt.ylim(0,450)
+    plt.hist(rmsd_distr, bins=140, color='skyblue')
+
+    # vertical lines
+    plt.axvline(x = 2.5, color = 'k')
+    plt.axvline(x = 5, color = 'k')
+    plt.axvline(x = 20, color = 'k')
+
+    # props of points
+    dict_col = {1: 'red', 0: 'black'}
+    dict_alpha = {1: 1, 0: 0.25}
+    dict_height = {1: 100, 0: 75}
+
+    num_items = dict(Counter(df_pairs.Label.tolist()))
+
+    colour = [dict_col.get(value) for value in df_pairs.Label.tolist()]
+    alphas = [dict_alpha.get(value) for value in df_pairs.Label.tolist()]
+
+    x_values = df_pairs.RMSD.tolist()
+    y_values = [dict_height.get(value) for value in df_pairs.Label.tolist()]#[75] * len(x_values)
+    #plt.text(65, 150, f'')
+    plt.title(f"{drug} - {protein} : 1 \n 0: {num_items.get(0)} 1:{num_items.get(1)}")
+    plt.scatter(x_values, y_values, c=colour, s =4, alpha=alphas)
+    # create new column for
+    #plt.savefig(f'ttest.png', dpi =330)
+    plt.savefig(f'test_figures/hist_{protein}_{drug}.png', dpi =330)
+
+
+
+def get_rmsd_value(protein_selected, protein_check):
+    if (protein_selected in RMSD.index) and (protein_check in RMSD.index):
+        out = RMSD.loc[protein_selected].loc[protein_check]
+    else:
+        out = None
+    return out
+
+
+############################
+############################
 
 RMSD = pd.read_pickle('../Results/RMSD_full_matrix.pkl')
 
-
-
 db_file_path = '../../DB/Data/BindingDB/tdc_package_preprocessing/BindingDB_max_affinity.tsv'
-
 
 df = pd.read_csv(db_file_path, sep='\t')
 
@@ -41,119 +100,42 @@ bindingdb_positives = bindingdb[bindingdb.Label == 1]
 
 #bindingdb.groupby('UniprotID').sum()
 
-grouped_bindingdb = bindingdb.groupby(by='UniprotID', group_keys=True).count()
-
-selected_prot = grouped_bindingdb.sort_values(by='PubChemID', ascending=False).iloc[10:20].index.tolist()
-
+#grouped_bindingdb_prot = bindingdb.groupby(by='UniprotID', group_keys=True).count()
+grouped_bindingdb_drug = bindingdb_positives.groupby(by='PubChemID', group_keys=True).count()#.sum(numeric_only=True)
 
 
+# select proteins with more drugs attached from 10th to 20th
+#selected_prot = grouped_bindingdb_prot.sort_values(by='PubChemID', ascending=False).iloc[10:20].index.tolist()
 
-protein = selected_prot[0]
+selected_drugs = grouped_bindingdb_drug.sort_values(by='UniprotID', ascending=False).iloc[:30].index.tolist()
+# try to select instead those with highest positives instead of whatever in general.
+#selected_prot = grouped_bindingdb_label.sort_values(by='Label', ascending=False).iloc[10:20].index.tolist()
 
-bindingdb[bindingdb.UniprotID == protein]
-
-
-possible_drugs_df = bindingdb[(bindingdb['UniprotID'] == protein) & (bindingdb['Label'] == 1)]
-
-check_most_connect_drug = []
-for drug in possible_drugs_df.PubChemID.tolist():
-    total = bindingdb_positives[bindingdb_positives.PubChemID == drug].Label.sum()
-    check_most_connect_drug.append((drug, total))
-
-drug = max(check_most_connect_drug)[0]
-
-print(f"Working with true pair {drug} - {protein}")
-
-drop_pair = bindingdb[(bindingdb['UniprotID'] == protein) & (bindingdb['PubChemID'] == drug)].index.tolist()[0]
+#drug = selected_drugs[0]
+## SECOND VERSION WITH DRUGS
 
 
-df_pairs = bindingdb[bindingdb.PubChemID == drug].drop(drop_pair)
+for drug in selected_drugs:
+    
+    pos_prot = bindingdb[(bindingdb.PubChemID == drug) & (bindingdb.Label == 1)] #.Label.sum()
 
-# create a new column that gets the  rms value
-test_ = df_pairs.UniprotID.tolist()[3] #in RMSD.index
-test_
-protein in RMSD.index
+    pos_prot_st = [prot for prot in pos_prot.UniprotID.tolist()  if prot in RMSD.index]
 
-def get_rmsd_value(protein_selected, protein_check):
-    if (protein_selected in RMSD.index) and (protein_check in RMSD.index):
-        out = RMSD.loc[protein_selected].loc[protein_check]
-    else:
-        out = None
-    return out
+    protein = pos_prot_st[random.randint(0, len(pos_prot_st)-1)]
+    
+    if protein not in RMSD.index:
+        continue 
 
-df_pairs['RMSD'] = df_pairs['UniprotID'].apply(lambda x: get_rmsd_value(protein, x))
+    print(f"Working with true pair {drug} - {protein}")
+    drop_pair = bindingdb[(bindingdb['UniprotID'] == protein) & (bindingdb['PubChemID'] == drug)].index.tolist()[0]
+    df_pairs = bindingdb[bindingdb.PubChemID == drug].drop(drop_pair)
 
-df_pairs = df_pairs.dropna()
+    df_pairs['RMSD'] = df_pairs['UniprotID'].apply(lambda x: get_rmsd_value(protein, x))
+    df_pairs = df_pairs.dropna()
+    df_pairs.shape
 
-df_pairs
-
-dict_col = {1: 'green', 0: 'black'}
-colour = [dict_col.get(value) for value in df_pairs.Label.tolist()]
-x_values = df_pairs.RMSD.tolist()
-y_values = [75] * len(x_values)
-
-#plt.scatter(x_values, y_values, c=colour, s =4)
-# create new column for
-#plt.savefig('test_hist_python.png')
+    vis_distr(drug, protein, RMSD, df_pairs)
+    #sleep(2)
 
 
 
-protein
-
-
-from collections import Counter
-
-
-def vis_distr(drug, protein, RMSD, df_pairs):
-    rmsd_distr = RMSD.loc[protein].drop(index=protein).values.tolist()
-    #len(rmsd_distr)
-
-    # plot stuff
-    plt.clf()
-    plt.title(f"{drug} - {protein} : 1")
-    plt.hist(rmsd_distr, bins=140, color='skyblue')
-
-    # vertical lines
-    plt.axvline(x = 2.5, color = 'k')
-    plt.axvline(x = 5, color = 'k')
-    plt.axvline(x = 20, color = 'k')
-
-    # props of points
-    dict_col = {1: 'red', 0: 'black'}
-    dict_alpha = {1: 1, 0: 0.25}
-    dict_height = {1: 100, 0: 75}
-
-    colour = [dict_col.get(value) for value in df_pairs.Label.tolist()]
-    alphas = [dict_alpha.get(value) for value in df_pairs.Label.tolist()]
-
-    x_values = df_pairs.RMSD.tolist()
-    y_values = [dict_height.get(value) for value in df_pairs.Label.tolist()]#[75] * len(x_values)
-    plt.text(65, 150, 'a')
-    plt.scatter(x_values, y_values, c=colour, s =4, alpha=alphas)
-    # create new column for
-    plt.savefig('test_hist_python.png', dpi =330)
-
-dict(Counter(df_pairs.Label.tolist()))
-
-vis_distr(drug, protein, RMSD, df_pairs )
-
-rmsd_vals = RMSD.values
-
-va = rmsd_vals[np.triu_indices(rmsd_vals.shape[0] ,k = 1)]
-
-np.triu(rmsd_vals, k=0)
-
-np.triu_indices(rmsd_vals) 
-
-
-def upper_tri_indexing(A):
-    m = A.shape[0]
-    r,c = np.triu_indices(m,1)
-    return A[r,c]
-
-
-
-vv = upper_tri_indexing(rmsd_vals)
-
-plt.hist(vv)
-plt.savefig('test_hist_python.png')
