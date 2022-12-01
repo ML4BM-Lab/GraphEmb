@@ -44,7 +44,8 @@ def main():
     DTIs = pd.read_csv('/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Input/Custom/DTI.txt', sep='\t')
     DTIs.columns = ['Protein', 'Drug']
     print(args.mode)
-    cv_distr, inv_drug_dd, inv_prot_dd = splitter.generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=5, RMSD_dict_opt=False, only_distribution=True)
+    # CHANGED HERE; TAKE A NEW LOOK!
+    a = splitter.generate_splits(DTIs, mode= 'Sp', n_seeds=1 ,  subsampling=True, foldnum=10, RMSD_dict_opt=False, only_distribution=False, cvopt_no_names=True)
     def get_indexexes(ind_list, X, PosNeg, inv_drug_dd=inv_drug_dd, inv_prot_dd =inv_prot_dd):
         index_list=[]
         x= X.tolist()
@@ -59,10 +60,12 @@ def main():
                 tr = inv_prot_dd[tr]
                 index_list.append(x.index([dr, tr]))
         return(index_list)
+
     # create 2 dictionaries for drugs. First one the keys are their order numbers
     #the second  one the keys are their names -- same for targets
     # drugID = dict([(d, i) for i, d in enumerate(allD)])
     # targetID = dict([(t, i) for i, t in enumerate(allT)])
+
     drugID = dict([(d, i) for i, d in inv_drug_dd.items()])
     targetID = dict([(t, i) for i, t in inv_prot_dd.items()])
 
@@ -98,128 +101,128 @@ def main():
 
     foldCounter = 1     # fold counter
     # for train_index, test_index in  skf.split(X,Y):
-    for fd in range(5):
-    train_index_orig, test_index_orig = train_test_split(cv_distr[foldCounter-1], test_size=0.3)
-    print("*** Working with Fold %i :***" %foldCounter)
-    train_index  = get_indexexes(train_index_orig, X, 1)
-    test_index  = get_indexexes(test_index_orig, X, 1)
-    # create known interaction of training part 
-    R_train_pos = []
-    for i in train_index:
-        if(Y[i]==1):
-            dr = X[i,0]
-            tr = X[i,1]
-            Rpos_data = dr, tr, Y[i]
-            R_train_pos.append(Rpos_data)
+    for fd in range(10):
+        train_index_orig, test_index_orig = train_test_split(cv_distr[foldCounter-1], test_size=0.3)
+        print("*** Working with Fold %i :***" %foldCounter)
+        train_index  = get_indexexes(train_index_orig, X, 1)
+        test_index   = get_indexexes(test_index_orig, X, 1)
+        # create known interaction of training part 
+        R_train_pos = []
+        for i in train_index:
+            if(Y[i]==1):
+                dr = X[i,0]
+                tr = X[i,1]
+                Rpos_data = dr, tr, Y[i]
+                R_train_pos.append(Rpos_data)
 
-    R_tr = pd.DataFrame(R_train_pos)
+        R_tr = pd.DataFrame(R_train_pos)
 
-    #first thing with R train to remove all edges in test (use it when finding path)
-    train_DT_Matrix = Mask_test_index(test_index, X, Y, DrTr, drugID, targetID)
-    DrTr_train = train_DT_Matrix.transpose()
+        #first thing with R train to remove all edges in test (use it when finding path)
+        train_DT_Matrix = Mask_test_index(test_index, X, Y, DrTr, drugID, targetID)
+        DrTr_train = train_DT_Matrix.transpose()
 
     #^^^^^^^^^^^^^^^^^^^^^^^^^ GIP SIMILARITY ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ## get GIP Similarity from training known interactions, TT sim, DD sim
-    DT_impute_D = impute_zeros(DrTr_train,allDsim[1])
-    DT_impute_T = impute_zeros(np.transpose(DrTr_train),allTsim[1])
+        ## get GIP Similarity from training known interactions, TT sim, DD sim
+        DT_impute_D = impute_zeros(DrTr_train,allDsim[1])
+        DT_impute_T = impute_zeros(np.transpose(DrTr_train),allTsim[1])
 
-    GIP_D = Get_GIP_profile(np.transpose(DT_impute_D),"d")
-    GIP_T = Get_GIP_profile(DT_impute_T,"t")
+        GIP_D = Get_GIP_profile(np.transpose(DT_impute_D),"d")
+        GIP_T = Get_GIP_profile(DT_impute_T,"t")
 
-    # ^^^^^^^^^^^^^^^^^^^^^ SNF ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    #fused similarity matrices into one matrix using SNF
+        # ^^^^^^^^^^^^^^^^^^^^^ SNF ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        #fused similarity matrices into one matrix using SNF
 
-    DDsim = []
-    TTsim = []
+        DDsim = []
+        TTsim = []
 
-    #DDsim.append(normDD_Sim)
-    DDsim.append(GIP_D)
-    for sim in allDsim:
-        DDsim.append(sim)
-    
-    #TTsim.append(normTT_Sim)
-    TTsim.append(GIP_T)      
-    for sim in allTsim:
-        TTsim.append(sim)
+        #DDsim.append(normDD_Sim)
+        DDsim.append(GIP_D)
+        for sim in allDsim:
+            DDsim.append(sim)
 
-    fused_simDr = SNF(DDsim,K=5,t=2,alpha=1.0)
-    fused_simTr = SNF(TTsim,K=5,t=2,alpha=1.0)
+        #TTsim.append(normTT_Sim)
+        TTsim.append(GIP_T)      
+        for sim in allTsim:
+            TTsim.append(sim)
+
+        fused_simDr = SNF(DDsim,K=5,t=2,alpha=1.0)
+        fused_simTr = SNF(TTsim,K=5,t=2,alpha=1.0)
 
     #^^^^^^^^^^^^^^^^^^^^^^^^^DTIs with node2vec code^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    k = 5
-    # remove all weak edges by keep strongest k similarities
-    TSsim = Strongest_k_sim(allTsim[0] ,k)
-    DSsim = Strongest_k_sim(allDsim[0],k)
+        k = 5
+        # remove all weak edges by keep strongest k similarities
+        TSsim = Strongest_k_sim(allTsim[0] ,k)
+        DSsim = Strongest_k_sim(allDsim[0],k)
 
-    # convert GIP similarity matrix into edgelist
-    PP_edgeList = edgeList(TSsim , allT)
-    DD_edgeList = edgeList(DSsim, allD )
-    # create the edge list of the whole graph including (DD, PP, R_train)
-    frames = [R_tr, DD_edgeList, PP_edgeList]
-    allEdgeList = pd.concat(frames)
-    
-    # write it in a file for next reading of node2vec
-    input_filename = 'edgeLists/edgeList_%i.txt '%foldCounter
-    allEdgeList.to_csv(input_filename, header = None, index = None, sep=' ')
+        # convert GIP similarity matrix into edgelist
+        PP_edgeList = edgeList(TSsim , allT)
+        DD_edgeList = edgeList(DSsim, allD )
+        # create the edge list of the whole graph including (DD, PP, R_train)
+        frames = [R_tr, DD_edgeList, PP_edgeList]
+        allEdgeList = pd.concat(frames)
+        
+        # write it in a file for next reading of node2vec
+        input_filename = 'edgeLists/edgeList_%i.txt '%foldCounter
+        allEdgeList.to_csv(input_filename, header = None, index = None, sep=' ')
 
-    # write edgeList and then read it for NODE2VEC generate Embedding
-    # read the graph to feed it into node2vec
-    train_graph_file = open(input_filename, 'r')
-    args.input = train_graph_file  
-    print('input is',args.input)
+        # write edgeList and then read it for NODE2VEC generate Embedding
+        # read the graph to feed it into node2vec
+        train_graph_file = open(input_filename, 'r')
+        args.input = train_graph_file  
+        print('input is',args.input)
 
-    #<<<<<<<<<<<<<<<<<<<<<<<<><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    # apply n2v on R positive training part and get the embeddings (protien_drugs FV)
-    nx_G = read_graph(args)
-    G = node2vec.Graph(nx_G, args.directed, args.p, args.q)
-    G.preprocess_transition_probs()
-    walks = G.simulate_walks(args.num_walks, args.walk_length)
-    learn_embeddings(walks, args)
+        #<<<<<<<<<<<<<<<<<<<<<<<<><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        # apply n2v on R positive training part and get the embeddings (protien_drugs FV)
+        nx_G = read_graph(args)
+        G = node2vec.Graph(nx_G, args.directed, args.p, args.q)
+        G.preprocess_transition_probs()
+        walks = G.simulate_walks(args.num_walks, args.walk_length)
+        learn_embeddings(walks, args)
 
-    # get the feature vector of R_positive training part (think about sending part!!??)
-    targetFV, drugFV = get_FV_drug_target(args, foldCounter, allT, allD)
-    
-    # Calculate cosine similarity for each drug pair, and for each target pair
-    cos_simDD = Cosine_Similarity(drugFV)
-    cos_simTT = Cosine_Similarity(targetFV)
-    # normalize simiarities to be in positive range [0,1]
-    cos_simDD = normalizedMatrix(cos_simDD)
-    cos_simTT  = normalizedMatrix(cos_simTT )
-    #---------------------------------------------------------------------   
+        # get the feature vector of R_positive training part (think about sending part!!??)
+        targetFV, drugFV = get_FV_drug_target(args, foldCounter, allT, allD)
+        
+        # Calculate cosine similarity for each drug pair, and for each target pair
+        cos_simDD = Cosine_Similarity(drugFV)
+        cos_simTT = Cosine_Similarity(targetFV)
+        # normalize simiarities to be in positive range [0,1]
+        cos_simDD = normalizedMatrix(cos_simDD)
+        cos_simTT  = normalizedMatrix(cos_simTT )
+        #---------------------------------------------------------------------   
 
-    # Generate all featres from the matrix multiplication of each path strucutre
-    # list for each feature (Graph G1)
-    sumDDD, maxDDD = DDD_TTT_sim(fused_simDr)
-    sumTTT, maxTTT= DDD_TTT_sim(fused_simTr)
-    
-    sumDDT,maxDDT = metaPath_Dsim_DT(fused_simDr,DrTr_train,2,True) 
-    sumDTT,maxDTT = metaPath_DT_Tsim(fused_simTr,DrTr_train,2,True)
+        # Generate all featres from the matrix multiplication of each path strucutre
+        # list for each feature (Graph G1)
+        sumDDD, maxDDD = DDD_TTT_sim(fused_simDr)
+        sumTTT, maxTTT= DDD_TTT_sim(fused_simTr)
+        
+        sumDDT,maxDDT = metaPath_Dsim_DT(fused_simDr,DrTr_train,2,True) 
+        sumDTT,maxDTT = metaPath_DT_Tsim(fused_simTr,DrTr_train,2,True)
 
-    sumDDDT,_ = metaPath_Dsim_DT(sumDDD,DrTr_train,3,True)
-    _,maxDDDT = metaPath_Dsim_DT(maxDDD,DrTr_train,3,True)
+        sumDDDT,_ = metaPath_Dsim_DT(sumDDD,DrTr_train,3,True)
+        _,maxDDDT = metaPath_Dsim_DT(maxDDD,DrTr_train,3,True)
 
-    sumDTTT,_ = metaPath_DT_Tsim(sumTTT,DrTr_train,3,True)
-    _,maxDTTT = metaPath_DT_Tsim(maxTTT,DrTr_train,3,True)
+        sumDTTT,_ = metaPath_DT_Tsim(sumTTT,DrTr_train,3,True)
+        _,maxDTTT = metaPath_DT_Tsim(maxTTT,DrTr_train,3,True)
 
-    sumDTDT,maxDTDT = metaPath_DTDT(DrTr_train)
-    sumDDTT,maxDDTT = metaPath_DDTT(DrTr_train,fused_simDr,fused_simTr, True)
-#============================================================================== 
-    # Generate all featres from the matrix multiplication of each path strucutre
-    # list for each feature (Graph G2)
-    sumDDD2, maxDDD2 = DDD_TTT_sim(cos_simDD)
-    sumTTT2, maxTTT2= DDD_TTT_sim(cos_simTT)
-    
-    sumDDT2,maxDDT2 = metaPath_Dsim_DT(cos_simDD,DrTr_train,2,True) 
-    sumDTT2,maxDTT2 = metaPath_DT_Tsim(cos_simTT,DrTr_train,2,True)
+        sumDTDT,maxDTDT = metaPath_DTDT(DrTr_train)
+        sumDDTT,maxDDTT = metaPath_DDTT(DrTr_train,fused_simDr,fused_simTr, True)
+    #============================================================================== 
+        # Generate all featres from the matrix multiplication of each path strucutre
+        # list for each feature (Graph G2)
+        sumDDD2, maxDDD2 = DDD_TTT_sim(cos_simDD)
+        sumTTT2, maxTTT2= DDD_TTT_sim(cos_simTT)
+        
+        sumDDT2,maxDDT2 = metaPath_Dsim_DT(cos_simDD,DrTr_train,2,True) 
+        sumDTT2,maxDTT2 = metaPath_DT_Tsim(cos_simTT,DrTr_train,2,True)
 
-    sumDDDT2,_ = metaPath_Dsim_DT(sumDDD2,DrTr_train,3,True)
-    _,maxDDDT2 = metaPath_Dsim_DT(maxDDD2,DrTr_train,3,True)
+        sumDDDT2,_ = metaPath_Dsim_DT(sumDDD2,DrTr_train,3,True)
+        _,maxDDDT2 = metaPath_Dsim_DT(maxDDD2,DrTr_train,3,True)
 
-    sumDTTT2,_ = metaPath_DT_Tsim(sumTTT2,DrTr_train,3,True)
-    _,maxDTTT2 = metaPath_DT_Tsim(maxTTT2,DrTr_train,3,True)
+        sumDTTT2,_ = metaPath_DT_Tsim(sumTTT2,DrTr_train,3,True)
+        _,maxDTTT2 = metaPath_DT_Tsim(maxTTT2,DrTr_train,3,True)
 
-    sumDTDT2,maxDTDT2 = metaPath_DTDT(DrTr_train)
-    sumDDTT2,maxDDTT2 = metaPath_DDTT(DrTr_train,cos_simDD,cos_simTT, True)
+        sumDTDT2,maxDTDT2 = metaPath_DTDT(DrTr_train)
+        sumDDTT2,maxDDTT2 = metaPath_DDTT(DrTr_train,cos_simDD,cos_simTT, True)
     
     #============================================================================== 
     ### Build feature vector and class labels

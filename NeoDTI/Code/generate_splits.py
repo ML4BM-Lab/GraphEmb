@@ -10,7 +10,7 @@ import numpy as np
 #Lets use Yamanishi NR as an example
 ##Load dataset
 #fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','IC','interactions','ic_admat_dgc_mat_2_line.txt')
-fpath = os.path.join(os.getcwd(),'../../DB','Data','Yamanashi_et_al_GoldStandard','NR','interactions','nr_admat_dgc_mat_2_line.txt')
+#fpath = os.path.join(os.getcwd(),'DB','Data','Yamanashi_et_al_GoldStandard','NR','interactions','nr_admat_dgc_mat_2_line.txt')
 #fpath = os.path.join(os.getcwd(),'DB','Data','Davis_et_al','tdc_package_preprocessing','DAVIS_et_al_2line.tsv')
 #fpath = os.path.join(os.getcwd(), 'DB', 'Data', 'BIOSNAP', 'ChG-Miner_miner-chem-gene', 'ChG-Miner_miner-chem-gene.tsv')
 
@@ -28,12 +28,13 @@ def mat_to_2line(dti):
     #
     return pd.DataFrame(dp_2line)
 
-##NEODTI
-fpath = os.path.join('/home/jfuente/data/jfuente/DTI/Input4Models/','NeoDTI','Data','Yamanashi_et_al_GoldStandard','NR','mat_drug_protein.txt')
+##NEODTI (we need to reconstruct the DTI from the drug_protein.txt file )
+
+fpath = os.path.join(os.getcwd(),'NeoDTI','Data','Yamanashi_et_al_GoldStandard','GPCR','mat_drug_protein.txt')
 DTIs = mat_to_2line(pd.read_csv(fpath, sep='\t', header = None)) ## MAKE SURE THE HEADER OPTION IS ON/OFF DEPENDING ON THE DATASET!
 DTIs.columns = ['Drug', 'Protein']
 
-sp_splits = generate_splits(DTIs, mode= 'Sp', subsampling=True, foldnum=10, 
+st_splits = generate_splits(DTIs, mode= 'St', subsampling=True, foldnum=10, 
                             negative_to_positive_ratio = 10, cvopt=True, cvopt_no_names=True,
                             RMSD_dict_opt=False, include_diagonal_RMSD=False)
 
@@ -49,5 +50,5 @@ for seed in sp_splits:
         
     
 
-with open('/mnt/md0/data/jfuente/DTI/Input4Models/NeoDTI/Data/Yamanashi_et_al_GoldStandard/NR/nr_splits.pickle', 'wb') as handle:
-    pickle.dump(sp_splits, handle, protocol=2)
+with open('/mnt/md0/data/jfuente/DTI/Input4Models/NeoDTI/Data/Yamanashi_et_al_GoldStandard/GPCR/gpcr_splits_St.pickle', 'wb') as handle:
+    pickle.dump(st_splits, handle, protocol=2)

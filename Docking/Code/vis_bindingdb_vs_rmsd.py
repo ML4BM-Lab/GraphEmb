@@ -24,7 +24,7 @@ import pandas as pd
 # drug = max(check_most_connect_drug)[0]
 #####
 
-def vis_distr(drug, protein, RMSD, df_pairs):
+def vis_distr(drug, protein, RMSD, df_pairs, mapcol = 'autumn'):
     rmsd_distr = RMSD.loc[protein].drop(index=protein).values.tolist()
     #len(rmsd_distr)
 
@@ -45,19 +45,40 @@ def vis_distr(drug, protein, RMSD, df_pairs):
 
     num_items = dict(Counter(df_pairs.Label.tolist()))
 
-    colour = [dict_col.get(value) for value in df_pairs.Label.tolist()]
-    alphas = [dict_alpha.get(value) for value in df_pairs.Label.tolist()]
+    #colour = [dict_col.get(value) for value in df_pairs.Label.tolist()]
+    colour = df_pairs.Y.tolist()
+    colour = [col if col < 100 else 100 for col in colour]
+    #colour =  [float(i)/sum(colour) for i in colour]
+    alphas = [1] * len(colour) #[dict_alpha.get(value) for value in df_pairs.Label.tolist()]
 
     x_values = df_pairs.RMSD.tolist()
+    [a,b,c,d] = get_intervals(x_values)
     y_values = [dict_height.get(value) for value in df_pairs.Label.tolist()]#[75] * len(x_values)
     #plt.text(65, 150, f'')
-    plt.title(f"{drug} - {protein} : 1 \n 0: {num_items.get(0)} 1:{num_items.get(1)}")
-    plt.scatter(x_values, y_values, c=colour, s =4, alpha=alphas)
+    plt.title(f"{drug} - {protein} : 1 \n 0: {num_items.get(0)} 1:{num_items.get(1)}\n {a:.2f}/{b:.2f}/{c:.2f}/{d:.2f}")
+    plt.scatter(x_values, y_values, c=colour, s =4, alpha=alphas, cmap = mapcol)
     # create new column for
-    #plt.savefig(f'ttest.png', dpi =330)
-    plt.savefig(f'test_figures/hist_{protein}_{drug}.png', dpi =330)
+    plt.colorbar()
+    plt.savefig(f'ttest.png', dpi =330)
+    #plt.savefig(f'test_figures/hist_{protein}_{drug}.png', dpi =330)
 
 
+# 
+def get_intervals(x_values):
+    a,b,c,d = 0,0,0,0
+    tot = len(x_values)
+    for val in x_values:
+        if val >0 and val < 2.5:
+            a+=1
+        elif val > 2.5 and val < 5:
+            b+=1
+        elif val > 5 and val < 20:
+            c+=1
+        else:
+            d+=1
+    return np.array([a,b,c,d])/tot * 100
+
+#x_values
 
 def get_rmsd_value(protein_selected, protein_check):
     if (protein_selected in RMSD.index) and (protein_check in RMSD.index):
@@ -93,7 +114,7 @@ bindingdb
 
 threshold = 30
 bindingdb['Label'] = [1 if x < threshold else 0 for x in bindingdb['Y']]
-bindingdb = bindingdb.drop(columns='Y')
+#bindingdb = bindingdb.drop(columns='Y')
 
 bindingdb_negatives = bindingdb[bindingdb.Label == 0]
 bindingdb_positives = bindingdb[bindingdb.Label == 1]
@@ -117,6 +138,8 @@ selected_drugs = grouped_bindingdb_drug.sort_values(by='UniprotID', ascending=Fa
 
 for drug in selected_drugs:
     
+    # def generate_df_pairs(bindingdb, drug, RMSD):
+    # if not protein: # and protein=None as argument
     pos_prot = bindingdb[(bindingdb.PubChemID == drug) & (bindingdb.Label == 1)] #.Label.sum()
 
     pos_prot_st = [prot for prot in pos_prot.UniprotID.tolist()  if prot in RMSD.index]
@@ -132,10 +155,15 @@ for drug in selected_drugs:
 
     df_pairs['RMSD'] = df_pairs['UniprotID'].apply(lambda x: get_rmsd_value(protein, x))
     df_pairs = df_pairs.dropna()
-    df_pairs.shape
-
-    vis_distr(drug, protein, RMSD, df_pairs)
+    #df_pairs.shape
+    # return df_pairs
+    vis_distr(drug, protein, RMSD, df_pairs, mapcol = 'cool')
     #sleep(2)
 
 
 
+
+drug = '9829523'
+protein = 'P07332'
+
+vis_distr(drug, protein, RMSD, df_pairs, mapcol = 'gray')
