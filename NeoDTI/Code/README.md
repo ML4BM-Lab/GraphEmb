@@ -20,7 +20,9 @@
 
 # This is the modified NeoDTI
 nohup python -u src/NeoDTI_cv_mod.py -m Yamanishi_et_al_GoldStandard/NR > logs/NR_default.out &
-nohup python -u src/NeoDTI_cv_mod.py -m Yamanishi_et_al_GoldStandard/IC > logs/IC_splits_St.out &
+nohup python -u src/NeoDTI_cv_mod.py -m Yamanishi_et_al_GoldStandard/IC > logs/IC_splits_Sp.out &
+
+nohup python -u src/NeoDTI_cv_mod.py -m Yamanishi_et_al_GoldStandard/GPCR > logs/GPCR_splits_St.out &
 
 docker cp nr_splits.pickle sad_hodgkin:/NeoDTI/data/Yamanishi_et_al_GoldStandard/NR/.
 
