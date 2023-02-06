@@ -1,7 +1,8 @@
 
 SPLIT=Sp
-DATA_NAME=E
-DATA_PATH=/home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Data/Yamanashi_et_al_GoldStandard/$DATA_NAME
+DATA_NAME=BIOSNAP
+# DATA_PATH=/home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Data/Yamanashi_et_al_GoldStandard/$DATA_NAME
+DATA_PATH=/home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Data/$DATA_NAME
 eval "DOCKER_ID=$( docker run -d -t dtgems:1.0 bash)";
 
 docker exec $DOCKER_ID pip install tqdm
@@ -28,9 +29,9 @@ docker cp $DATA_PATH/${DATA_NAME}_prot_SmithWaterman_scores_MinMax.tsv $DOCKER_I
 docker cp $DATA_PATH/${DATA_NAME}_prot_spectrum_kernel_k3.tsv $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Input/Custom/Tsim/
 docker cp $DATA_PATH/${DATA_NAME}_prot_spectrum_kernel_k4.tsv $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Input/Custom/Tsim/
 
-docker exec $DOCKER_ID ls -A1 /Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Input/Custom/Tsim/ > $DATA_PATH/allTsim_files.txt
+docker exec $DOCKER_ID find /Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Input/Custom/Tsim/  -name "${DATA_NAME}_*" -exec  basename {} \; > $DATA_PATH/allTsim_files.txt
 docker cp $DATA_PATH/allTsim_files.txt $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Input/Custom/Tsim/
-docker exec $DOCKER_ID ls -A1 /Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Input/Custom/Dsim/ > $DATA_PATH/allDsim_files.txt
+docker exec $DOCKER_ID find /Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Input/Custom/Dsim/  -name "${DATA_NAME}_*" -exec  basename {} \; > $DATA_PATH/allDsim_files.txt
 docker cp $DATA_PATH/allDsim_files.txt $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Input/Custom/Dsim/
 
 # python3 get_admat_from_dti_Yamanashi.py ./../../DB/Data/Yamanashi_et_al_GoldStandard/$DATA_NAME/interactions/${DATA_NAME,,}_admat_dgc_mat_2_line.txt
@@ -38,9 +39,11 @@ docker cp $DATA_PATH/allDsim_files.txt $DOCKER_ID:/Drug-Target-Interaction-Predi
 docker cp $DATA_PATH/${DATA_NAME}_admat.tsv $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Input/Custom/admat_dgc.txt
 docker cp $DATA_PATH/${DATA_NAME}_dti.tsv $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Input/Custom/DTI.txt
 
+docker cp  /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Code/Model_Sp_Sd_St_split_Improved.py $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Model_Sp_Sd_St_split_Improved.py
+
 docker cp  /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Code/load_datasets.py $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/load_datasets.py
-# docker cp  /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Code/Clean_data_${DATA_NAME}.py $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Clean_data.py
-docker cp  /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Code/Clean_data_Yamanishi.py $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Clean_data.py
+docker cp  /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Code/Clean_data_${DATA_NAME}.py $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Clean_data.py
+# docker cp  /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Code/Clean_data_Davis.py $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Clean_data.py
 # docker cp  /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Code/DTIs_Main.py $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/DTIs_Main.py
 docker cp  /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Code/DTIs_Main_Splits.py $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/DTIs_Main.py
 docker cp  /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Code/n2v_mainFunctions.py $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/n2v_mainFunctions.py

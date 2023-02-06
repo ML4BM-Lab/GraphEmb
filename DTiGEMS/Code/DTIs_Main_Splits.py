@@ -45,29 +45,15 @@ def main():
     DTIs.columns = ['Protein', 'Drug']
     print(args.mode)
     # CHANGED HERE; TAKE A NEW LOOK!
-    a = splitter.generate_splits(DTIs, mode= 'Sp', n_seeds=1 ,  subsampling=True, foldnum=10, RMSD_dict_opt=False, only_distribution=False, cvopt_no_names=True)
-    def get_indexexes(ind_list, X, PosNeg, inv_drug_dd=inv_drug_dd, inv_prot_dd =inv_prot_dd):
-        index_list=[]
-        x= X.tolist()
-        for dr, tr, y in tqdm(ind_list):
-            if (PosNeg == 'None'):
-                dr = inv_drug_dd[dr]
-                tr = inv_prot_dd[tr]
-                index_list.append(x.index([dr, tr]))
-                next
-            if (y == PosNeg):
-                dr = inv_drug_dd[dr]
-                tr = inv_prot_dd[tr]
-                index_list.append(x.index([dr, tr]))
-        return(index_list)
+    splits = splitter.generate_splits(DTIs, mode= str(args.mode), n_seeds=1 ,  subsampling=True, foldnum=10, RMSD_dict_opt=False, only_distribution=False, cvopt_no_names=True)
 
     # create 2 dictionaries for drugs. First one the keys are their order numbers
     #the second  one the keys are their names -- same for targets
-    # drugID = dict([(d, i) for i, d in enumerate(allD)])
-    # targetID = dict([(t, i) for i, t in enumerate(allT)])
+    drugID = dict([(d, i) for i, d in enumerate(sorted(allD))])
+    targetID = dict([(t, i) for i, t in enumerate(sorted(allT))])
 
-    drugID = dict([(d, i) for i, d in inv_drug_dd.items()])
-    targetID = dict([(t, i) for i, t in inv_prot_dd.items()])
+    inv_drugID = dict([(d, i) for i, d in drugID.items()])
+    inv_targetID = dict([(t, i) for i, t in targetID.items()])
 
     #-----------------------------------------
     ###### Define different classifiers
@@ -80,9 +66,7 @@ def main():
                         min_samples_leaf=1, max_features=None, random_state=1,max_leaf_nodes=None, 
                         class_weight= 'balanced' ), algorithm="SAMME", n_estimators=100,random_state=32)
 
-    # 10-folds Cross Validation...............
-    skf = StratifiedKFold(n_splits=10, shuffle = True, random_state = 22)
-    skf.get_n_splits(X, Y)
+
     # all evaluation listsSelect..
     correct_classified = []
     ps = []
@@ -98,25 +82,45 @@ def main():
     FN = []
     TP = []
 
-
     foldCounter = 1     # fold counter
     # for train_index, test_index in  skf.split(X,Y):
-    for fd in range(10):
-        train_index_orig, test_index_orig = train_test_split(cv_distr[foldCounter-1], test_size=0.3)
-        print("*** Working with Fold %i :***" %foldCounter)
-        train_index  = get_indexexes(train_index_orig, X, 1)
-        test_index   = get_indexexes(test_index_orig, X, 1)
+    for fd in range(len(splits[0])):
+        # train_index_orig, test_index_orig = train_test_split(cv_distr[foldCounter-1], test_size=0.3)
+        print(f"*** Working with Fold %i :***{str(fd+1)}" )
         # create known interaction of training part 
         R_train_pos = []
-        for i in train_index:
-            if(Y[i]==1):
-                dr = X[i,0]
-                tr = X[i,1]
-                Rpos_data = dr, tr, Y[i]
+        for i in splits[0][fd][0]:
+            if(i[2]==1):
+                dr = inv_drugID.get(i[0])
+                tr = inv_targetID.get(i[1])
+                Rpos_data = dr, tr, 1
                 R_train_pos.append(Rpos_data)
 
         R_tr = pd.DataFrame(R_train_pos)
 
+        train_index=[]
+        for train in R_train_pos:
+            a = np.where(X==train[0])
+            b = np.where(X==train[1])
+            train_index.extend(list(set.intersection(set(a[0].tolist()), set(b[0].tolist()))))
+
+        train_index = np.array(train_index)
+
+        test_pos = []
+        for i in splits[0][fd][1]:
+            if(i[2]==1):
+                dr = inv_drugID.get(i[0])
+                tr = inv_targetID.get(i[1])
+                Rpos_data = dr, tr, 1
+                test_pos.append(Rpos_data)
+
+        test_index=[]
+        for test in test_pos:
+            a = np.where(X==test[0])
+            b = np.where(X==test[1])
+            test_index.extend(list(set.intersection(set(a[0].tolist()), set(b[0].tolist()))))
+
+        test_index = np.array(test_index)
         #first thing with R train to remove all edges in test (use it when finding path)
         train_DT_Matrix = Mask_test_index(test_index, X, Y, DrTr, drugID, targetID)
         DrTr_train = train_DT_Matrix.transpose()
@@ -160,9 +164,10 @@ def main():
         # create the edge list of the whole graph including (DD, PP, R_train)
         frames = [R_tr, DD_edgeList, PP_edgeList]
         allEdgeList = pd.concat(frames)
-        
+        allEdgeList = allEdgeList.mask(allEdgeList.eq('None')).dropna()
+
         # write it in a file for next reading of node2vec
-        input_filename = 'edgeLists/edgeList_%i.txt '%foldCounter
+        input_filename = 'edgeLists/edgeList_%i.txt'%foldCounter
         allEdgeList.to_csv(input_filename, header = None, index = None, sep=' ')
 
         # write edgeList and then read it for NODE2VEC generate Embedding
@@ -173,6 +178,7 @@ def main():
 
         #<<<<<<<<<<<<<<<<<<<<<<<<><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         # apply n2v on R positive training part and get the embeddings (protien_drugs FV)
+
         nx_G = read_graph(args)
         G = node2vec.Graph(nx_G, args.directed, args.p, args.q)
         G.preprocess_transition_probs()
@@ -266,9 +272,8 @@ def main():
         YY = np.array(class_labels)
 
         #fit the model
-        train_index = get_indexexes(test_index_orig, X, 'None')
         max_abs_scaler = MaxAbsScaler()
-        X_train = max_abs_scaler.fit(XX[train_index]) 
+        X_train = max_abs_scaler.fit(XX[train_index])
         X_train_transform = max_abs_scaler.transform(XX[train_index])
 
         X_test_transform = max_abs_scaler.transform(XX[test_index])
