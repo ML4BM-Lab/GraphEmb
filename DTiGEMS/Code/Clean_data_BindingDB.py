@@ -1,3 +1,4 @@
+
 import os
 import numpy as np
 import pandas as pd
@@ -79,12 +80,14 @@ for fl in tqdm(matrices):
 
 with open('/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Input/Custom/DTI.txt', 'r') as infl:
 	lines = infl.readlines()
+
 drugprot_set = drugSet.union(protSet)
 P_count=[]
 D_count=[]
 with open('/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Input/Custom/DTI.txt', 'w') as outfl:
 	for ln in lines:
 		tmp = ln.split()
+		tmp = [t.replace('.0', '') for t in tmp]
 		if set(tmp).issubset(drugprot_set):
 			P_count.append(tmp[0])
 			D_count.append(tmp[1])
