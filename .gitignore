@@ -22,7 +22,7 @@
 *.emb
 *.json
 ./*/Data/
-*/.DS_Store
+*.DS_Store
 Docking/tmp_data
 *.pdb.gz
 *.pdb
