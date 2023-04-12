@@ -1,5 +1,5 @@
 
-DATA_NAME=BindingDB
+DATA_NAME=DrugBank
 # DATA_PATH=/home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Data/Yamanashi_et_al_GoldStandard/$DATA_NAME
 DATA_PATH=/home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Data/$DATA_NAME
 eval "DOCKER_ID=$( docker run -d -t dtgems:1.0 bash)";

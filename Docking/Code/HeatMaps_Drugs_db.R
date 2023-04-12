@@ -12,7 +12,7 @@ library(RColorBrewer)
 
 ##################
 # LOAD FILES
-database_name <- 'DrugBank'
+database_name <- 'BindingDB'
 
 print(database_name)
 folder_path <- '../Results/data_per_dataset'
@@ -37,20 +37,20 @@ mat_sim_drugs <- as.matrix(mat_sim_drugs)
 
 
 ###  HISTOGRAM
-hits_drug = mat_sim_drugs[upper.tri(mat_sim_drugs, diag = FALSE)]
-data <- data.frame(hits_drug)
+# hits_drug = mat_sim_drugs[upper.tri(mat_sim_drugs, diag = FALSE)]
+# data <- data.frame(hits_drug)
 
-file_fig <- paste0(folder_db_path, '/hist_drugs_', database_name, '.pdf')
+# file_fig <- paste0(folder_db_path, '/hist_drugs_', database_name, '.pdf')
 
-pdf(file = file_fig)
-ggplot(data, aes(hits_drug)) +
-  ggtitle(paste0("Dataset: ", database_name))+
-  labs(x = "Drug Similarity (Tanimoto score)") +             
-  geom_histogram(aes(y = ..density..), bins=60, colour="#0c0f0a", fill="#d04088")+
-  geom_density()+
-  theme_classic()+
-  theme(plot.title = element_text(hjust = 0.5))   
-dev.off()
+# pdf(file = file_fig)
+# ggplot(data, aes(hits_drug)) +
+#   ggtitle(paste0("Dataset: ", database_name))+
+#   labs(x = "Drug Similarity (Tanimoto score)") +             
+#   geom_histogram(aes(y = ..density..), bins=60, colour="#0c0f0a", fill="#d04088")+
+#   geom_density()+
+#   theme_classic()+
+#   theme(plot.title = element_text(hjust = 0.5))   
+# dev.off()
 
 
 ### HEATMAP 
@@ -60,20 +60,26 @@ pale <- c("#133c55","#386fa4","#78b7e2","#f5f5f5")
 col_fun <- colorRamp2(c(0, 0.5,0.75,1), pale)
 col_fun(seq(-300, 300))
 
-### Annotations
-tags_king <- unique(annot_kingdom)[unique(annot_kingdom) != "-"]
 
-if (length(tags_king)==1) { 
-    color_vec_kig = c('#17b46a')
-    } else if (length(tags_king)==2) {
-        color_vec_kig = c('#17b46a','#ee451b')
-} 
-color_kingdom <- setNames(color_vec_kig, tags_king)
-color_kingdom <- c(color_kingdom, setNames('#ffffff', "-"))
+
+### Annotations
+
+# Not using annot_kingdom
+# tags_king <- unique(annot_kingdom)[unique(annot_kingdom) != "-"]
+
+# if (length(tags_king)==1) { 
+#     color_vec_kig = c('#17b46a')
+#     } else if (length(tags_king)==2) {
+#         color_vec_kig = c('#17b46a','#ee451b')
+# } 
+# color_kingdom <- setNames(color_vec_kig, tags_king)
+# color_kingdom <- c(color_kingdom, setNames('#ffffff', "-"))
+
 
 # Load Paletes
 qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
 col_vec_super = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+
 
 # superclass
 tags_superclass = unique(annot_superclass)[unique(annot_superclass) != "-"]
@@ -86,9 +92,10 @@ color_class = setNames(col_vec_super[1+6:(length(tags_class)+5)], tags_class)
 color_class <- c(color_class, setNames('#FFFFFF', "-"))
 
 # subclass
-tags_subclass = unique(annot_subclass)[unique(annot_subclass) != "-"]
-color_subclass = setNames(col_vec_super[1:length(tags_subclass)], tags_subclass)
-color_subclass <- c(color_subclass, setNames('#FFFFFF', "-"))
+## Not using subclass
+# tags_subclass = unique(annot_subclass)[unique(annot_subclass) != "-"]
+# color_subclass = setNames(col_vec_super[1:length(tags_subclass)], tags_subclass)
+# color_subclass <- c(color_subclass, setNames('#FFFFFF', "-"))
 
 
 #### Molecular Descriptors
@@ -153,8 +160,8 @@ left_ha <- rowAnnotation(df=anno_df_moldes,
 
 
 
-file_fig <- paste0(folder_db_path, '/heatmap_drugs_', database_name, '.png')
-png(file = file_fig, width = 2000, height = 1800)
+file_fig <- paste0(folder_db_path, '/heatmap_drugs_', database_name, '_new.png')
+png(file = file_fig, width = 2000, height = 2000)
 Heatmap(mat_sim_drugs, col = col_fun, name = 'Drug Similarity',
         show_row_names = FALSE, show_column_names = FALSE,
         show_row_dend = FALSE, show_column_dend = FALSE, 
