@@ -1,8 +1,8 @@
 
-SPLIT=Sp
-DATA_NAME=BIOSNAP
-# DATA_PATH=/home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Data/Yamanashi_et_al_GoldStandard/$DATA_NAME
-DATA_PATH=/home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Data/$DATA_NAME
+SPLIT=Sd
+DATA_NAME=E
+DATA_PATH=/home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Data/Yamanashi_et_al_GoldStandard/$DATA_NAME
+# DATA_PATH=/home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Data/$DATA_NAME
 eval "DOCKER_ID=$( docker run -d -t dtgems:1.0 bash)";
 
 docker exec $DOCKER_ID pip install tqdm
@@ -42,13 +42,14 @@ docker cp $DATA_PATH/${DATA_NAME}_dti.tsv $DOCKER_ID:/Drug-Target-Interaction-Pr
 docker cp  /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Code/Model_Sp_Sd_St_split_Improved.py $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Model_Sp_Sd_St_split_Improved.py
 
 docker cp  /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Code/load_datasets.py $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/load_datasets.py
-docker cp  /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Code/Clean_data_${DATA_NAME}.py $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Clean_data.py
+# docker cp  /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Code/Clean_data_${DATA_NAME}.py $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Clean_data.py
+docker cp  /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Code/Clean_data_Yamanishi.py $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Clean_data.py
 # docker cp  /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Code/Clean_data_Davis.py $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Clean_data.py
 # docker cp  /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Code/DTIs_Main.py $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/DTIs_Main.py
 docker cp  /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Code/DTIs_Main_Splits.py $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/DTIs_Main.py
 docker cp  /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Code/n2v_mainFunctions.py $DOCKER_ID:/Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/n2v_mainFunctions.py
 
 docker exec -w /Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec $DOCKER_ID python3 -u /Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/Clean_data.py
-nohup docker exec -w /Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec $DOCKER_ID python3 -u /Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/DTIs_Main.py --mode $SPLIT> /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Results/${DATA_NAME}_results.txt &
+nohup docker exec -w /Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec $DOCKER_ID python3 -u /Drug-Target-Interaction-Prediciton-Method/DTIs_node2vec/DTIs_Main.py --mode $SPLIT >> /home/margaret/data/jfuente/DTI/Input4Models/DTiGEMS/Results/${DATA_NAME}_results.txt &
 
 docker stop $DOCKER_ID && docker rm $DOCKER_ID
