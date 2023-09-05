@@ -1,7 +1,10 @@
 import pandas as pd
 import os
 import numpy as np
-from scipy.stats import wilcoxon
+from scipy.stats import wilcoxon, mannwhitneyu
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -62,47 +65,76 @@ P00533	Epidermal growth factor receptor	EGFR_HUMAN	DB08247	6-(cyclohexylmethoxy)
 P49841	Glycogen synthase kinase-3 beta	GSK3B_HUMAN	DB00748	carbinoxamine
 """
 
+names = []
+p1s = []
+data = []
+
 ## get position of first
 name = 'EGFR'
 p1 = ref[ref['Gene'] == 'P00533']
 p1 = p1[p1['Drug ID'] == 'DB08247'].index[0]
 
-# name = 'GSKB'
-# p1 = ref[ref['Gene'] == 'P49841']
-# p1 = p1[p1['Drug ID'] == 'DB00748'].index[0]
+names.append(name)
+p1s.append(p1)
 
-score_rmsd = []
-bool_rmsd = []
-score_random = []
-bool_random = []
+name = 'GSKB'
+p1 = ref[ref['Gene'] == 'P49841']
+p1 = p1[p1['Drug ID'] == 'DB00748'].index[0]
 
-for i in range(5):
-    s = f'seed_{i}'
+names.append(name)
+p1s.append(p1)
 
-    ## get pred and true
-    rmsd_score = rmsd[s].iloc[p1,0]
-    rmsd_bool = rmsd[s].iloc[p1,1]
-    score_rmsd.append(rmsd_score)
-    bool_rmsd.append(rmsd_bool)
-
-    random_score = random[s].iloc[p1,0]
-    random_bool = random[s].iloc[p1,1]
-    score_random.append(random_score)
-    bool_random.append(random_bool)
+for name,p1 in zip(names,p1s):
 
 
-# perform wilcoxon test
-odds_ratio, p_value = wilcoxon(score_rmsd, score_random)
+    score_rmsd = []
+    bool_rmsd = []
+    score_random = []
+    bool_random = []
 
-# Create a DataFrame from the arrays
-data = pd.DataFrame({'RMSD': score_rmsd, 'RANDOM': score_random})
+    for i in range(5):
+        s = f'seed_{i}'
+
+        ## get pred and true
+        rmsd_score = rmsd[s].iloc[p1,0]
+        rmsd_bool = rmsd[s].iloc[p1,1]
+        score_rmsd.append(rmsd_score)
+        bool_rmsd.append(rmsd_bool)
+
+        random_score = random[s].iloc[p1,0]
+        random_bool = random[s].iloc[p1,1]
+        score_random.append(random_score)
+        bool_random.append(random_bool)
+
+
+    # perform wilcoxon test
+    #wilcoxon(score_rmsd, score_random)
+    odds_ratio, p_value = mannwhitneyu(score_rmsd, score_random)
+    p_value = round(p_value,5)
+
+    # Create a DataFrame from the arrays
+    data.append(pd.DataFrame({'name':name, 'RMSD': score_rmsd, 'RANDOM': score_random}))
+
+
+#build dataframe
+df = pd.concat(data)
+dfm = pd.melt(df, id_vars = ['name'])
+dfm.columns = ['name','type','probability']
+
+## set palette
+custom_palette = ["#4f9ed5", "#5d5fa5"] 
+
+# Set the custom palette
+sns.set_palette(custom_palette)
+
 # Plot boxplots using seaborn
-ax = sns.boxplot(data=data)
-ax.set_title(f'{name}: NS (p-val = {p_value})')
+ax = sns.boxplot(data=dfm, x = 'name', y = 'probability', hue='type')
+ax.set_title(f'RMSD vs Random (5 seeds)')
 # Add labels to the plot
-plt.xlabel('Conditions')
+plt.tight_layout()
+plt.xlabel('Targets')
 plt.ylabel('Prediction Probability')
-plt.savefig(os.path.join('RMSD',f'rmsd_random_biosnap_comparison_{name}.png'))
+plt.savefig(os.path.join('RMSD',f'rmsd_random_biosnap_comparison_mannwhitney_final.pdf'))
 plt.clf()
 plt.cla()
 plt.close()
