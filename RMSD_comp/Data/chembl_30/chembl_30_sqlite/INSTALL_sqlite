@@ -1,0 +1,24 @@
+***************************************************************************
+*
+* Name:         INSTALL
+*
+* Purpose:      To describe how to use ChEMBL data with
+*               SQLite engine.
+*
+* Date:         22/02/2022
+*
+* Contact:      chembl-help@ebi.ac.uk
+*
+***************************************************************************
+*
+* DB Version    chembl_30
+* SQLite        3.26.0
+*
+***************************************************************************
+
+Instructions
+------------
+
+1. Simply invoke:
+
+    $> sqlite3 chembl_30.db

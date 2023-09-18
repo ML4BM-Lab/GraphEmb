@@ -1,0 +1,6 @@
+--2022-07-04 14:14:29--  https://rest.uniprot.org/uniprotkb/stream?compressed=true
+Resolving rest.uniprot.org (rest.uniprot.org)... 193.62.192.81
+Connecting to rest.uniprot.org (rest.uniprot.org)|193.62.192.81|:443... connected.
+HTTP request sent, awaiting response... 400 Bad Request
+2022-07-04 14:14:29 ERROR 400: Bad Request.
+
