@@ -21,7 +21,6 @@ Finally, the necessity of graph embedding tools for benchmarking drug repurposin
 
 This repository is divided into 4 blocks:
 - **DB**: The databases folder contain all the codes that have been used to preprocess the evaluated main (DrugBank, BIOSNAP, BindingDB, DAVIS and Yamanishi) and complimentary (CTD, FDA, HPRD and SIDER) datasets. Also, there is a link to a zenodo repository to download the available datasets.
-
 - **Models**: Containing a folder for every evaluated model (see Figure 2). Within each folder, all code, input matrices to the model and results is given.
 - **N2V**: Containing all the necessary code (and a link to zenodo to download input data to the model) to reproduce the results of every model used, and the figures used in the paper.
 - **RMSD**: Containing all the necessary code (and a link to zenodo to download input data) to reproduce the *in-sillico* validation performed for Moltrans and HyperAttentionDTI models. 
