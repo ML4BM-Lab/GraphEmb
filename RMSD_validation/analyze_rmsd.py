@@ -10,51 +10,51 @@ import seaborn as sns
 
 
 ## load reference
-ref = pd.read_csv(os.path.join('RMSD','final_fold_biosnap_annotated.tsv'), sep='\t', index_col=0)
+ref = pd.read_csv(os.path.join('RMSD_validation','final_fold_biosnap_annotated.tsv'), sep='\t', index_col=0)
 
 ## load --> final fold threshold rmsd 6
-rmsd_files = sorted(os.listdir(os.path.join('RMSD','FinalFold_threshold6_5_seeds_BIOSNAP')))
-rmsd = {f'seed_{i}': pd.read_csv(os.path.join('RMSD','FinalFold_threshold6_5_seeds_BIOSNAP',x,'predictions.csv'),index_col=0) for i,x in enumerate(rmsd_files)}
+rmsd_files = sorted(os.listdir(os.path.join('RMSD_validation','FinalFold_threshold6_5_seeds_BIOSNAP')))
+rmsd = {f'seed_{i}': pd.read_csv(os.path.join('RMSD_validation','FinalFold_threshold6_5_seeds_BIOSNAP',x,'predictions.csv'),index_col=0) for i,x in enumerate(rmsd_files)}
 
 ## load --> final fold threshold random
-random_files = sorted(os.listdir(os.path.join('RMSD','FinalFold_Random_5_seeds_BIOSNAP')))
-random = {f'seed_{i}': pd.read_csv(os.path.join('RMSD','FinalFold_Random_5_seeds_BIOSNAP', x, 'predictions.csv'),index_col=0) for i,x in enumerate(random_files)}
+random_files = sorted(os.listdir(os.path.join('RMSD_validation','FinalFold_Random_5_seeds_BIOSNAP')))
+random = {f'seed_{i}': pd.read_csv(os.path.join('RMSD_validation','FinalFold_Random_5_seeds_BIOSNAP', x, 'predictions.csv'),index_col=0) for i,x in enumerate(random_files)}
 
 
-pos_per_rmsd = []
-pos_per_random = []
-## for each seed
-for i in range(5):
-    s = f'seed_{i}'
+# pos_per_rmsd = []
+# pos_per_random = []
+# ## for each seed
+# for i in range(5):
+#     s = f'seed_{i}'
 
-    ## get only positives
-    only_positives = ref[ref['Label'] == 1].index
+#     ## get only positives
+#     only_positives = ref[ref['Label'] == 1].index
 
-    ## get pred and true
-    rmsd_score = rmsd[s].iloc[only_positives,0].values
-    rmsd_bool = rmsd[s].iloc[only_positives,1].values
-    pos_per_rmsd.append(rmsd_bool.sum()/rmsd_bool.shape[0])
+#     ## get pred and true
+#     rmsd_score = rmsd[s].iloc[only_positives,0].values
+#     rmsd_bool = rmsd[s].iloc[only_positives,1].values
+#     pos_per_rmsd.append(rmsd_bool.sum()/rmsd_bool.shape[0])
 
-    random_score = random[s].iloc[only_positives,0].values
-    random_bool = random[s].iloc[only_positives,1].values
-    pos_per_random.append(random_bool.sum()/random_bool.shape[0])
+#     random_score = random[s].iloc[only_positives,0].values
+#     random_bool = random[s].iloc[only_positives,1].values
+#     pos_per_random.append(random_bool.sum()/random_bool.shape[0])
 
 
-# perform wilcoxon test
-odds_ratio, p_value = wilcoxon(pos_per_rmsd, pos_per_random)
+# # perform wilcoxon test
+# odds_ratio, p_value = wilcoxon(pos_per_rmsd, pos_per_random)
 
-# Create a DataFrame from the arrays
-data = pd.DataFrame({'RMSD': pos_per_rmsd, 'RANDOM': pos_per_random})
-# Plot boxplots using seaborn
-ax = sns.boxplot(data=data)
-ax.set_title(f'NS (p-val = {p_value})')
-# Add labels to the plot
-plt.xlabel('Conditions')
-plt.ylabel('Percentage')
-plt.savefig(os.path.join('RMSD','rmsd_random_biosnap_comparison.png'))
-plt.clf()
-plt.cla()
-plt.close()
+# # Create a DataFrame from the arrays
+# data = pd.DataFrame({'RMSD': pos_per_rmsd, 'RANDOM': pos_per_random})
+# # Plot boxplots using seaborn
+# ax = sns.boxplot(data=data)
+# ax.set_title(f'NS (p-val = {p_value})')
+# # Add labels to the plot
+# plt.xlabel('Conditions')
+# plt.ylabel('Percentage')
+# plt.savefig(os.path.join('RMSD_validation','rmsd_random_biosnap_comparison.png'))
+# plt.clf()
+# plt.cla()
+# plt.close()
 
 
 """
@@ -84,7 +84,7 @@ p1 = p1[p1['Drug ID'] == 'DB00748'].index[0]
 names.append(name)
 p1s.append(p1)
 
-for name,p1 in zip(names,p1s):
+for name, p1 in zip(names,p1s):
 
 
     score_rmsd = []
@@ -109,7 +109,7 @@ for name,p1 in zip(names,p1s):
 
     # perform wilcoxon test
     #wilcoxon(score_rmsd, score_random)
-    odds_ratio, p_value = mannwhitneyu(score_rmsd, score_random)
+    odds_ratio, p_value = wilcoxon(score_rmsd, score_random)
     p_value = round(p_value,5)
 
     # Create a DataFrame from the arrays
@@ -134,7 +134,7 @@ ax.set_title(f'RMSD vs Random (5 seeds)')
 plt.tight_layout()
 plt.xlabel('Targets')
 plt.ylabel('Prediction Probability')
-plt.savefig(os.path.join('RMSD',f'rmsd_random_biosnap_comparison_mannwhitney_final.pdf'))
+plt.savefig(os.path.join('RMSD_validation',f'rmsd_random_biosnap_comparison_wilcoxon_final.pdf'))
 plt.clf()
 plt.cla()
 plt.close()
