@@ -1,4 +1,4 @@
-Notes of calculating the pairwise RMSD for subsampling. 
+Notes on the calculation of the pairwise RMSD for subsampling. 
 ======
 # General notes
 
