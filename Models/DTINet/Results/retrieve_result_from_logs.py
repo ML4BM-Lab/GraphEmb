@@ -6,6 +6,8 @@ import glob
 import matplotlib.pyplot as plt
 
 
+# code for reading longs an retrieve results of AUC/AUPR
+
 list_files = glob.glob('*.out')
 # create db
 subsamp_data = []

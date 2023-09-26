@@ -1,4 +1,3 @@
-
 #  Launching the model in Docker
 
 This section assumes that the preprocessing of the data has been already made.
@@ -11,12 +10,14 @@ The results are also writen in Results/ folder as an .out file.
 nohup bash ./launch_eegdti.sh -b <db name> -d <image_name> > launch_eegdti_nr.out &
 ```
 
-***** Test with: 
-nohup bash ./launch_eegdti.sh -b NR -d ftest_eegdti > launch_eegdti_nr.out &
+For example:
+```
+nohup bash ./launch_eegdti.sh -b NR -d eegdti > launch_eegdti_nr.out &
+```
 
 
+All the needed data should already be in data_dti. 
 
-All needed data should already be in data_dti. 
 The python script alone can be run as:
 ```
 python3 main_modified_eegdti.py <database name folder>
@@ -27,25 +28,30 @@ python3 main_modified_eegdti.py <database name folder>
 # Launching the model with splits in Docker
 
 For this part, again splits shoudld be previously created and in Data/ folder.
+
 These can be created using:
 
-!!!! MODIFY FOR RMSD !!!!
 ```
-python3 generate_onetooneindex_splits.py --dbPath <dbname> --split_type <Sp...> -subsampling -rmsd
+python3 generate_onetooneindex_splits.py --dbPath <dbname> --split_type <Sp/St/Sd.> -subsampling
 ```
+
+Note that the splits were generated using the code of GraphGuest but before it was available as a pypi package.
+
 
 For launching the model, execute the following shell script. 
 
 ```
-nohup bash launch_eegdti_splits.sh -b NR -d eegdti_mod -s Sp > log_splits_NR_Sp.out &
+nohup bash launch_eegdti_splits.sh -b <dataset> -d <image_name>  -s <Sp/St/Sd> > logfile.out &
 ```
-old: (-r for rsmd) 
-test with:
+
+As example:
+```
 nohup bash launch_eegdti_splits.sh -b NR -d ftest_eegdti -s Sp > log_splits_test.out &
+```
 
 # Note
 
-The docker given includes the modified files in order to launch the model ! 
+The docker needs to include the modified files in order to launch the model.
 
 We needed to modify the following in the default run:
     - main .py
@@ -63,7 +69,7 @@ We need to modify the following files in the splits run:
 
 # Instructions for running the preprocesing of the data
 
-This model needs the same preprocessing as for DTINet, indeed the  Luo Dataset. 
+This model needs the same preprocessing as for DTINet, indeed the original model also used the Luo Dataset. 
 If you want to replicate this step, you can run one of the following scripts
 
 ```
@@ -77,6 +83,7 @@ This model needs 3 folders with specific data:
 
 
 sim_network corresponds to the output of compute_similarity.m script from DTINet.
+
 In order to retrieve these 3 folders, you should follow some steps, as matlab fails in execution form outside docker 
 in some machines. 
 
@@ -113,5 +120,3 @@ Folders/files that actually use:
 - sevenNets: mat_* from Luo (including transpose)
 - sim_network == network from compute similarity in DTINet (compute_similarity.m)
 - oneTooneIndex: index of positive and negative edges for train/test
-
-
