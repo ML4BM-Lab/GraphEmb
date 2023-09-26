@@ -36,5 +36,5 @@ Docking/Code/chembl_30/
 chembl_30.db
 /Docking/Data/
 /Docking/Results/
-
+/docker/*
 

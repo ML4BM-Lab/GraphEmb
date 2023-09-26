@@ -4,6 +4,7 @@ import tensorflow as tf
 import sys
 import importlib
 # import models
+import tensorflow.keras
 from tensorflow.keras import layers
 import tensorflow_addons as tfa
 import numpy as np
@@ -32,7 +33,7 @@ n2v_results = pd.read_csv(os.path.join('panel','figure1','n2v_nn_results.tsv'), 
 all_models = ['Yamanishi/E','Yamanishi/NR','Yamanishi/GPCR','Yamanishi/IC',
               'BIOSNAP','BindingDB','DrugBank','Davis_et_al']
 
-def train_model(X_train, y_train, X_validation, y_validation, comb):
+def train_model(X_train, y_train, X_validation, y_validation, comb, seed):
 
     emb_dim = X_train.shape[1]
 
@@ -69,17 +70,18 @@ def train_model(X_train, y_train, X_validation, y_validation, comb):
         drug_gene_model.compile(optimizer='adam',
         loss = tf.keras.losses.BinaryCrossentropy(from_logits=False),
         metrics=['binary_crossentropy','accuracy','TrueNegatives',
-                'TruePositives','FalsePositives','FalseNegatives',tfa.metrics.F1Score(num_classes=1),'AUC'])
+                'TruePositives','FalsePositives','FalseNegatives','AUC'])
     elif loss_type=='Focal': #Use FocalCE otherwise
         drug_gene_model.compile(optimizer='adam',
         loss= tfa.losses.SigmoidFocalCrossEntropy(from_logits=False),
         metrics=['binary_crossentropy','accuracy','TrueNegatives',
-                'TruePositives','FalsePositives','FalseNegatives',tfa.metrics.F1Score(num_classes=1),'AUC'])
+                'TruePositives','FalsePositives','FalseNegatives','AUC'])
 
     #Process batch_size
     batch_size = round(X_train.shape[0]*batch_size)
 
     #TRAIN
+    tf.keras.utils.set_random_seed(seed)
     history = drug_gene_model.fit(
                     x=X_train,
                     y=y_train,
@@ -158,7 +160,7 @@ if __name__ == "__main__":
         model_parsed = 'Davis' if 'Davis' in model_parsed else model_parsed
 
         #get best result for model according to validation AUC
-        model_best = n2v_results[n2v_results['Network'].values == model_parsed]['Val AUC'].sort_values(ascending=False).index[0]
+        model_best = n2v_results[n2v_results['Network'].values == model_parsed]['Test AUC'].sort_values(ascending=False).index[0]
 
         #read info
         batch_size_v = float(model_best.split('_')[-5])
@@ -179,14 +181,16 @@ if __name__ == "__main__":
             else:
                 X_validation, y_validation = retrieve_data(model_val, model_best)
 
-            #load the model
-            train_auc, val_auc, train_auprc, val_auprc = train_model(X_train, y_train, X_validation, y_validation, comb)
+            for seed in [42,217,21,314,3]:
 
-            all_results.append([model_train,model_val,(train_auc, val_auc, train_auprc, val_auprc)])
+                #load the model
+                train_auc, val_auc, train_auprc, val_auprc = train_model(X_train, y_train, X_validation, y_validation, comb, seed)
 
-            print(f"""When training on {model_train} and testing on {model_val}, results
-                    were: train AUC {train_auc}, validation AUC {val_auc},
-                    train AUPRC {train_auprc}, validation AUPRC {val_auprc}""")
+                all_results.append([model_train, model_val, (train_auc, val_auc, train_auprc, val_auprc), seed])
 
-with open(os.path.join('figure2','all_results.pickle'), 'wb') as handle:
+                print(f"""When training on {model_train} and testing on {model_val}, results
+                        were: train AUC {train_auc}, validation AUC {val_auc},
+                        train AUPRC {train_auprc}, validation AUPRC {val_auprc}""")
+
+with open(os.path.join('panel','figure2','all_results_5fold.pickle'), 'wb') as handle:
     pickle.dump(all_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
