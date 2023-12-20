@@ -7,12 +7,10 @@ import os
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 
-
 #load dataframe
 df = pd.read_csv(os.path.join('figs','time_consumption_benchmarking.csv'))
 df.index = df['Model/Dataset']
 df.drop('Model/Dataset',axis=1, inplace=True)
-
 
 # Function to convert time values to seconds
 def time_to_seconds(time_str):
