@@ -37,10 +37,10 @@ for col in df.columns:
 df = df.replace('OOT',float('nan'))
 df = df.replace('OOR',float('nan'))
 df = np.log2(df)
+df = df[df.median(axis=0).sort_values().index]
 
 # Create a figure
 colors = ["#033aa5", "#bb6f7c", "#4970e3", "#b4b9e3", "#e6b5a9", "#d34c6a", "#8dd5a3", "#f0c78d"]
-colors = ["#ca586f", "#70a845", "#8761cc", "#b49041", "#688bcc", "#cd5d39", "#4aac8d", "#c361aa"]
 
 plt.figure(figsize=(10, 6))
 
