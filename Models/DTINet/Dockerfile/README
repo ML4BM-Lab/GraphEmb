@@ -1,0 +1,28 @@
+Waiting to be able to execute Matlab code
+
+https://github.com/mathworks-ref-arch/matlab-dockerfile
+
+
+
+## MATLAB instalation
+
+In order to install all the packages from matlab:
+	* Mount the ISO file with:
+		* `sudo mount -t iso9660 -o loop /path/to/iso/R2021b_Update_3_Linux.iso /mnt/`
+		* Copy the content of the created folder to the docker, in this case to `/media/mathworks/mathworks`
+	* Copy the installer_input.txt
+	* Run './install -inputFile /path/to/installer_input.txt'
+
+
+## Setting up matlab
+
+For using the matlab with the licence use the folowing credentials:
+> your_mail@mail.com
+> yourpassword
+
+
+
+## Runing matlab scripts
+
+`matlab -nodisplay -nosplash -nodesktop -r "run('path/to/your/script.m');exit;"`
+

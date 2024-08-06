@@ -1,3 +1,6 @@
+DTINet
+======
+
 # Launching DTINet
 
 ## Default Settings 
@@ -5,7 +8,7 @@
 ### Launch DTINet with Docker
 
 Matlab raises problems with x11 for our workstation. 
-For that reason, we use two bash codes to prepare the docker and run it for a given dataset.
+For this reason, we use two bash codes to prepare the docker and run it for a given dataset.
 
 
 #### Prepare docker
@@ -36,8 +39,7 @@ nohup bash ./Launch_DTINet_matlab.sh DrugBank &
 
 ## Evaluation with new splits
 
-
-The procedure is similar as before. 
+The procedure is similar to the previous one. 
 
 Still, splits can be generated individually with the script generate generate_splits_dtinet.py
 
@@ -45,11 +47,14 @@ Still, splits can be generated individually with the script generate generate_sp
 python3 generate_splits_dtinet.py --dbPath <database name> --split_type <Sp/Sd/St>  -subsampling 
 ```
 
-Note that the splits were generated using the code of GraphGuest but before it was available as a pypi package.
+Note that the splits were generated using the code of GraphGUEST before it was available as a pypi package.
+For using the splits in a new model, it might be faster, simpler and safer to install GUEST (repo: https://github.com/ubioinformat/GraphGuest)
+
 
 ### Prepare Model 
 
-This script generates the splits and a docker. In this step the splits are copied into the docker, and the docker id will also appear on the screen.
+This script generates the splits and a docker container. 
+In this step the splits are copied into the docker, and the docker id will also appear on the screen.
 
 
 ```
@@ -58,7 +63,7 @@ bash prepare_launch_splits.sh -b <db_name>
 
 ### Launch Model in Docker
 
-Remember that first time will ask for your matlab credentials.
+Remember that first time will ask for your Matlab credentials.
 
 ```
 bash Launch_DTINet_splits_matlab.sh -b <db_name> -s <Sp/Sd/St> 
@@ -100,7 +105,7 @@ Script that calls:
 ## What do we retrieve from each database? 
 * DrugBank database 
     - Drug nodes
-    - *** DTI *** - change DB in each folder
+    - *** DTI *** - change for DB in each folder
     - drug-drug 
 
 * HPRD database
