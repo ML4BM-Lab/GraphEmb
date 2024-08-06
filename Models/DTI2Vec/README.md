@@ -1,3 +1,6 @@
+DTI2vec
+====
+
 # Inputs needed for DTI2vec
 
 Raw data needed:
