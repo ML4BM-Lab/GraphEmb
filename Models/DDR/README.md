@@ -1,13 +1,11 @@
 DDR
 ======
 
-# Launching DDR
-## Default Settings 
-### Launch DDR with Docker
+# Launch DDR with Docker
 
 Due to the different libraries this method requires, we are providing a docker to run it over different datasets.
 
-#### Prepare docker
+## Prepare docker
 
 Build image as (in the same folder as the Dockerfile):
 
@@ -22,7 +20,7 @@ Run the container as:
 # docker run -dt --name <container_name> <image_name>
 docker run -dt --name ddr_benchmark ddr_model
 ```
-#### Load Data
+## Load Data
 
 The first step is to copy the data files from the PostSNF folder of the database to be used
 to the docker container. We will use Yamanishi_NR database as an example. These commands should be
@@ -40,7 +38,7 @@ Outside of the docker, copy the files to be used:
 docker cp Data/Yamanashi_et_al_GoldStandard/NR/Formatted/PostSNF ddr_benchmark:/ddr/DATASETS/Yamanishi_NR
 ```
 
-#### Launch model
+## Launch model
 
 We modified the original code in DDR to print results, and set parameters as input instead of 
 hardcoding them as original described in the code. Therefore, the main file "nr_demo.py" should be replaced
@@ -66,7 +64,7 @@ we would run the following command:
 docker cp ddr_benchmark:/ddr/DATASETS/Yamanishi_NR/PostSNF/results_nr.out 
 ```
 
-## Evaluation with Sp,Sd and St splits
+## Evaluation with Sp, Sd and St splits
 
 This model already incorporates this splits into its pipeline, so it has not required further modifications.
 
