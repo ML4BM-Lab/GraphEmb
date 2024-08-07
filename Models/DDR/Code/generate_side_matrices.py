@@ -75,7 +75,7 @@ def GenMOLfiles(dataset,subdataset,path_to_mol):
     print('Generating MOL files for DRUGS')
     path_to_script = os.getcwd()+'/Methods/DDR/Code/Preprocessing_genMOLfiles.py'
     #generate molfiles
-    subprocess.run(["/home/sevastopol/anaconda3/bin/python",path_to_script, dataset, subdataset, path_to_mol],stdout=sys.stdout)
+    subprocess.run(["python",path_to_script, dataset, subdataset, path_to_mol],stdout=sys.stdout)
 
 #RchemCPP
 def RchemCPP(path_to_mol,drug_savepath):
@@ -139,7 +139,7 @@ def GenProtSymbols(dataset,subdataset):
     print('Generating Symbols for PROTEINS')
     path_to_script = os.getcwd()+'/Methods/DDR/Code/Preprocessing_genProtSymbols.py'
     #generate molfiles
-    subprocess.run(["/home/sevastopol/anaconda3/bin/python",path_to_script, dataset, subdataset, protpath],stdout=sys.stdout)
+    subprocess.run(["python",path_to_script, dataset, subdataset, protpath],stdout=sys.stdout)
 
 #KeBABS
 def KeBABS(fastapath,protein_savepath):
@@ -152,7 +152,7 @@ def KeBABS(fastapath,protein_savepath):
 def BioGRID(protein_savepath,protpath):
     print(f'Generating BioGRID matrix')
     path_to_script = os.getcwd()+'/Methods/DDR/Code/Protein_kernels_BioGRID.py'
-    subprocess.run(["/home/sevastopol/anaconda3/bin/python",path_to_script, protein_savepath, protpath],stdout=sys.stdout)
+    subprocess.run(["python",path_to_script, protein_savepath, protpath],stdout=sys.stdout)
 
 #BioMART
 def BioMART(protpath,dataset,protein_savepath):
