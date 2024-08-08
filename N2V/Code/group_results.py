@@ -16,6 +16,7 @@ from collections import defaultdict as dd
 
 ## Detect the different networks
 n2v_nn_results = os.listdir(os.path.join('n2v_nn_results'))
+
 #sorted set n2v_nn results
 n2v_nn_results_ss = sorted(set(['_'.join(x.split('_')[0:2]) if x.split('_')[0] == 'Yamanishi' else x.split('_')[0] for x in n2v_nn_results]))
 
@@ -75,4 +76,5 @@ full_df_params = pd.concat([params_df,full_df],axis=1)
 full_df_params_order = full_df_params[['Network', 'Embedding', 'Architecture', 'Epochs',
                                        'Loss Function', 'Train AUC', 'Val AUC', 'Test AUC', 
                                        'Train AUPRC', 'Val AUPRC', 'Test AUPRC']]
+
 full_df_params_order.to_csv(os.path.join('Results','n2v_nn_results.tsv'),sep='\t')

@@ -173,7 +173,7 @@ if __name__ == "__main__":
             #get the identifier (old name + new tags)
             ID = emb_f_p[:-4]+'_'+'_'.join(map(str,comb))
 
-            file_path = os.getcwd()+f'/Results/{ID}.pickle'
+            file_path = os.getcwd()+f'/Results/n2v_nn_results/{ID}.pickle'
 
             #check if file exists
             if os.path.isfile(file_path):

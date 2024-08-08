@@ -35,11 +35,13 @@ task for each of the databases, such as AUC or AUPRC. This will take a while so 
 
 ```
 cd <your_path>/N2V/.
+mkdir Results/n2v_nn_results/
 python3 -u apply_grid.search.py > Results/grid_search.out &
 ```
 
-Then, run "group_results.py", that will generate a .tsv file containing the 
-evaluation metrics and the run information (N2V parameters) from the generated list of pickle files.
+Alternatively, **these files are already provided in the n2v_nn_results folder of the associated Zenodo repository.**
+Then, run "group_results.py", that will generate a .tsv file containing the evaluation metrics and the run information 
+(N2V parameters) from the generated list of pickle files.
 
 ```
 python3 -u group_results.py
