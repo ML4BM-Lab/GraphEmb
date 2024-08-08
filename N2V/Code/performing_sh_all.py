@@ -21,11 +21,6 @@ from sklearn.model_selection import train_test_split
 db_dict = './DBs_dict/'
 emb_p = './DBs_embeddings/'
 
-"""
-Yamanishi-E
-BIOSNAP
-"""
-
 #read dataframe
 n2v_results = pd.read_csv(os.path.join('Results','n2v_nn_results.tsv'), sep='\t', index_col = 0)
 
