@@ -31,14 +31,15 @@ First, create a folder in the docker's working directory.
 
 ```
 mkdir DATASETS
-mkdir Yamanishi_NR
+mkdir DATASETS/Yamanishi_NR
+mkdir DATASETS/Yamanishi_NR/Sp
 ```
 
 Outside of the docker, copy files and splits:
 
 ```
 # copy the splits (this example copies the Sp split)
-docker cp Data/Yamanashi_nr/Sp/* hadti_benchmark:/HpyerAttentionDTI/DATASETS/Yamanishi_NR/.
+docker cp Data/Yamanashi_nr/Sp/* hadti_benchmark:/HpyerAttentionDTI/DATASETS/Yamanishi_NR/Sp/.
 ```
 
 ## Launch the model

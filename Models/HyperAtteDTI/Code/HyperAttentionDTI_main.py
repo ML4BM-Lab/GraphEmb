@@ -136,9 +136,10 @@ if __name__ == "__main__":
 
     """Load preprocessed data."""
    
-    DATASET = sys.argv[1]
-    split_type = sys.argv[2] #'Sp', 'Sd' or 'St'
-    dir_input = './DATASETS/' + f'{DATASET}/' + split_type + f'/{DATASET}_seed' + str(i) + '.txt'
+    DATASET = sys.argv[1] # Yamanishi_nr
+    split_type = sys.argv[2] #' Sp', 'Sd' or 'St'
+    seed_type = sys.argv[3] # 0, 1, 2, 3, 4
+    dir_input = f'./DATASETS/{DATASET}/{split_type}/{DATASET}_seed{seed_type}.txt'
 
     print("Train in " + DATASET)
         
@@ -154,7 +155,18 @@ if __name__ == "__main__":
     Accuracy_List_stable, AUC_List_stable, AUPR_List_stable, Recall_List_stable, Precision_List_stable = [], [], [], [], []
     FF_Accuracy_List_stable, FF_AUC_List_stable, FF_AUPR_List_stable, FF_Recall_List_stable, FF_Precision_List_stable = [], [], [], [], []
 
+    ##
+    dataset_path = f"./Results/{DATASET}"
+    if not os.path.exists(dataset_path):
+        os.makedirs(dataset_path)
+
+    split_path = f"./Results/{DATASET}/{split_type}"
+    if not os.path.exists(split_path):
+        os.makedirs(split_path)
+
+
     for i_fold in range(K_Fold):
+
         print('*' * 25, 'No.', i_fold + 1, '-fold', '*' * 25)
       
         train_dataset, test_dataset = get_kfold_data(i_fold, dataset, K_Fold)
@@ -197,13 +209,8 @@ if __name__ == "__main__":
         Loss = nn.CrossEntropyLoss(weight=weight_CE)
         # print(model)
         
-        dataset_path = "./Results/" + DATASET
-        if not os.path.exists(dataset_path):
-            os.makedirs(dataset_path)
-
-        save_path = "./Results/" + DATASET + "/{}".format(i_fold)
-        note = ''
-        writer = SummaryWriter(log_dir=save_path, comment=note)
+        save_path = f"./Results/{DATASET}/{split_type}/{i_fold}"
+        writer = SummaryWriter(log_dir=save_path, comment='')
 
         """Output files."""
 
@@ -216,7 +223,8 @@ if __name__ == "__main__":
             hp_attr = '\n'.join(['%s:%s' % item for item in hp.__dict__.items()])
             f.write(hp_attr + '\n')
 
-        early_stopping = EarlyStopping(savepath = save_path,patience=hp.Patience, verbose=True, delta=0)
+        early_stopping = EarlyStopping(savepath = save_path, patience=hp.Patience, verbose=True, delta=0)
+
         # print("Before train,test the model:")
         # _,_,_,_,_,_ = test_model(test_dataset_load, save_path, DATASET, Loss, dataset="Test",lable="untrain",save=False)
 
