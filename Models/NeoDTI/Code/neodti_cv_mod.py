@@ -35,6 +35,7 @@ parser.add_option("-k","--k",default=512,help="The dimension of project matrices
 parser.add_option("-t","--t",default = "o",help="Test scenario")
 parser.add_option("-r","--r",default = "ten",help="positive negative ratio")
 parser.add_option("-m","--m",default = "default_data",help="selected dataset matrix")
+parser.add_option("-s", "--s", default = 'default', help = "type of split")
 
 (opts, args) = parser.parse_args()
 
@@ -52,16 +53,16 @@ def row_normalize(a_matrix, substract_self_loop):
     return new_matrix
 
 #load network
-splits = False #Set to True to do Sp, Sd, St
-split_type = 'St'
+
+split_type = opts.s
 network_path = 'data/'+opts.m+'/'
 
-if splits:
-    AUC_path = os.path.join(network_path, 'test_auc_splits_'+split_type+'.out')
-    AUPR_path = os.path.join(network_path, 'test_aupr_splits_'+split_type+'.out')
-else:
+if split_type == 'default':
     AUC_path = os.path.join(network_path, 'test_auc_default.out')
     AUPR_path = os.path.join(network_path, 'test_aupr_default.out')
+else:
+    AUC_path = os.path.join(network_path, 'test_auc_splits_'+split_type+'.out')
+    AUPR_path = os.path.join(network_path, 'test_aupr_splits_'+split_type+'.out')
 
 drug_drug = np.loadtxt(network_path+'mat_drug_drug.txt')
 #print 'loaded drug drug', check_symmetric(drug_drug), np.shape(drug_drug)
@@ -328,7 +329,7 @@ for r in xrange(5):
     else:
         dti_o = np.loadtxt(network_path+'mat_drug_protein_'+opts.t+'.txt')
 
-    if not splits:
+    if split_type == 'default':
         
         whole_positive_index = []
         whole_negative_index = []
@@ -407,7 +408,7 @@ for r in xrange(5):
         test_aupr_fold = []
         rs = np.random.randint(0,1000,1)[0]
 
-        if not splits:
+        if split_type == 'default':
             kf = StratifiedKFold(data_set[:,2], n_folds=10, shuffle=True, random_state=rs)
 
             for train_index, test_index in kf:

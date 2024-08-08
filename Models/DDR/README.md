@@ -20,6 +20,7 @@ Run the container as:
 # docker run -dt --name <container_name> <image_name>
 docker run -dt --name ddr_benchmark ddr_model
 ```
+
 ## Load Data
 
 The first step is to copy the data files from the PostSNF folder of the database to be used

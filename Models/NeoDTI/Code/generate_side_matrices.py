@@ -1,4 +1,4 @@
-#/home/sevastopol/anaconda3/bin/python
+#python
 import sys
 import os
 import subprocess
@@ -39,13 +39,13 @@ def GenMOLfiles(dataset,subdataset,path_to_mol):
     print('Generating MOL files for DRUGS')
     path_to_script = os.getcwd()+'/Methods/NeoDTI/Code/Preprocessing_genMOLfiles.py'
     #generate molfiles
-    subprocess.run(["/home/sevastopol/anaconda3/bin/python",path_to_script, dataset, subdataset, path_to_mol],stdout=sys.stdout)
+    subprocess.run(["python",path_to_script, dataset, subdataset, path_to_mol],stdout=sys.stdout)
 
 #MORGAN FINGERPRINT
 def MorganFingerprint(molpath,savepath):
     print('Generating MorganFingerprint for DRUGS')
     path_to_script = os.getcwd()+'/Methods/NeoDTI/Code/Drugs_kernels_MorganFingerprint.py'
-    subprocess.run(["/home/sevastopol/anaconda3/bin/python",path_to_script, molpath, savepath],stdout=sys.stdout)
+    subprocess.run(["python",path_to_script, molpath, savepath],stdout=sys.stdout)
 
 #SIDER 
 def SIDER(name):
