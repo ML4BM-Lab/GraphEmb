@@ -28,8 +28,9 @@ as a grid search was run for N2V. Lets now run the provided .py files in the cod
 ## Launch the classification model
 
 First, run "apply_gridsearch.py", where several configurations of N2V will be tried, 
-such as the embedding size of the number of steps in the random walk. This will generate
-a large list of pickle files in the Results folder, containing evaluation metrics of the classification 
+such as the embedding size of the number of steps in the random walk. Also, a few parameters of the
+Shallow Neural Network will be included in the grid search, such as the loss type or the type of architecture.
+This will generate a large list of pickle files in the Results folder, containing evaluation metrics of the classification 
 task for each of the databases, such as AUC or AUPRC. This will take a while so we can save the log in an output file:
 
 ```
