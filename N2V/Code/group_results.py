@@ -75,4 +75,4 @@ full_df_params = pd.concat([params_df,full_df],axis=1)
 full_df_params_order = full_df_params[['Network', 'Embedding', 'Architecture', 'Epochs',
                                        'Loss Function', 'Train AUC', 'Val AUC', 'Test AUC', 
                                        'Train AUPRC', 'Val AUPRC', 'Test AUPRC']]
-full_df_params_order.to_csv(os.path.join('panel','figure1','n2v_nn_results.tsv'),sep='\t')
+full_df_params_order.to_csv(os.path.join('Results','n2v_nn_results.tsv'),sep='\t')
