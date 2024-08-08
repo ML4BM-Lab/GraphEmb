@@ -94,7 +94,7 @@ Even though we used the default parameters to run NeoDTI for each database, they
 
 - **Type of Split (-s or --s)**: 
   - **Default**: "default" 
-  - **Description**: Specifies the type of split. Set "sp", "sd" or "st" to use each of the Sp, Sd or St splits.
+  - **Description**: Specifies the type of split. Set "sp", "sd" or "st" to use each of the Sp, Sd or St splits. Otherwise the default (random) will be used.
 
 # Code files description
 
