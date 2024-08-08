@@ -27,7 +27,7 @@ BIOSNAP
 """
 
 #read dataframe
-n2v_results = pd.read_csv(os.path.join('panel','figure1','n2v_nn_results.tsv'), sep='\t', index_col = 0)
+n2v_results = pd.read_csv(os.path.join('Results','n2v_nn_results.tsv'), sep='\t', index_col = 0)
 
 
 all_models = ['Yamanishi/E','Yamanishi/NR','Yamanishi/GPCR','Yamanishi/IC',
@@ -192,5 +192,5 @@ if __name__ == "__main__":
                         were: train AUC {train_auc}, validation AUC {val_auc},
                         train AUPRC {train_auprc}, validation AUPRC {val_auprc}""")
 
-with open(os.path.join('panel','figure2','all_results_5fold.pickle'), 'wb') as handle:
+with open(os.path.join('Results','all_results_5fold.pickle'), 'wb') as handle:
     pickle.dump(all_results, handle, protocol=pickle.HIGHEST_PROTOCOL)

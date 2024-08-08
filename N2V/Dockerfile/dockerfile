@@ -1,0 +1,10 @@
+FROM tensorflow/tensorflow:2.9.0
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends apt-utils \ 
+pkg-config git nano mlocate libprotobuf-dev
+
+RUN mkdir wdir
+WORKDIR /wdir
+
+RUN pip install numpy scikit-learn tflearn tqdm pandas tensorflow-addons

@@ -30,8 +30,8 @@ from sklearn.preprocessing import binarize
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
 
-db_dict = 'DBs_dict/'
-emb_p = 'DBs_embeddings/'
+db_dict = 'Data/DBs_dict/'
+emb_p = 'Data/DBs_embeddings/'
 
 #Define the parameters we are going to be varying for the grid
 batch_size_v = [1/16, 1/64]
@@ -173,7 +173,7 @@ if __name__ == "__main__":
             #get the identifier (old name + new tags)
             ID = emb_f_p[:-4]+'_'+'_'.join(map(str,comb))
 
-            file_path = os.getcwd()+f'/n2v_nn_results/{ID}.pickle'
+            file_path = os.getcwd()+f'/Results/{ID}.pickle'
 
             #check if file exists
             if os.path.isfile(file_path):
