@@ -25,7 +25,7 @@ docker run -dt --name hadti_benchmark hadti_model
 
 The first step is to copy the data files from the database to be used to the docker container. As HyperAttentionDTI only requires the SMILE sequence of the Drug
 and the aminoacid sequence of the protein, these have been concatenated into a single file, containing these information plus the interaction label.
-For each database, the Sp, Sd, St have been also generated and are located under each database folder. We will use Yamanishi_NR database as an example. These commands should be run from the HyperAttentionDTI's folder.
+For each database, the Sp, Sd, St have been also generated and are located under each database folder. We will use Yamanishi_NR database and Sp mode as an example. These commands should be run from the HyperAttentionDTI's folder.
 
 First, create a folder in the docker's working directory. 
 
