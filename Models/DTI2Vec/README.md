@@ -16,7 +16,7 @@ Run the container as:
 docker run -dt --name <container_name> <image_name>
 ```
 
-For example ```docker run -dt --name dti2vec moltrans_Sp```.
+For example ```docker run -dt --name dti2vec dti2vec_Sp```.
 
 If you want to run your docker in a given folder from your computer, remember to add the flag ``-v`` indicating the paths to connect.
 
