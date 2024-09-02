@@ -1,0 +1,10 @@
+tqdm==4.62.3
+pymol-open-source==2.3.0
+numpy==1.22.2
+pandas==1.5.1
+requests==2.26.0
+matplotlib==3.5.1
+seaborn==0.11.2
+biopython==1.79
+pubchempy==1.0.4
+rdkit==2023.03.2

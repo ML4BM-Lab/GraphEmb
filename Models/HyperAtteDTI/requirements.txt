@@ -1,0 +1,6 @@
+torch>=1.2
+numpy
+scikit-learn
+tqdm
+tensorboardX
+prefetch-generator

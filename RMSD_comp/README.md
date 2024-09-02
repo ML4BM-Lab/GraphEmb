@@ -34,6 +34,7 @@ For the selected proteins, the following script was used to retrieve annotation.
 get_annotations_uniprot.py 
 ```
 
+Pymol may be installed with conda, however there is also availble the pymol-open-source package.
 
 
 ## Downloading Data

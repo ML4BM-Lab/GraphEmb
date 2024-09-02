@@ -1,0 +1,6 @@
+tensorflow==1.15.0
+bidict
+scikit-learn
+numpy
+tqdm
+matplotlib
