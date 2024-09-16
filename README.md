@@ -13,7 +13,7 @@ The rapid growth of machine learning within the graph embedding and drug repurpo
 
 Similarly, building the required complementary matrices for every model is a highly demanding task. Most of the databases used at the moment of the method development are now updated, and this data needs to be retrieved in different ways (e.g., xml, tsv, APIs) with different identifiers (e.g., DrugBank, SIDER, PubChem, Uniprot). Moreover, the code necessary to access this information is often not included within the repositories of the models. For this reason, we provide a GitHub repository that includes the code to generate all the necessary matrices, allowing reproducibility of the drug repurposing evaluation.
 
-Finally, the necessity of graph embedding tools for benchmarking drug repurposing methodologies became evident during the study. For this reason, we developed a Python package (named *GraphGuest*, available at https://github.com/ubioinformat/GraphGuest) to perform relevant tasks such as splitting the data, testing different criteria or handling negative subsampling. This package can ease the comparison of graph embedding approaches not only for DTIs, but also for other types of graph data. 
+Finally, the necessity of graph embedding tools for benchmarking drug repurposing methodologies became evident during the study. For this reason, we developed a Python package (named *GUEST*, available at [https://github.com/ubioinformat/GUEST](https://github.com/ML4BM-Lab/GUEST)) to perform relevant tasks such as splitting the data, testing different criteria or handling negative subsampling. This package can ease the comparison of graph embedding approaches not only for DTIs, but also for other types of graph data. 
 
 
 <p align="center" width="100%">
